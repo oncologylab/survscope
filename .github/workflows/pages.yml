@@ -35,7 +35,7 @@ jobs:
       DATA_VERSION: ${{ inputs.data_version || '2026.07.28' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: actions/setup-node@v4
