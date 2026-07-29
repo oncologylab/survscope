@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use SurvScope, please cite this software and the TCGA-CDR publication."
+title: "SurvScope"
+type: software
+authors:
+  - family-names: Li
+    given-names: Yaoxiang
+repository-code: "https://github.com/oncologylab/survscope"
+url: "https://oncologylab.github.io/survscope/"
+license: MIT
+version: 0.1.0
+date-released: 2026-07-29

@@ -1,0 +1,78 @@
+name: Build TCGA data release
+
+on:
+  workflow_dispatch:
+    inputs:
+      data_version:
+        description: Immutable data version (YYYY.MM.DD)
+        required: true
+        default: "2026.07.28"
+      cohorts:
+        description: "all or comma-separated TCGA abbreviations"
+        required: true
+        default: "all"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: survscope-data-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DATA_VERSION: ${{ inputs.data_version }}
+      COHORT_INPUT: ${{ inputs.cohorts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install .
+      - name: Validate immutable tag
+        shell: bash
+        run: |
+          if [[ ! "$DATA_VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "data_version must use YYYY.MM.DD" >&2
+            exit 2
+          fi
+          if gh release view "data-v${DATA_VERSION}" >/dev/null 2>&1; then
+            echo "data-v${DATA_VERSION} already exists; data releases are immutable" >&2
+            exit 2
+          fi
+      - name: Stream and compact TCGA cohorts
+        shell: bash
+        run: |
+          if [[ "$COHORT_INPUT" == "all" ]]; then
+            survscope-build-data \
+              --outdir data-build \
+              --data-version "$DATA_VERSION"
+            echo "EXPECTED_COHORTS=33" >> "$GITHUB_ENV"
+          else
+            IFS=',' read -r -a cohort_array <<< "$COHORT_INPUT"
+            survscope-build-data \
+              --cohorts "${cohort_array[@]}" \
+              --outdir data-build \
+              --data-version "$DATA_VERSION"
+            echo "EXPECTED_COHORTS=${#cohort_array[@]}" >> "$GITHUB_ENV"
+          fi
+      - name: Validate complete release
+        run: |
+          python scripts/validate_data_release.py \
+            --dir data-build \
+            --expected-cohorts "$EXPECTED_COHORTS" \
+            --max-bytes 891289600 \
+            --max-assets 999
+      - name: Publish immutable release assets
+        shell: bash
+        run: |
+          gh release create "data-v${DATA_VERSION}" \
+            --target "$GITHUB_SHA" \
+            --title "SurvScope data ${DATA_VERSION}" \
+            --notes "Compact plot-only GDC STAR-TPM and TCGA-CDR data. Raw TCGA matrices are not included."
+          gh release upload "data-v${DATA_VERSION}" data-build/*
