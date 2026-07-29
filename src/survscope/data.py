@@ -1,4 +1,4 @@
-"""Read compact SurvScope release assets from disk or GitHub Releases."""
+"""Read compact SurvScope assets from disk or the immutable static site."""
 
 from __future__ import annotations
 
@@ -71,8 +71,8 @@ class DataStore:
             str(base)
             if base is not None
             else (
-                "https://github.com/oncologylab/survscope/releases/download/"
-                f"data-v{self.data_version}"
+                "https://oncologylab.github.io/survscope/data/"
+                f"{self.data_version}"
             )
         )
         self.cache = cache

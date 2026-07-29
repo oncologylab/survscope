@@ -51,6 +51,11 @@ def test_gene_bucket_has_fixed_width_expression(store: DataStore):
     assert np.nanmin(data.expression_tpm) >= 0
 
 
+def test_default_store_reads_fine_grained_static_assets():
+    store = DataStore(data_version="2026.07.28", cache=False)
+    assert store.base == "https://oncologylab.github.io/survscope/data/2026.07.28"
+
+
 def test_bucket_assignment_is_stable():
     assert _bucket_for("SRD5A1") == _bucket_for("srd5a1")
     assert len(_bucket_for("SRD5A1")) == 2

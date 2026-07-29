@@ -50,12 +50,27 @@ jobs:
             echo "Invalid DATA_VERSION" >&2
             exit 2
           fi
-          if gh release view "data-v${DATA_VERSION}" >/dev/null 2>&1; then
+          tag="data-v${DATA_VERSION}"
+          archive_name="survscope-data-${DATA_VERSION}.tar"
+          release_ready="$(
+            gh release view "$tag" \
+              --json isDraft,assets \
+              --jq ".isDraft == false and any(.assets[]; .name == \"${archive_name}\")" \
+              2>/dev/null || true
+          )"
+          if [[ "$release_ready" == "true" ]]; then
             release_dir="$(mktemp -d)"
-            gh release download "data-v${DATA_VERSION}" --dir "$release_dir"
+            gh release download "$tag" \
+              --pattern "${archive_name}*" \
+              --dir "$release_dir"
+            (
+              cd "$release_dir"
+              sha256sum -c "${archive_name}.sha256"
+            )
             rm -rf "web/public/data/${DATA_VERSION}"
             mkdir -p "web/public/data/${DATA_VERSION}"
-            cp "$release_dir"/* "web/public/data/${DATA_VERSION}/"
+            tar -xf "$release_dir/$archive_name" \
+              -C "web/public/data/${DATA_VERSION}"
             expected=33
           else
             echo "Complete release not found; deploying bundled regression catalog."

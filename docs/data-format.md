@@ -3,6 +3,11 @@
 Each immutable data release contains one manifest, one anonymous clinical JSON
 per cohort, and up to 16 expression ZIP buckets per cohort.
 
+GitHub Releases wraps those files in one uncompressed tar archive to keep the
+upload atomic and avoid secondary API rate limits. GitHub Pages unpacks the
+archive and serves the individual files, so an analysis downloads only its
+manifest, clinical asset, and selected expression bucket.
+
 ## Manifest
 
 `manifest-{data_version}.json` records:

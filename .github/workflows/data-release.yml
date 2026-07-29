@@ -68,11 +68,46 @@ jobs:
             --expected-cohorts "$EXPECTED_COHORTS" \
             --max-bytes 891289600 \
             --max-assets 999
+      - name: Package release in one API-friendly archive
+        shell: bash
+        run: |
+          archive_name="survscope-data-${DATA_VERSION}.tar"
+          tar -cf "$archive_name" -C data-build .
+          sha256sum "$archive_name" > "${archive_name}.sha256"
+          archive_bytes="$(stat -c %s "$archive_name")"
+          echo "Archive: ${archive_bytes} bytes"
+          test "$archive_bytes" -le 891289600
+          echo "ARCHIVE_NAME=${archive_name}" >> "$GITHUB_ENV"
       - name: Publish immutable release assets
         shell: bash
         run: |
+          tag="data-v${DATA_VERSION}"
+          release_created=false
+          cleanup_incomplete_release() {
+            if [[ "$release_created" == "true" ]]; then
+              gh release delete "$tag" --yes --cleanup-tag >/dev/null 2>&1 || true
+            fi
+          }
+          upload_with_retry() {
+            local asset="$1"
+            local attempt
+            for attempt in 1 2 3; do
+              if gh release upload "$tag" "$asset" --clobber; then
+                return 0
+              fi
+              echo "Upload attempt ${attempt} failed for ${asset}" >&2
+              sleep "$((attempt * 20))"
+            done
+            return 1
+          }
+          trap cleanup_incomplete_release ERR
           gh release create "data-v${DATA_VERSION}" \
+            --draft \
             --target "$GITHUB_SHA" \
             --title "SurvScope data ${DATA_VERSION}" \
-            --notes "Compact plot-only GDC STAR-TPM and TCGA-CDR data. Raw TCGA matrices are not included."
-          gh release upload "data-v${DATA_VERSION}" data-build/*
+            --notes "Compact plot-only GDC STAR-TPM and TCGA-CDR data. The archive contains no raw TCGA matrices or sample identifiers."
+          release_created=true
+          upload_with_retry "$ARCHIVE_NAME"
+          upload_with_retry "${ARCHIVE_NAME}.sha256"
+          gh release edit "$tag" --draft=false
+          trap - ERR

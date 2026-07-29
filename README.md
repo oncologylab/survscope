@@ -23,7 +23,7 @@ survscope plot \
   --outdir plots
 ```
 
-The command downloads only the release manifest, one small clinical asset, and
+The command downloads only the static manifest, one small clinical asset, and
 the bucket containing the selected gene. Use `--no-cache` to avoid retaining
 those selected chunks.
 
@@ -83,7 +83,11 @@ Software and data are versioned independently:
 - immutable data tags: `data-v2026.07.28`, …
 
 The website displays its active data version. Refreshes are manual and produce
-a new data tag; an existing data release is never replaced silently.
+a new data tag; an existing data release is never replaced silently. Each
+GitHub data release contains one plot-only tar archive to avoid API rate limits.
+The Pages workflow unpacks it into fine-grained static assets, so the browser
+and Python client still fetch only the selected manifest, cohort, and gene
+bucket.
 
 To validate the bundled small PAAD regression fixture:
 
