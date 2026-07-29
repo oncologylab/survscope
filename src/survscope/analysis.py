@@ -64,7 +64,10 @@ def analyze_gene_data(
 
         median_record = data.medians.get(endpoint, {})
         if isinstance(cutoff, str):
-            endpoint_cutoff = float(median_record.get("cutoff_tpm", np.nan))
+            stored_cutoff = median_record.get("cutoff_tpm")
+            endpoint_cutoff = (
+                float(stored_cutoff) if stored_cutoff is not None else np.nan
+            )
             if not np.isfinite(endpoint_cutoff) and len(endpoint_tpm):
                 endpoint_cutoff = float(np.median(endpoint_tpm))
             high = endpoint_tpm > endpoint_cutoff

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from survscope.analysis import analyze_gene_data
+from survscope.data import GeneData
 from survscope.statistics import bh_fdr, cox_binary, kaplan_meier, logrank_test
 
 
@@ -26,3 +28,40 @@ def test_bh_ignores_nonfinite_values():
         [0.03, 0.04, 0.04],
     )
     assert np.isnan(result[1])
+
+
+def test_null_endpoint_median_with_no_observations_reports_na():
+    clinical = {
+        "endpoints": {
+            endpoint: {
+                "time": [None, None],
+                "event": [None, None],
+                "quality": "unavailable",
+                "quality_note": "No usable endpoint data.",
+            }
+            for endpoint in ("OS", "DSS", "PFI", "DFI")
+        }
+    }
+    data = GeneData(
+        symbol="GENE",
+        ensembl="ENSG00000000001",
+        cohort="LAML",
+        encoded_expression=np.array([1000, 2000], dtype="<u2"),
+        medians={
+            endpoint: {"cutoff_tpm": None, "flips": []}
+            for endpoint in ("OS", "DSS", "PFI", "DFI")
+        },
+        clinical=clinical,
+        cohort_label="Acute myeloid leukemia",
+        data_version="test",
+        sources={
+            "expression": {"label": "test"},
+            "survival": {"label": "test"},
+        },
+    )
+    result = analyze_gene_data(data)
+    for endpoint in result.endpoints.values():
+        assert endpoint.n == 0
+        assert np.isnan(endpoint.cutoff_tpm)
+        assert np.isnan(endpoint.logrank_p)
+        assert endpoint.warning == "No endpoint-valid samples."

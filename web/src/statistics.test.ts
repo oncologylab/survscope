@@ -72,4 +72,17 @@ describe("browser survival statistics", () => {
     expect(result[2]).toBeCloseTo(0.04);
     expect(result[3]).toBeCloseTo(0.04);
   });
+
+  test("renders an endpoint with a null median and no observations as NA", () => {
+    const data = referenceGene();
+    data.clinical.endpoints.DSS.time = data.clinical.endpoints.DSS.time.map(
+      () => null,
+    );
+    data.gene.medians.DSS = { cutoff_tpm: null, flips: [] };
+    const result = analyzeGeneData(data, "median");
+    expect(result.endpoints.DSS.n).toBe(0);
+    expect(result.endpoints.DSS.cutoffTpm).toBeNaN();
+    expect(result.endpoints.DSS.logrankP).toBeNaN();
+    expect(result.endpoints.DSS.warning).toBe("No endpoint-valid samples.");
+  });
 });
