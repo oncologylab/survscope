@@ -24,15 +24,19 @@ import numpy as np
 from .constants import (
     BUCKET_COUNT,
     COHORT_LABELS,
+    COHORT_PRIMARY_SAMPLE_CODES,
     COHORTS,
     DEFAULT_DATA_VERSION,
+    DEFAULT_PRIMARY_SAMPLE_CODES,
     ENDPOINT_COLUMNS,
     ENDPOINTS,
     EXPRESSION_SCALE,
     GDC_EXPRESSION_URL,
     GDC_PIPELINE_URL,
     GDC_PROBEMAP_URL,
+    GDC_SAMPLE_TYPE_CODES_URL,
     MISSING_EXPRESSION,
+    SAMPLE_TYPE_LABELS,
     SCHEMA_VERSION,
     TCGA_CDR_CITATION_URL,
     TCGA_CDR_URL,
@@ -56,9 +60,17 @@ def _sample_case(sample: str) -> str:
     return sample[:15]
 
 
-def _is_primary_tumor(sample: str) -> bool:
+def _sample_type_code(sample: str) -> str | None:
     parts = sample.split("-")
-    return len(parts) >= 4 and parts[3][:2] == "01"
+    return parts[3][:2] if len(parts) >= 4 and len(parts[3]) >= 2 else None
+
+
+def _primary_sample_codes(cohort: str) -> tuple[str, ...]:
+    return COHORT_PRIMARY_SAMPLE_CODES.get(cohort.upper(), DEFAULT_PRIMARY_SAMPLE_CODES)
+
+
+def _is_primary_cancer_sample(sample: str, cohort: str) -> bool:
+    return _sample_type_code(sample) in _primary_sample_codes(cohort)
 
 
 def _bucket_for(symbol: str) -> str:
@@ -185,6 +197,8 @@ def _clinical_asset(
     sample_cases: list[str],
     survival_rows: dict[str, dict[str, dict[str, float | None]]],
 ) -> dict[str, Any]:
+    sample_codes = _primary_sample_codes(cohort)
+    sample_labels = [SAMPLE_TYPE_LABELS[code] for code in sample_codes]
     endpoints = {}
     for endpoint in ENDPOINTS:
         quality, note = endpoint_quality(cohort, endpoint)
@@ -198,7 +212,8 @@ def _clinical_asset(
         "schema_version": SCHEMA_VERSION,
         "cohort": cohort,
         "sample_count": len(sample_cases),
-        "sample_type": "Primary Tumor (TCGA sample code 01)",
+        "sample_type": " / ".join(sample_labels),
+        "sample_type_codes": list(sample_codes),
         "identifiers_included": False,
         "endpoints": endpoints,
     }
@@ -276,14 +291,18 @@ def build_cohort(
                 for index, sample in enumerate(header[1:]):
                     case = _sample_case(sample)
                     if (
-                        _is_primary_tumor(sample)
+                        _is_primary_cancer_sample(sample, cohort)
                         and case in survival_rows
                         and case not in seen_cases
                     ):
                         selected.append((index, case))
                         seen_cases.add(case)
                 if not selected:
-                    raise RuntimeError(f"No matched primary-tumor samples found for {cohort}")
+                    codes = ", ".join(_primary_sample_codes(cohort))
+                    raise RuntimeError(
+                        f"No matched primary cancer samples found for {cohort} "
+                        f"(TCGA sample codes: {codes})"
+                    )
                 selected_indices = [index for index, _ in selected]
                 sample_cases = [case for _, case in selected]
                 clinical = _clinical_asset(cohort, sample_cases, survival_rows)
@@ -379,13 +398,14 @@ def build_cohort(
         "label": COHORT_LABELS[cohort],
         "sample_count": len(sample_cases),
         "gene_count": len(genes),
+        "sample_type_codes": list(_primary_sample_codes(cohort)),
         "clinical_asset": clinical_name,
         "bucket_assets": bucket_assets,
         "source": source_details,
     }
     print(
         f"{cohort}: completed {len(genes):,} genes across {len(bucket_assets)} buckets "
-        f"for {len(sample_cases):,} matched primary tumors",
+        f"for {len(sample_cases):,} matched primary cancer samples",
         flush=True,
     )
     return cohort_manifest, genes
@@ -461,8 +481,14 @@ def build_release(
             "exact_median_membership_corrections": True,
         },
         "sample_policy": {
-            "sample_type": "Primary Tumor",
-            "tcga_sample_code": "01",
+            "sample_type": "Cohort-specific primary cancer specimen",
+            "default_tcga_sample_codes": list(DEFAULT_PRIMARY_SAMPLE_CODES),
+            "cohort_overrides": {
+                cohort: list(codes)
+                for cohort, codes in sorted(COHORT_PRIMARY_SAMPLE_CODES.items())
+            },
+            "code_definitions": SAMPLE_TYPE_LABELS,
+            "code_table": GDC_SAMPLE_TYPE_CODES_URL,
             "one_sample_per_case": True,
             "case_identifiers_published": False,
         },

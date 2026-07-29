@@ -2,8 +2,10 @@
 
 For each expression sample, SurvScope uses the corresponding TCGA-CDR case and
 endpoint when expression, time, and event are finite and time is greater than
-zero. Primary tumors are TCGA sample code `01`; if a matrix contains more than
-one primary-tumor column for a case, the first stable matrix column is used.
+zero. Solid-tumor cohorts use TCGA sample code `01` (Primary Solid Tumor).
+LAML uses code `03` (Primary Blood Derived Cancer - Peripheral Blood), following
+the GDC sample-type code table. If a matrix contains more than one eligible
+primary-cancer column for a case, the first stable matrix column is used.
 
 Median grouping is recomputed within the valid sample set for each endpoint.
 Values strictly greater than the median TPM are High; ties and values below the

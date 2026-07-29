@@ -17,6 +17,20 @@ ENDPOINT_COLUMNS = {
     "DFI": ("DFI.time", "DFI"),
 }
 
+# TCGA sample-type codes:
+# https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes
+DEFAULT_PRIMARY_SAMPLE_CODES = ("01",)
+COHORT_PRIMARY_SAMPLE_CODES = {
+    "LAML": ("03",),
+}
+SAMPLE_TYPE_LABELS = {
+    "01": "Primary Solid Tumor",
+    "03": "Primary Blood Derived Cancer - Peripheral Blood",
+}
+GDC_SAMPLE_TYPE_CODES_URL = (
+    "https://gdc.cancer.gov/resources-tcga-users/tcga-code-tables/sample-type-codes"
+)
+
 COHORTS = (
     "ACC",
     "BLCA",

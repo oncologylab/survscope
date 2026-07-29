@@ -134,7 +134,7 @@ export default function App() {
           <p className="eyebrow">OncologyLab research software</p>
           <h1>From gene to survival figure, without a server.</h1>
           <p>
-            Explore primary-tumor STAR TPM across TCGA cohorts. Every
+            Explore primary-cancer STAR TPM across TCGA cohorts. Every
             calculation runs locally in your browser from versioned static data.
           </p>
         </section>
@@ -323,7 +323,7 @@ export default function App() {
           <div>
             <p>
               <strong>Expression</strong>
-              GDC STAR TPM, primary tumors only
+              GDC STAR TPM, cohort-specific primary samples
             </p>
             <p>
               <strong>Outcomes</strong>

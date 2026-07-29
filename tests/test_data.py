@@ -6,7 +6,13 @@ import json
 import numpy as np
 import pytest
 
-from survscope.builder import SourceText, _bucket_for, load_probemap
+from survscope.builder import (
+    SourceText,
+    _bucket_for,
+    _is_primary_cancer_sample,
+    _primary_sample_codes,
+    load_probemap,
+)
 from survscope.data import DataStore
 
 
@@ -48,6 +54,15 @@ def test_gene_bucket_has_fixed_width_expression(store: DataStore):
 def test_bucket_assignment_is_stable():
     assert _bucket_for("SRD5A1") == _bucket_for("srd5a1")
     assert len(_bucket_for("SRD5A1")) == 2
+
+
+def test_primary_sample_policy_handles_solid_and_blood_cancers():
+    assert _primary_sample_codes("PAAD") == ("01",)
+    assert _primary_sample_codes("LAML") == ("03",)
+    assert _is_primary_cancer_sample("TCGA-2J-AAB1-01A", "PAAD")
+    assert not _is_primary_cancer_sample("TCGA-2J-AAB1-11A", "PAAD")
+    assert _is_primary_cancer_sample("TCGA-AB-2802-03A", "LAML")
+    assert not _is_primary_cancer_sample("TCGA-AB-2802-01A", "LAML")
 
 
 def test_probemap_excludes_ambiguous_symbols():

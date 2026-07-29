@@ -40,7 +40,8 @@ outputs = survscope.plot(analysis, formats=("pdf", "svg"), output_dir="plots")
 
 The reference figure contract is:
 
-- primary-tumor samples (TCGA sample code `01`);
+- primary cancer samples (code `01` for solid tumors and LAML code `03` for
+  primary peripheral-blood cancer);
 - endpoint-specific median expression split, with `High` defined strictly as
   expression greater than the cutoff;
 - OS, DSS, PFI, and DFI in a 2×2, 6.8-inch square figure;

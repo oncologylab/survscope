@@ -14,6 +14,10 @@ per cohort, and up to 16 expression ZIP buckets per cohort.
 - the searchable gene symbol/Ensembl catalog and deterministic bucket mapping;
 - byte size and SHA-256 for every declared data asset.
 
+The sample policy uses code `01` (Primary Solid Tumor) by default and code `03`
+(Primary Blood Derived Cancer - Peripheral Blood) for LAML. The manifest stores
+the policy and its GDC code-table source explicitly.
+
 The deterministic bucket is the first byte of `SHA256(upper(gene_symbol))`
 modulo 16, formatted as two hexadecimal digits.
 
