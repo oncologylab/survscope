@@ -225,7 +225,7 @@ export const SurvivalPlot = forwardRef<
       style={{
         background: "#ffffff",
         color: "#111111",
-        fontFamily: "'Liberation Sans', Arial, Helvetica, sans-serif",
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
         fontWeight: 700,
       }}
     >
