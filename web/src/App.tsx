@@ -255,6 +255,30 @@ export default function App() {
                 ))}
               </div>
             </div>
+            {analysis && (
+              <section className="quality-strip" aria-label="Endpoint quality">
+                {ENDPOINTS.map((endpoint) => {
+                  const result = analysis.endpoints[endpoint];
+                  return (
+                    <article key={endpoint} data-quality={result.quality}>
+                      <div>
+                        <strong>{endpoint}</strong>
+                        <span>{qualityLabel(result.quality)}</span>
+                      </div>
+                      <p>
+                        n={result.n} · events={result.events} · cutoff{" "}
+                        {Number.isFinite(result.cutoffTpm)
+                          ? `${result.cutoffTpm.toPrecision(5)} TPM`
+                          : "NA"}
+                      </p>
+                      {(result.qualityNote || result.warning) && (
+                        <small>{result.warning || result.qualityNote}</small>
+                      )}
+                    </article>
+                  );
+                })}
+              </section>
+            )}
             <div className="plot-stage">
               {analysis ? (
                 <SurvivalPlot ref={plotRef} analysis={analysis} />
@@ -267,41 +291,6 @@ export default function App() {
             </div>
           </section>
         </section>
-
-        {analysis && (
-          <section className="endpoint-quality">
-            <div className="section-title">
-              <span>03</span>
-              <div>
-                <h2>Endpoint quality</h2>
-                <p>TCGA-CDR Table 3 recommendations remain visible.</p>
-              </div>
-            </div>
-            <div className="quality-grid">
-              {ENDPOINTS.map((endpoint) => {
-                const result = analysis.endpoints[endpoint];
-                return (
-                  <article key={endpoint} data-quality={result.quality}>
-                    <div>
-                      <strong>{endpoint}</strong>
-                      <span>{qualityLabel(result.quality)}</span>
-                    </div>
-                    <p>
-                      n={result.n}; events={result.events}; cutoff=
-                      {Number.isFinite(result.cutoffTpm)
-                        ? `${result.cutoffTpm.toPrecision(5)} TPM`
-                        : "NA"}
-                    </p>
-                    {(result.qualityNote || result.warning) && (
-                      <small>{result.warning || result.qualityNote}</small>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
       </main>
 
       <footer>

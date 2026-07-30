@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test("renders the reference plot without external runtime requests", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const externalRequests: string[] = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
@@ -20,7 +21,18 @@ test("renders the reference plot without external runtime requests", async ({
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
   ).toBeVisible();
   await expect(page.getByText("recommended", { exact: true })).toHaveCount(4);
-  await expect(page.getByText(/n=177; events=93/)).toBeVisible();
+  await expect(page.getByText(/n=177 · events=93/)).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight <= window.innerHeight,
+    ),
+  ).toBe(true);
+  expect(
+    await page.locator(".controls").evaluate(
+      (element) => element.scrollHeight <= element.clientHeight,
+    ),
+  ).toBe(true);
+  await expect(page.locator("footer")).toBeVisible();
   expect(externalRequests).toEqual([]);
 });
 

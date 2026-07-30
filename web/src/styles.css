@@ -98,16 +98,14 @@ main {
 }
 
 .control-heading,
-.result-heading > div:first-child,
-.section-title {
+.result-heading > div:first-child {
   display: flex;
   gap: 14px;
   align-items: flex-start;
 }
 
 .control-heading > span,
-.result-heading > div:first-child > span,
-.section-title > span {
+.result-heading > div:first-child > span {
   color: var(--coral);
   font-family: Georgia, serif;
   font-size: 14px;
@@ -122,8 +120,7 @@ h2 {
 }
 
 .control-heading p,
-.result-heading p,
-.section-title p {
+.result-heading p {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 12px;
@@ -322,8 +319,8 @@ button:disabled {
 .plot-stage {
   display: grid;
   place-items: center;
-  min-height: 580px;
-  margin-top: 22px;
+  min-height: 0;
+  margin-top: 10px;
   overflow: auto;
   background:
     linear-gradient(90deg, rgb(30 48 45 / 3%) 1px, transparent 1px),
@@ -335,8 +332,11 @@ button:disabled {
 
 .survival-plot {
   display: block;
-  width: min(100%, 680px);
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  max-height: 680px;
+  aspect-ratio: 1;
   background: white;
   box-shadow: 0 13px 32px rgb(26 34 33 / 14%);
 }
@@ -353,61 +353,63 @@ button:disabled {
   opacity: 0.16;
 }
 
-.endpoint-quality {
-  padding: 75px 0 28px;
-}
-
-.quality-grid {
+.quality-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 24px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
-.quality-grid article {
-  padding: 18px;
-  background: rgb(255 254 251 / 72%);
+.quality-strip article {
+  min-width: 0;
+  padding: 8px 9px;
+  background: #f7f6f1;
   border: 1px solid var(--line);
 }
 
-.quality-grid article > div {
+.quality-strip article > div {
   display: flex;
+  gap: 6px;
   align-items: center;
   justify-content: space-between;
 }
 
-.quality-grid article > div span {
-  padding: 4px 7px;
+.quality-strip article > div span {
+  padding: 3px 5px;
   color: var(--teal-dark);
   background: #dcefeb;
   border-radius: 99px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.quality-grid article[data-quality="caution"] > div span {
+.quality-strip article[data-quality="caution"] > div span {
   color: #855b13;
   background: #f4e6bd;
 }
 
-.quality-grid article[data-quality="not_recommended"] > div span,
-.quality-grid article[data-quality="unavailable"] > div span {
+.quality-strip article[data-quality="not_recommended"] > div span,
+.quality-strip article[data-quality="unavailable"] > div span {
   color: #8e4333;
   background: #f3d9d2;
 }
 
-.quality-grid p,
-.quality-grid small {
+.quality-strip p,
+.quality-strip small {
   display: block;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 9px;
+  line-height: 1.35;
 }
 
-.quality-grid p {
-  margin: 16px 0 5px;
+.quality-strip p {
+  margin: 5px 0 0;
+}
+
+.quality-strip small {
+  margin-top: 3px;
 }
 
 footer {
@@ -430,6 +432,89 @@ footer a {
   font-weight: 700;
 }
 
+@media (min-width: 981px) {
+  body {
+    overflow: hidden;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-rows: 48px minmax(0, 1fr) 45px;
+    height: 100dvh;
+    min-height: 680px;
+  }
+
+  main {
+    min-height: 0;
+  }
+
+  .workspace {
+    height: calc(100% - 24px);
+    margin-top: 12px;
+  }
+
+  .controls,
+  .result {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .controls {
+    overflow-y: auto;
+  }
+
+  .controls > label,
+  .controls fieldset {
+    margin-top: 16px;
+  }
+
+  .controls select,
+  .gene-control > input,
+  .cutoff-input {
+    height: 40px;
+  }
+
+  .controls fieldset {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .controls legend {
+    margin-bottom: 0;
+  }
+
+  .radio {
+    margin-top: 0 !important;
+    padding: 9px;
+  }
+
+  .primary-button {
+    margin-top: 16px;
+    padding: 11px 14px;
+  }
+
+  .status {
+    min-height: 20px;
+    margin-top: 8px;
+  }
+
+  .result {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .plot-stage {
+    flex: 1;
+  }
+
+  footer {
+    align-items: center;
+    margin-top: 0;
+    padding: 10px 0;
+  }
+}
+
 @media (max-width: 980px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -440,7 +525,7 @@ footer a {
     border-bottom: 1px solid var(--line);
   }
 
-  .quality-grid {
+  .quality-strip {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -469,10 +554,6 @@ footer a {
 
   .plot-stage {
     min-height: 360px;
-  }
-
-  .quality-grid {
-    grid-template-columns: 1fr;
   }
 
   footer {
