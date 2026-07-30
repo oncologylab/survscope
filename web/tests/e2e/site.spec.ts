@@ -9,7 +9,13 @@ test("renders the reference plot without external runtime requests", async ({
     if (url.hostname !== "127.0.0.1") externalRequests.push(request.url());
   });
   await page.goto("?gene=SRD5A1&cohort=PAAD&cutoff=median");
-  await expect(page.getByRole("heading", { name: /without a server/i })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "SurvScope", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Choose an analysis" }),
+  ).toBeVisible();
+  await expect(page.getByText("Transparent by design")).toHaveCount(0);
   await expect(
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
   ).toBeVisible();

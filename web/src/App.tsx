@@ -115,30 +115,14 @@ export default function App() {
     <div className="app-shell">
       <header className="masthead">
         <a className="brand" href={import.meta.env.BASE_URL}>
-          <span className="brand-mark" aria-hidden="true">
-            S
-          </span>
-          <span>
-            <strong>SurvScope</strong>
-            <small>TCGA survival, publication ready</small>
-          </span>
+          SurvScope
         </a>
-        <div className="data-badge">
-          <span>Data release</span>
-          <strong>{manifest?.data_version ?? "…"}</strong>
-        </div>
+        <span className="data-version">
+          Data {manifest?.data_version ?? "…"}
+        </span>
       </header>
 
       <main>
-        <section className="hero">
-          <p className="eyebrow">OncologyLab research software</p>
-          <h1>From gene to survival figure, without a server.</h1>
-          <p>
-            Explore primary-cancer STAR TPM across TCGA cohorts. Every
-            calculation runs locally in your browser from versioned static data.
-          </p>
-        </section>
-
         <section className="workspace" aria-label="Survival plot workspace">
           <form className="controls" onSubmit={runAnalysis}>
             <div className="control-heading">
@@ -318,23 +302,6 @@ export default function App() {
           </section>
         )}
 
-        <section className="provenance">
-          <h2>Transparent by design</h2>
-          <div>
-            <p>
-              <strong>Expression</strong>
-              GDC STAR TPM, cohort-specific primary samples
-            </p>
-            <p>
-              <strong>Outcomes</strong>
-              PanCanAtlas TCGA-CDR OS, DSS, PFI, DFI
-            </p>
-            <p>
-              <strong>Runtime</strong>
-              Pure static browser application; no biomedical API calls
-            </p>
-          </div>
-        </section>
       </main>
 
       <footer>
