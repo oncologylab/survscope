@@ -28,8 +28,8 @@ jobs:
       DATA_VERSION: ${{ inputs.data_version }}
       COHORT_INPUT: ${{ inputs.cohorts }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
