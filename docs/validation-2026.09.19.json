@@ -1,0 +1,176 @@
+{
+  "case_count": 1314,
+  "endpoint_count": 5256,
+  "generated_at": "2026-09-19T06:57:17.947569+00:00",
+  "versions": {
+    "R": "4.3.3",
+    "survival": "3.8.13",
+    "jsonlite": "1.8.8",
+    "Python": "3.12.12",
+    "NumPy": "2.4.6",
+    "SciPy": "1.17.1",
+    "Node": "v22.23.2"
+  },
+  "coverage": {
+    "cohorts": [
+      "ACC",
+      "BLCA",
+      "BRCA",
+      "CESC",
+      "CHOL",
+      "COAD",
+      "CPTAC-3-ASTRO",
+      "CPTAC-3-FHRCC",
+      "CPTAC-3-GBM",
+      "CPTAC-3-GLIOMA",
+      "CPTAC-3-HNSC",
+      "CPTAC-3-KICH",
+      "CPTAC-3-KIRP",
+      "CPTAC-3-LAML",
+      "CPTAC-3-LUAD",
+      "CPTAC-3-LUSC",
+      "CPTAC-3-OLIGO",
+      "CPTAC-3-PAAD",
+      "CPTAC-3-RCC",
+      "CPTAC-3-SCCNOS",
+      "CPTAC-3-SKCM",
+      "CPTAC-3-STAD",
+      "CPTAC-3-UCEC",
+      "CPTAC-3-UTUC",
+      "DLBC",
+      "ESCA",
+      "GBM",
+      "HNSC",
+      "KICH",
+      "KIRC",
+      "KIRP",
+      "LAML",
+      "LGG",
+      "LIHC",
+      "LUAD",
+      "LUSC",
+      "MESO",
+      "OV",
+      "PAAD",
+      "PCPG",
+      "PRAD",
+      "READ",
+      "SARC",
+      "SKCM",
+      "STAD",
+      "TGCT",
+      "THCA",
+      "THYM",
+      "UCEC",
+      "UCS",
+      "UVM"
+    ],
+    "genes": [
+      "EGFR",
+      "SRD5A1",
+      "TP53"
+    ],
+    "data_versions": [
+      "2026.09.18"
+    ],
+    "groupings": [
+      {
+        "kind": "median"
+      },
+      {
+        "kind": "mean"
+      },
+      {
+        "kind": "tpm",
+        "threshold": 10
+      },
+      {
+        "kind": "percentile",
+        "percentile": 75
+      },
+      {
+        "kind": "percentile",
+        "percentile": 50
+      },
+      {
+        "kind": "extremes",
+        "lowerPercent": 25,
+        "upperPercent": 25
+      },
+      {
+        "kind": "extremes",
+        "lowerPercent": 33.333333333333336,
+        "upperPercent": 33.333333333333336
+      },
+      {
+        "kind": "extremes",
+        "lowerPercent": 20,
+        "upperPercent": 30
+      }
+    ]
+  },
+  "source_sha256": {
+    "src/survscope/analysis.py": "62cc9b1a110a57778ac5b64eb48c19881f088373d5a395be9d0577481aabccb4",
+    "src/survscope/statistics.py": "9532d03e06c303bfcc2e98a078c1dd8911f395c8ec4e1661f8a4ac3bc6bb6425",
+    "src/survscope/grouping.py": "363ed0bbc4129e170f4e06ca2c9825cc9a1249c33f411bd9b50f8917dffbfb5f",
+    "web/src/statistics.ts": "07489d1536cf3469fd7f9451b6652174a72d380a3a6f8dbc7c23c9d8c0b6ea39",
+    "web/src/numeric.ts": "20adf9adb07d3fd86baa0cc51ae7347a543928fcbd4cba26bfd3c779fc2c0228",
+    "web/src/grouping.ts": "b39c3a659c686d66fb3069208050bd0fbfca31741e08fcc2201e65b70d1bad4e",
+    "scripts/statistics-reference.R": "ea4da872f65638ae77cd6180e1d96ac298c8e2d7cf3f871c4114f252ccc6e6f6"
+  },
+  "JavaScript": {
+    "maximum_errors": {
+      "n": 0,
+      "nLow": 0,
+      "nHigh": 0,
+      "events": 0,
+      "eventsLow": 0,
+      "eventsHigh": 0,
+      "eligibleN": 0,
+      "excludedMiddle": 0,
+      "lowerThreshold": 2.2737367544323206e-13,
+      "upperThreshold": 4.547473508864641e-13,
+      "logrankChi2": 1.7763568394002505e-15,
+      "logrankP": 4.468647674116255e-15,
+      "logrankQ": 1.7319479184152442e-14,
+      "coxHr": 2.580600011459211e-09,
+      "coxP": 4.169721679048166e-09,
+      "timeMonths": 0,
+      "survival": 0,
+      "atRisk": 0,
+      "censored": 0,
+      "greenwood": 0,
+      "confidence": 2.220446049250313e-16
+    },
+    "failure_count": 0,
+    "failures": []
+  },
+  "R": {
+    "maximum_errors": {
+      "n": 0,
+      "nLow": 0,
+      "nHigh": 0,
+      "events": 0,
+      "eventsLow": 0,
+      "eventsHigh": 0,
+      "eligibleN": 0,
+      "excludedMiddle": 0,
+      "lowerThreshold": 5.002220859751105e-12,
+      "upperThreshold": 5.002220859751105e-12,
+      "logrankChi2": 2.1671553440683056e-13,
+      "logrankP": 5.5067062021407764e-14,
+      "logrankQ": 8.054668043655511e-14,
+      "coxHr": 2.13179136471231e-06,
+      "coxP": 7.881422778632796e-06,
+      "timeMonths": 5.115907697472721e-13,
+      "survival": 7.771561172376096e-16,
+      "atRisk": 0,
+      "censored": 0,
+      "greenwood": 5.551115123125783e-16,
+      "confidence": 1.3322676295501878e-15
+    },
+    "failure_count": 0,
+    "failures": []
+  },
+  "cox_error_scale": "absolute difference in log hazard ratio"
+}

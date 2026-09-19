@@ -2,11 +2,13 @@
 
 from .analysis import analyze
 from .data import DataStore
+from .grouping import GroupingSpec
 from .models import EndpointResult, SurvivalAnalysis
 from .plotting import plot
 
 __all__ = [
     "DataStore",
+    "GroupingSpec",
     "EndpointResult",
     "SurvivalAnalysis",
     "analyze",
@@ -15,7 +17,7 @@ __all__ = [
     "search_genes",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def available_cohorts(store: DataStore | None = None) -> list[dict]:

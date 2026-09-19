@@ -23,6 +23,7 @@ class Curve:
     survival: np.ndarray
     n: int
     events: int
+    timeline: list[dict[str, float | int | None]] = field(default_factory=list)
 
 
 @dataclass
@@ -47,6 +48,11 @@ class EndpointResult:
     low: Curve | None = None
     high: Curve | None = None
     warning: str = ""
+    eligible_n: int = 0
+    excluded_middle: int = 0
+    lower_threshold: float = np.nan
+    upper_threshold: float = np.nan
+    cox_status: str = "unavailable"
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-compatible endpoint statistics without curve arrays."""
@@ -67,6 +73,11 @@ class EndpointResult:
             "cox_hr": _number_or_none(self.cox_hr),
             "cox_p": _number_or_none(self.cox_p),
             "warning": self.warning,
+            "eligible_n": self.eligible_n,
+            "excluded_middle": self.excluded_middle,
+            "lower_threshold": _number_or_none(self.lower_threshold),
+            "upper_threshold": _number_or_none(self.upper_threshold),
+            "cox_status": self.cox_status,
         }
 
 
@@ -78,11 +89,14 @@ class SurvivalAnalysis:
     ensembl: str
     cohort: str
     cohort_label: str
-    cutoff: str | float
+    cutoff: str | float | None
     data_version: str
     source_expression: str
     source_survival: str
     endpoints: dict[str, EndpointResult] = field(default_factory=dict)
+    grouping: dict[str, Any] = field(default_factory=lambda: {"kind": "median"})
+    grouping_label: str = "Median expression"
+    statistics_version: str = "1"
 
     @property
     def filename_stem(self) -> str:
@@ -95,6 +109,9 @@ class SurvivalAnalysis:
             "cohort": self.cohort,
             "cohort_label": self.cohort_label,
             "cutoff": self.cutoff,
+            "grouping": self.grouping,
+            "grouping_label": self.grouping_label,
+            "statistics_version": self.statistics_version,
             "data_version": self.data_version,
             "source_expression": self.source_expression,
             "source_survival": self.source_survival,

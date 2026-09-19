@@ -1,168 +1,73 @@
 # SurvScope
 
 [![CI](https://github.com/oncologylab/survscope/actions/workflows/ci.yml/badge.svg)](https://github.com/oncologylab/survscope/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/survscope.svg)](https://pypi.org/project/survscope/)
-[![Pages](https://img.shields.io/badge/app-GitHub%20Pages-147d77)](https://oncologylab.github.io/survscope/)
+[![Open the app](https://img.shields.io/badge/open-SurvScope-147d77)](https://oncologylab.github.io/survscope/)
 
-SurvScope creates reproducible, publication-style TCGA and CPTAC Kaplan–Meier survival
-plots from a compact, immutable data release. The website is a pure static
-application: it has no server, sends no biomedical API requests at runtime, and
-can export SVG, vector PDF, PNG, or analysis JSON directly in the browser.
+**Explore how a gene's RNA expression relates to survival in a cancer cohort, then edit and download the figure.** SurvScope works in your browser, without an account or installation.
 
-**Web application:** <https://oncologylab.github.io/survscope/>
+[**Open SurvScope →**](https://oncologylab.github.io/survscope/) · [Step-by-step guide](docs/user-guide.md) · [Statistical methods](docs/methods.md)
 
-## Quick start
+![SurvScope showing a survival comparison and the available expression groups](docs/images/comparison.png)
+
+## Make your first figure
+
+1. Choose a cancer cohort and enter a gene symbol, such as **SRD5A1** or **TP53**.
+2. Choose how to compare lower and higher expression. Start with the median, or try a percentile, the lowest/highest quarters or thirds, custom extreme groups, the mean, or a TPM threshold. Check the patient counts before running.
+3. Select **Create survival plot**. Each panel shows a different outcome, when available.
+4. Select **Edit figure** to change labels, colors, fonts, dimensions, axes, panel layout, and annotations. Click and drag items directly on the figure. Optional confidence bands, censor marks, and number-at-risk tables add context.
+5. Download **SVG**, **PDF**, or **PNG**. **Save project** lets you reopen the results and keep editing; a style preset reuses the appearance for another analysis.
+
+The original blue/red, four-panel, 6.8-inch figure remains the default. Editing the figure's appearance does not change the calculated results.
+
+## Which cancers and data are available?
+
+The current release includes **all 33 TCGA cohorts and 18 CPTAC-3 tumor groups**, covering 59,317 uniquely mapped gene symbols. TCGA and CPTAC appear separately in the cohort menu, with patient counts; pancreatic cancer is one of many choices. Availability varies by gene and outcome.
+
+TCGA provides overall survival (OS), disease-specific survival (DSS), progression-free interval (PFI), and disease-free interval (DFI), where the source supports them. CPTAC currently provides **RNA expression and OS**. Protein abundance and CPTAC-2 survival are not included. Some rare CPTAC groups have only one or two patients and cannot support an estimable comparison. See the [coverage table and sources](docs/cptac.md).
+
+## Read the results carefully
+
+A curve estimates the fraction of patients who remain event-free over time. The legend gives patients (`n`) and events (`e`) in each group. The p-value compares the curves; the hazard ratio compares higher with lower expression. These are unadjusted associations, not proof that a gene causes a difference or predicts an individual's outcome.
+
+Comparing expression extremes leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
+
+JavaScript calculations are checked against Python and independently executed R `survival`. Group membership, event counts, and risk counts agree exactly in the validation suite. Numerical tolerances and the preserved PAAD reference estimates are documented in [methods and validation](docs/methods.md#validation).
+
+## Use Python or the command line
+
+Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.3.0):
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.2.0/survscope-0.2.0-py3-none-any.whl
-survscope plot \
-  --gene SRD5A1 \
-  --cohort PAAD \
-  --cutoff median \
-  --format pdf svg png \
-  --outdir plots
+  https://github.com/oncologylab/survscope/releases/download/v0.3.0/survscope-0.3.0-py3-none-any.whl
+survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
+survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
+  --grouping extremes --lower-percent 25 --upper-percent 25 --json --outdir plots
 ```
-
-The command downloads only the static manifest, one small clinical asset, and
-the bucket containing the selected gene. Use `--no-cache` to avoid retaining
-those selected chunks.
-
-The tested Python wheel is published on GitHub Releases. PyPI publication is
-pending its one-time Trusted Publisher registration; maintainers can follow
-the [publishing setup](docs/publishing.md).
-
-Python usage:
 
 ```python
 import survscope
+from survscope import GroupingSpec
 
-analysis = survscope.analyze("SRD5A1", "PAAD", cutoff="median")
-outputs = survscope.plot(analysis, formats=("pdf", "svg"), output_dir="plots")
+result = survscope.analyze(
+    "SRD5A1", "PAAD",
+    grouping=GroupingSpec("extremes", lower_percent=25, upper_percent=25),
+)
+survscope.plot(result, formats=("pdf", "svg"), output_dir="plots")
 ```
 
-**Cohort coverage:** 33 TCGA cohorts and 18 CPTAC-3 tumor groups with matched
-RNA expression and overall survival, using separate codes such as `CPTAC-3-PAAD`.
-The additional rare groups can contain only one or two patients; cohort labels
-show sample counts and empty/no-event comparisons return unavailable statistics.
-CPTAC-2 currently lacks usable matched survival outcomes in the sources checked.
-See [CPTAC sources, coverage, and build instructions](docs/cptac.md).
-Protein abundance is not included in the TPM workflow.
+The Python package shares the comparison methods and the default figure. The interactive editor and its project files are browser features. PyPI publication awaits its one-time [Trusted Publisher setup](docs/publishing.md); use the GitHub wheel meanwhile.
 
-```bash
-survscope plot --gene SRD5A1 --cohort CPTAC-3-PAAD --format pdf svg png
-```
+## Reproducibility and further reading
 
-## What is reproduced
+The website displays its data version. Data releases are immutable; saved projects record both data and software versions. Browser calculations use static assets served with the site, with no external data-service requests or telemetry. Published assets contain no patient identifiers or raw expression matrices.
 
-The TCGA reference figure contract is:
+- [User guide](docs/user-guide.md): comparisons, editing, downloads, and common questions
+- [Methods](docs/methods.md): grouping, statistics, reference validation, and limitations
+- [CPTAC coverage and research](docs/cptac.md): included cohorts, sources, and exclusions
+- [Development and releases](docs/development.md): local setup, checks, and deployment
+- [Data format](docs/data-format.md): compact assets and provenance
 
-- primary cancer samples (code `01` for solid tumors and LAML code `03` for
-  primary peripheral-blood cancer);
-- endpoint-specific median expression split, with `High` defined strictly as
-  expression greater than the cutoff;
-- OS, DSS, PFI, and DFI in a 2×2, 6.8-inch square figure;
-- Kaplan–Meier curves, two-sided log-rank p-value, binary Cox HR using Breslow
-  ties, and Benjamini–Hochberg q-value across valid endpoints;
-- GDC STAR TPM expression and PanCanAtlas TCGA-CDR survival outcomes;
-- the existing blue/red palette, Liberation Sans in Matplotlib and Helvetica/Arial
-  in the browser, annotation
-  formatting, and `{GENE}_TCGA_{COHORT}_KM_survival` filename.
+For scientific use, cite [Liu et al., TCGA-CDR, Cell (2018)](https://doi.org/10.1016/j.cell.2018.02.052), the [GDC expression pipeline](https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/), and the source project for your cohort. SurvScope is research software, not a diagnostic or clinical decision-making tool.
 
-Numeric cutoffs are entered as TPM. Static expression is encoded to 0.001
-`log2(TPM+1)` resolution. The build stores sparse corrections so the default
-median grouping remains identical to the unquantized source values.
-
-## Deliberately small data
-
-SurvScope does **not** retain raw TCGA expression matrices. The manual data
-workflow streams one GDC-Xena cohort matrix at a time, quantizes each useful
-gene row immediately, and writes only:
-
-- compact expression values needed to form custom high/low groups;
-- four survival time/event arrays in a stable anonymous order;
-- exact median cutoffs and sparse grouping corrections;
-- gene/cohort indexes, quality labels, provenance, and checksums.
-
-Raw `.star_tpm.tsv.gz` files are never written to the repository, GitHub
-Release, Pages artifact, or Actions cache. Case and sample identifiers are not
-included in published assets. See [the data format](docs/data-format.md) for
-the on-disk schema.
-
-The source catalog covers the 33 TCGA-CDR cancer types, 18 CPTAC-3 groups, and every uniquely
-mapped GENCODE v36 gene symbol present in the corresponding GDC STAR-TPM
-matrix. Ambiguous symbol mappings are excluded rather than silently merged.
-
-## Data and software releases
-
-Software and data are versioned independently:
-
-- package/application tags: `v0.1.0`, `v0.2.0`, …
-- immutable data tags: `data-v2026.07.28`, …
-
-The website displays its active data version. Refreshes are manual and produce
-a new data tag; an existing data release is never replaced silently. Each
-GitHub data release contains one plot-only tar archive to avoid API rate limits.
-The Pages workflow unpacks it into fine-grained static assets, so the browser
-and Python client still fetch only the selected manifest, cohort, and gene
-bucket.
-
-To validate the bundled small PAAD regression fixture:
-
-```bash
-python scripts/validate_data_release.py \
-  --dir web/public/data/2026.07.28 \
-  --expected-cohorts 1
-```
-
-The production data release is generated only on an ephemeral GitHub runner:
-
-```bash
-gh workflow run data-release.yml \
-  -f data_version=2026.09.18 \
-  -f cohorts=all \
-  -f include_cptac=true \
-  -f tcga_data_version=2026.07.28
-```
-
-This reuses the verified compact TCGA assets byte for byte and streams the
-CPTAC cohorts. Leave `tcga_data_version` blank to rebuild TCGA from its sources.
-The Python default is `2026.09.18`. Pages serves the active release; download
-older immutable release archives and use `--data-dir` for archived analyses.
-
-## Development
-
-```bash
-python -m pip install -e ".[test]"
-pytest
-
-cd web
-npm ci
-npm test
-npm run build
-npm run test:e2e
-```
-
-Node.js 22 is used by CI. The repository includes a six-gene PAAD fixture for
-tests and initial static preview; the Pages deployment workflow replaces it
-with the complete validated data release when that release exists.
-
-## Scientific use
-
-SurvScope is research software, not a diagnostic or clinical
-decision-making tool. Endpoint quality badges transcribe the use
-recommendations in TCGA-CDR Table 3, including cautioned and not-recommended
-combinations rather than hiding them.
-
-Please cite:
-
-- Liu J, et al. *An Integrated TCGA Pan-Cancer Clinical Data Resource to Drive
-  High-Quality Survival Outcome Analytics.* Cell. 2018.
-  <https://doi.org/10.1016/j.cell.2018.02.052>
-- The GDC mRNA expression quantification pipeline:
-  <https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/>
-
-## License
-
-SurvScope source code is released under the [MIT License](LICENSE). Source
-datasets remain subject to their original terms and citations.
+Source code uses the [MIT License](LICENSE). Bundled fonts and numerical code retain their [third-party notices](web/public/third-party-notices.txt); data retain their original terms and citations.

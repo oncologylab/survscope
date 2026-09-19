@@ -57,18 +57,16 @@ discovery cohort.
 The published [data-v2026.09.18 release](https://github.com/oncologylab/survscope/releases/tag/data-v2026.09.18)
 contains the full catalogs for all 18 CPTAC groups and all 33 TCGA cohorts:
 59,317 genes, 869 assets, and 818,907,113 bytes. All 561 TCGA data assets match
-the `2026.07.28` release byte for byte. The deployed site is 823,332,414 bytes
-(785.19 MiB), within the 850 MiB budget. Both the release archive and all
+the `2026.07.28` release byte for byte. The initial 0.2 site was 823,332,414 bytes
+(785.19 MiB); the 0.3 build is 789.57 MiB, within the 850 MiB budget. Both the release archive and all
 extracted assets passed checksum and coverage validation.
 
-The live browser was checked with SRD5A1 in every one of the 51 cohorts.
-Patient/group counts, exact median cutoffs, and log-rank chi-square statistics
-matched Python exactly. P-values and Cox estimates agreed within the existing
-solvers' numerical precision (maximum observed Cox p-value difference
-6.54e-6). CPTAC lung-cancer SVG/PDF exports retained the 6.8-inch dimensions;
-the 300-dpi PNG was 2040 × 2040 pixels. No external runtime requests or browser
-errors occurred. CI passed 36 Python tests, five browser statistics tests,
-and three browser end-to-end tests, including the original TCGA reference.
+Software 0.3 adds the figure editor and outcome-independent comparison choices
+across these same cohorts. Current cross-language tests cover 5,256 endpoint
+comparisons (three genes, eight groupings, all 51 cohorts, and synthetic edge
+cases). Counts and memberships match exactly; [methods and validation](methods.md#validation)
+record numerical tolerances, measured errors, and the independent R reference.
+Each new Pages build checks the complete site's size again before deployment.
 
 ## Sources that informed the implementation
 
@@ -175,8 +173,8 @@ Leave the workflow's `tcga_data_version` input blank for a full source refresh.
 
 Use a fresh `data-vYYYY.MM.DD` tag for a production refresh. Validation checks
 checksums (including the manifest), requested and gene coverage, endpoint shape,
-asset count, and the 850 MiB budget. Pages additionally requires all 33 TCGA
-cohorts and checks the final site size. It selects the newest immutable data
+asset count, and the 850 MiB budget. Pages additionally requires all 33 TCGA cohorts and, for releases from
+2026.09.18 onward, all 18 current CPTAC groups, and checks the final site size. It selects the newest immutable data
 release unless a version is explicitly requested, and compiles the matching
 `VITE_DATA_VERSION` into the static app. Browser requests stay on the same origin.
 

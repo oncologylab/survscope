@@ -10,6 +10,7 @@ from pathlib import Path
 from .analysis import analyze
 from .constants import DEFAULT_DATA_VERSION
 from .data import DataStore
+from .grouping import GroupingSpec
 from .plotting import plot
 
 
@@ -46,11 +47,16 @@ def build_parser() -> argparse.ArgumentParser:
     plot_parser = subparsers.add_parser("plot", help="Analyze and plot one gene/cohort.")
     plot_parser.add_argument("--gene", required=True)
     plot_parser.add_argument("--cohort", required=True)
-    plot_parser.add_argument(
+    comparison = plot_parser.add_mutually_exclusive_group()
+    comparison.add_argument(
         "--cutoff",
         default="median",
         help="Use 'median' or a numeric TPM cutoff.",
     )
+    comparison.add_argument("--grouping", choices=("median", "mean", "percentile", "extremes"))
+    plot_parser.add_argument("--percentile", type=float)
+    plot_parser.add_argument("--lower-percent", type=float)
+    plot_parser.add_argument("--upper-percent", type=float)
     plot_parser.add_argument(
         "--format",
         nargs="+",
@@ -94,11 +100,24 @@ def main(argv: list[str] | None = None) -> int:
     store = _store(args)
 
     if args.command == "plot":
+        grouping = None
+        if args.grouping:
+            grouping = GroupingSpec(
+                kind=args.grouping,
+                percentile=args.percentile,
+                lower_percent=args.lower_percent,
+                upper_percent=args.upper_percent,
+            )
+        elif any(
+            value is not None for value in (args.percentile, args.lower_percent, args.upper_percent)
+        ):
+            raise SystemExit("Percentage options require --grouping percentile or extremes.")
         result = analyze(
             args.gene,
             args.cohort,
             cutoff=_parse_cutoff(args.cutoff),
             store=store,
+            grouping=grouping,
         )
         outputs = plot(result, formats=args.formats, output_dir=args.outdir, dpi=args.dpi)
         for path in outputs.paths:

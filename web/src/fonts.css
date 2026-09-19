@@ -1,0 +1,84 @@
+@font-face {
+  font-family: "SurvScope Sans";
+  src: url("/fonts/LiberationSans-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Sans";
+  src: url("/fonts/LiberationSans-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Sans";
+  src: url("/fonts/LiberationSans-Italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Sans";
+  src: url("/fonts/LiberationSans-BoldItalic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Serif";
+  src: url("/fonts/LiberationSerif-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Serif";
+  src: url("/fonts/LiberationSerif-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Serif";
+  src: url("/fonts/LiberationSerif-Italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Serif";
+  src: url("/fonts/LiberationSerif-BoldItalic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Mono";
+  src: url("/fonts/LiberationMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Mono";
+  src: url("/fonts/LiberationMono-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Mono";
+  src: url("/fonts/LiberationMono-Italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Mono";
+  src: url("/fonts/LiberationMono-BoldItalic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
