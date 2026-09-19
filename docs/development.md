@@ -30,7 +30,7 @@ scripts/install_r_reference.sh
 python scripts/validate_statistics.py
 ```
 
-The installer uses `sudo` for R and jsonlite, then installs the SHA-256-verified upstream R survival source at the pinned revision. Other systems can install R, jsonlite, and survival 3.8-13 manually. Node dependencies must already be installed. The regular suite writes `data-build/statistical-validation.json` and exits unsuccessfully on any mismatch beyond the documented tolerances.
+The installer uses `sudo` for R, jsonlite, and Matrix, then installs the SHA-256-verified upstream R survival source at the pinned revision. Other systems can install R, jsonlite, Matrix, and survival 3.8-13 manually. Node dependencies must already be installed. The regular suite writes `data-build/statistical-validation.json` and exits unsuccessfully on any mismatch beyond the documented tolerances.
 
 Validate a complete compact release, without obtaining raw source matrices:
 
