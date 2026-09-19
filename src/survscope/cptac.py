@@ -1,13 +1,14 @@
 """Build-time access to open CPTAC RNA expression and GDC overall survival.
 
-Raw STAR files are consumed in memory, one sample at a time and one cohort at
-a time. Only anonymous compact assets and aggregate provenance are written.
+Raw STAR files are consumed in memory, with at most three sample streams in
+one cohort at a time. Only anonymous compact assets and aggregate provenance are written.
 """
 
 from __future__ import annotations
 
 import csv
 import hashlib
+import http.client
 import io
 import json
 import math
@@ -16,7 +17,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from collections import Counter, deque
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -367,12 +370,49 @@ def read_star_tpm(
         raise RuntimeError("STAR file must declare one GENCODE gene model")
     for key in ambiguous:
         genes.pop(key, None)
+    declared_model = next(iter(models))
+    # One GDC CPTAC melanoma STAR file has this duplicated-v header typo.
+    # Its complete gene mapping matches v36; cross-file mapping checks stay strict.
+    model = {"GENCODE vv36": "GENCODE v36"}.get(declared_model, declared_model)
     return genes, {
         "sha256": sha256.hexdigest(),
         "bytes": size,
-        "gene_model": next(iter(models)),
+        "gene_model": model,
+        "gene_model_declared": declared_model,
         "ambiguous_symbols_excluded": len(ambiguous),
     }
+
+
+def _stream_samples(client: GdcClient, files: list[dict], wanted_genes: set[str] | None):
+    """Yield verified samples in input order, buffering at most three downloads."""
+    def read(file):
+        for attempt in range(3):
+            try:
+                with client.open(f"data/{file['file_id']}") as response:
+                    return read_star_tpm(
+                        response, expected_md5=file["md5sum"],
+                        expected_bytes=file["file_size"], wanted_genes=wanted_genes,
+                    )
+            except (http.client.IncompleteRead, ConnectionError, TimeoutError):
+                if attempt == 2:
+                    raise
+                time.sleep(2**attempt)
+        raise RuntimeError("Unreachable STAR retry state")
+
+    remaining = iter(files)
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        pending = deque()
+        for file in remaining:
+            pending.append((file, pool.submit(read, file)))
+            if len(pending) == 3:
+                break
+        while pending:
+            file, future = pending.popleft()
+            genes, provenance = future.result()
+            yield file, genes, provenance
+            following = next(remaining, None)
+            if following is not None:
+                pending.append((following, pool.submit(read, following)))
 
 
 def build_cptac_cohort(
@@ -458,17 +498,11 @@ def build_cptac_cohort(
     records: list[tuple[str, str]] = []
     matrix: np.ndarray | None = None
     gene_model = None
+    declared_models: Counter[str] = Counter()
     bytes_streamed = 0
     ambiguous_symbols = 0
-    for column, case in enumerate(case_order):
-        file = selected[case]
-        with client.open(f"data/{file['file_id']}") as response:
-            genes, provenance = read_star_tpm(
-                response,
-                expected_md5=file["md5sum"],
-                expected_bytes=file["file_size"],
-                wanted_genes=wanted_genes,
-            )
+    sample_streams = _stream_samples(client, [selected[case] for case in case_order], wanted_genes)
+    for column, (file, genes, provenance) in enumerate(sample_streams):
         observed = sorted((symbol, value[0]) for symbol, value in genes.items())
         if column == 0:
             if not observed:
@@ -478,6 +512,7 @@ def build_cptac_cohort(
             matrix = np.full((len(records), sample_count), np.nan)
         if observed != records or provenance["gene_model"] != gene_model:
             raise RuntimeError("STAR gene mappings changed within the cohort; rebuild separately")
+        declared_models[provenance["gene_model_declared"]] += 1
         assert matrix is not None
         matrix[:, column] = [math.log2(genes[symbol][1] + 1) for symbol, _ in records]
         bytes_streamed += provenance["bytes"]
@@ -578,6 +613,7 @@ def build_cptac_cohort(
             "file_count": sample_count,
             "bytes_streamed": bytes_streamed,
             "file_checksums_verified": True,
+            "gene_model_declarations": dict(sorted(declared_models.items())),
             "sample_selection": "One primary specimen per case; sample-type priority, "
             "then sample UUID and file UUID lexical order",
         },

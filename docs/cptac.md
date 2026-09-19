@@ -116,7 +116,11 @@ the exclusion count is recorded instead of silently treating them as independent
 patients. UUIDs and submitter IDs are not written to published assets.
 
 Ambiguous gene symbols are excluded case-insensitively. All files in a cohort
-must agree on gene mapping and gene-model version. TPM is converted to
+must agree on gene mapping and gene-model version. One melanoma STAR file
+declares `GENCODE vv36`; its 59,317 symbol/Ensembl mappings match the other
+samples exactly. The builder normalizes only that observed header typo to
+`GENCODE v36` and records counts of the original declarations in provenance.
+Actual gene-model or mapping changes still fail the build. TPM is converted to
 `log2(TPM+1)` and encoded to the existing uint16 format; exact median membership
 corrections preserve the source grouping. The current TCGA statistical and
 6.8-inch figure contract remains unchanged.
@@ -138,7 +142,9 @@ survscope --data-version 2026.09.18 --data-dir data-build/cptac \
 
 Add `--genes SRD5A1 TP53` for a compact smoke fixture. This reduces the output
 catalog, not source downloads: each selected STAR file must still be consumed
-and checksummed. A build keeps one cohort's gene values in memory to calculate
+and checksummed. Up to three sample downloads run concurrently, with results
+consumed in the fixed patient order and at most three buffered downloads.
+A build keeps one cohort's gene values in memory to calculate
 exact medians; it never writes a raw expression matrix. Metadata requests are
 paginated; transient connection/HTTP errors retry, and incomplete or changing
 responses fail explicitly.

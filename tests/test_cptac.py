@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,15 @@ def test_star_verifies_entire_source_even_for_gene_subset():
             expected_bytes=len(payload),
             wanted_genes={"GOOD"},
         )
+
+
+def test_observed_gdc_header_typo_is_normalized_and_preserved_in_provenance():
+    payload = star_payload("ENSG1.1\tGOOD\t3\n").replace(b"GENCODE v36", b"GENCODE vv36")
+    genes, source = read_star(payload)
+    assert genes == {"GOOD": ("ENSG1", 3.0)}
+    assert source["gene_model"] == "GENCODE v36"
+    assert source["gene_model_declared"] == "GENCODE vv36"
+    assert source["sha256"] == hashlib.sha256(payload).hexdigest()
     with pytest.raises(RuntimeError, match="byte count"):
         read_star_tpm(
             io.BytesIO(payload),
@@ -181,7 +191,27 @@ class FakeGdc:
         ]
 
     def open(self, path):
+        if path == "data/file-0":
+            # Later downloads finish first; expression columns must still match clinical rows.
+            time.sleep(0.02)
         return io.BytesIO(self.payloads[path.removeprefix("data/")])
+
+
+@pytest.mark.parametrize("old,new", [(b"GENCODE v36", b"GENCODE v37"),
+                                     (b"ENSG1.1", b"ENSG2.1")])
+def test_actual_gene_model_or_mapping_changes_still_fail(tmp_path, old, new):
+    client = FakeGdc()
+    client.payloads["file-1"] = client.payloads["file-1"].replace(old, new)
+    with pytest.raises(RuntimeError, match="gene mappings changed"):
+        build_cptac_cohort("CPTAC-3-PAAD", outdir=tmp_path, client=client)
+
+
+def test_header_normalization_records_original_declarations(tmp_path):
+    client = FakeGdc()
+    client.payloads["file-1"] = client.payloads["file-1"].replace(b"GENCODE v36", b"GENCODE vv36")
+    details, genes = build_cptac_cohort("CPTAC-3-PAAD", outdir=tmp_path, client=client)
+    assert len(genes) == 1 and details["sample_count"] == 4
+    assert details["source"]["gene_model_declarations"] == {"GENCODE v36": 3, "GENCODE vv36": 1}
 
 
 def test_builder_round_trip_preserves_exact_median_groups_and_anonymity(tmp_path, monkeypatch):

@@ -60,7 +60,8 @@ The TCGA reference figure contract is:
 - Kaplan–Meier curves, two-sided log-rank p-value, binary Cox HR using Breslow
   ties, and Benjamini–Hochberg q-value across valid endpoints;
 - GDC STAR TPM expression and PanCanAtlas TCGA-CDR survival outcomes;
-- the existing blue/red palette, Helvetica/Arial typography, annotation
+- the existing blue/red palette, Liberation Sans in Matplotlib and Helvetica/Arial
+  in the browser, annotation
   formatting, and `{GENE}_TCGA_{COHORT}_KM_survival` filename.
 
 Numeric cutoffs are entered as TPM. Static expression is encoded to 0.001
