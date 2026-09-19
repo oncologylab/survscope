@@ -87,6 +87,12 @@ test("exports edited physical dimensions, embedded fonts, overlays, and clean ve
   await page.getByRole("button", { name: "Edit figure", exact: true }).click();
   await number(page, "Width (inches)", "8");
   await number(page, "Height (inches)", "5");
+  await expect(page.locator("svg.survival-plot")).toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)",
+  );
+  const paper = (await page.locator("svg.survival-plot > rect").boundingBox())!;
+  expect(paper.width / paper.height).toBeCloseTo(8 / 5, 3);
   await page.getByLabel("Font", { exact: true }).selectOption("Serif");
   await page.getByText("Survival details", { exact: true }).click();
   for (const label of [
@@ -272,4 +278,21 @@ test("reuses presets, rearranges outcomes, and applies consistent axes to all pa
   await page.mouse.up();
   await page.getByRole("button", { name: "Fit", exact: true }).click();
   await expect(stage).toHaveClass(/fitted/);
+});
+
+test("reading the guide does not move or undo a selected figure item", async ({
+  page,
+}) => {
+  await page.goto("");
+  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  const title = page.locator('[data-element="title"]');
+  await title.click();
+  await page.keyboard.press("ArrowRight");
+  await expect(title).toHaveAttribute("transform", "translate(1,0)");
+  await page.getByRole("button", { name: "How to use", exact: true }).click();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Control+z");
+  await expect(title).toHaveAttribute("transform", "translate(1,0)");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
 });

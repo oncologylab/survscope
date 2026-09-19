@@ -304,6 +304,7 @@ export default function App() {
 
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
+      if (event.target instanceof Element && event.target.closest("dialog")) return;
       if (
         !editing ||
         /^(INPUT|TEXTAREA|SELECT)$/.test((event.target as HTMLElement).tagName)

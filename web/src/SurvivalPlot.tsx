@@ -579,7 +579,7 @@ export const SurvivalPlot = forwardRef<SVGSVGElement, Props>(
         onPointerCancel={end}
         onPointerDown={() => editor?.select(null)}
         style={{
-          background: "#fff",
+          background: "transparent",
           color: "#111",
           fontFamily: `SurvScope ${settings.fontFamily}`,
           fontWeight: 700,

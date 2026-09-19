@@ -323,8 +323,9 @@ button:disabled {
   height: 100%;
   max-height: 680px;
   aspect-ratio: 1;
-  background: white;
-  box-shadow: 0 13px 32px rgb(26 34 33 / 14%);
+  /* The SVG page rectangle defines the white paper; letterboxing is workspace. */
+  background: transparent;
+  filter: drop-shadow(0 13px 16px rgb(26 34 33 / 14%));
 }
 
 .plot-placeholder {
