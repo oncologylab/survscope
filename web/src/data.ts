@@ -1,4 +1,5 @@
 import { unzipSync } from "fflate";
+import { cohortDisplayName } from "./cohorts";
 
 import type {
   BucketMeta,
@@ -8,7 +9,10 @@ import type {
   Manifest,
 } from "./types";
 
-export const DATA_VERSION = "2026.07.28";
+export const DATA_VERSION = import.meta.env.VITE_DATA_VERSION || "2026.07.28";
+if (!/^\d{4}\.\d{2}\.\d{2}$/.test(DATA_VERSION)) {
+  throw new Error("VITE_DATA_VERSION must use YYYY.MM.DD");
+}
 
 const dataRoot = `${import.meta.env.BASE_URL}data/${DATA_VERSION}`;
 let manifestPromise: Promise<Manifest> | null = null;
@@ -16,6 +20,9 @@ const clinicalCache = new Map<string, Promise<ClinicalData>>();
 const bucketCache = new Map<string, Promise<{ meta: BucketMeta; matrix: Uint8Array }>>();
 
 async function checkedFetch(url: string): Promise<Response> {
+  if (new URL(url, window.location.href).origin !== window.location.origin) {
+    throw new Error("Data assets must be served from the same origin.");
+  }
   const response = await fetch(url, { credentials: "same-origin" });
   if (!response.ok) {
     throw new Error(`Data asset request failed (${response.status}): ${url}`);
@@ -26,7 +33,13 @@ async function checkedFetch(url: string): Promise<Response> {
 export function loadManifest(): Promise<Manifest> {
   manifestPromise ??= checkedFetch(
     `${dataRoot}/manifest-${DATA_VERSION}.json`,
-  ).then((response) => response.json() as Promise<Manifest>);
+  ).then((response) => response.json() as Promise<Manifest>)
+    .then((manifest) => {
+      if (![1, 2].includes(manifest.schema_version) || manifest.data_version !== DATA_VERSION) {
+        throw new Error("Unsupported data schema or mismatched data release.");
+      }
+      return manifest;
+    });
   return manifestPromise;
 }
 
@@ -39,7 +52,7 @@ function findGene(manifest: Manifest, query: string, cohort: string): GeneRecord
       item.cohorts.includes(cohort),
   );
   if (!gene) {
-    throw new Error(`${query} is not available for TCGA-${cohort}.`);
+    throw new Error(`${query} is not available for ${cohortDisplayName(cohort)}.`);
   }
   return gene;
 }
@@ -64,7 +77,7 @@ function loadBucket(
   if (cached) return cached;
   const asset = manifest.cohorts[cohort].bucket_assets[bucket];
   if (!asset) {
-    throw new Error(`TCGA-${cohort} has no data bucket ${bucket}.`);
+    throw new Error(`${cohortDisplayName(cohort)} has no data bucket ${bucket}.`);
   }
   const promise = checkedFetch(`${dataRoot}/${asset}`)
     .then((response) => response.arrayBuffer())
@@ -98,6 +111,7 @@ export async function loadGeneData(
   cohort: string,
 ): Promise<GeneData> {
   const manifest = await loadManifest();
+  if (!manifest.cohorts[cohort]) throw new Error(`Unsupported cohort: ${cohort}`);
   const geneIndex = findGene(manifest, geneQuery, cohort);
   const [clinical, bucket] = await Promise.all([
     loadClinical(manifest, cohort),
@@ -110,6 +124,8 @@ export async function loadGeneData(
     throw new Error(`${geneIndex.symbol} is missing from its data bucket.`);
   }
   return {
+    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources).expression.label,
+    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources).survival.label,
     gene,
     cohort,
     cohortLabel: manifest.cohorts[cohort].label,

@@ -1,12 +1,13 @@
 import { jsPDF } from "jspdf";
 import { svg2pdf } from "svg2pdf.js";
+import { figureFilename } from "./cohorts";
 
 import type { SurvivalAnalysis } from "./types";
 
 const POINTS = 489.6;
 
 function filename(analysis: SurvivalAnalysis, extension: string): string {
-  return `${analysis.gene}_TCGA_${analysis.cohort}_KM_survival.${extension}`;
+  return figureFilename(analysis.gene, analysis.cohort, extension);
 }
 
 function download(blob: Blob, name: string): void {

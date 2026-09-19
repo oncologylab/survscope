@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-DEFAULT_DATA_VERSION = "2026.07.28"
+DEFAULT_DATA_VERSION = "2026.09.18"
 SCHEMA_VERSION = 1
 EXPRESSION_SCALE = 1000
 MISSING_EXPRESSION = 65535
@@ -118,3 +118,8 @@ TCGA_CDR_CITATION_URL = "https://doi.org/10.1016/j.cell.2018.02.052"
 GDC_PIPELINE_URL = (
     "https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/"
 )
+
+
+def cohort_display_name(cohort: str) -> str:
+    """Keep legacy TCGA abbreviations while namespacing additional programs."""
+    return cohort if cohort.startswith(("CPTAC-", "TCGA-")) else f"TCGA-{cohort}"

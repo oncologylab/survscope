@@ -92,5 +92,5 @@ def test_probemap_excludes_ambiguous_symbols():
 def test_unknown_gene_and_cohort_are_clear_errors(store):
     with pytest.raises(KeyError, match="Gene not found"):
         store.load_gene("NOT_A_REAL_GENE", "PAAD")
-    with pytest.raises(KeyError, match="Unsupported TCGA cohort"):
+    with pytest.raises(KeyError, match="Unsupported cohort"):
         store._load_clinical("NOPE")

@@ -1,4 +1,4 @@
-name: Build TCGA data release
+name: Build survival data release
 
 on:
   workflow_dispatch:
@@ -6,11 +6,19 @@ on:
       data_version:
         description: Immutable data version (YYYY.MM.DD)
         required: true
-        default: "2026.07.28"
+        default: "2026.09.18"
       cohorts:
-        description: "all or comma-separated TCGA abbreviations"
+        description: "all (TCGA) or comma-separated TCGA/CPTAC-3 cohort codes"
         required: true
         default: "all"
+      include_cptac:
+        description: Also build all 18 supported CPTAC-3 RNA/OS cohorts
+        type: boolean
+        default: true
+      tcga_data_version:
+        description: Compact TCGA release to reuse (blank rebuilds TCGA from source)
+        required: false
+        default: "2026.07.28"
 
 permissions:
   contents: write
@@ -27,6 +35,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       DATA_VERSION: ${{ inputs.data_version }}
       COHORT_INPUT: ${{ inputs.cohorts }}
+      INCLUDE_CPTAC: ${{ inputs.include_cptac }}
+      TCGA_DATA_VERSION: ${{ inputs.tcga_data_version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,22 +55,51 @@ jobs:
             echo "data-v${DATA_VERSION} already exists; data releases are immutable" >&2
             exit 2
           fi
-      - name: Stream and compact TCGA cohorts
+          if git ls-remote --exit-code --tags origin "refs/tags/data-v${DATA_VERSION}"; then
+            echo "Data tag already exists; choose a new immutable version" >&2
+            exit 2
+          fi
+      - name: Download verified compact TCGA base
+        if: inputs.tcga_data_version != ''
         shell: bash
         run: |
-          if [[ "$COHORT_INPUT" == "all" ]]; then
-            survscope-build-data \
-              --outdir data-build \
-              --data-version "$DATA_VERSION"
-            echo "EXPECTED_COHORTS=33" >> "$GITHUB_ENV"
-          else
-            IFS=',' read -r -a cohort_array <<< "$COHORT_INPUT"
-            survscope-build-data \
-              --cohorts "${cohort_array[@]}" \
-              --outdir data-build \
-              --data-version "$DATA_VERSION"
-            echo "EXPECTED_COHORTS=${#cohort_array[@]}" >> "$GITHUB_ENV"
+          if [[ ! "$TCGA_DATA_VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "Invalid TCGA_DATA_VERSION" >&2
+            exit 2
           fi
+          archive_name="survscope-data-${TCGA_DATA_VERSION}.tar"
+          mkdir -p tcga-download tcga-base
+          gh release download "data-v${TCGA_DATA_VERSION}" \
+            --pattern "${archive_name}*" --dir tcga-download
+          (
+            cd tcga-download
+            sha256sum -c "${archive_name}.sha256"
+          )
+          tar -xf "tcga-download/${archive_name}" -C tcga-base
+      - name: Stream and compact selected cohorts
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from survscope.builder import main
+          from survscope.constants import COHORTS
+          from survscope.cptac import CPTAC_COHORTS
+
+          requested = os.environ["COHORT_INPUT"]
+          cohorts = list(COHORTS) if requested == "all" else [
+              code.strip().upper() for code in requested.split(",")
+          ]
+          if os.environ["INCLUDE_CPTAC"] == "true":
+              cohorts.extend(CPTAC_COHORTS)
+          cohorts = list(dict.fromkeys(cohorts))
+          args = ["--cohorts", *cohorts, "--outdir", "data-build",
+                  "--data-version", os.environ["DATA_VERSION"]]
+          if os.environ["TCGA_DATA_VERSION"]:
+              args.extend(["--tcga-release", "tcga-base"])
+          main(args)
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write(f"EXPECTED_COHORTS={len(cohorts)}\n")
+          PY
       - name: Validate complete release
         run: |
           python scripts/validate_data_release.py \
@@ -105,7 +144,7 @@ jobs:
             --draft \
             --target "$GITHUB_SHA" \
             --title "SurvScope data ${DATA_VERSION}" \
-            --notes "Compact plot-only GDC STAR-TPM and TCGA-CDR data. The archive contains no raw TCGA matrices or sample identifiers."
+            --notes "Compact plot-only RNA/TPM survival data for the cohorts listed in the manifest. TCGA uses TCGA-CDR; CPTAC uses GDC overall survival. No raw matrices or sample identifiers are included."
           release_created=true
           upload_with_retry "$ARCHIVE_NAME"
           upload_with_retry "${ARCHIVE_NAME}.sha256"

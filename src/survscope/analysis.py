@@ -26,7 +26,7 @@ def analyze(
     *,
     store: DataStore | None = None,
 ) -> SurvivalAnalysis:
-    """Analyze one gene in one TCGA cohort.
+    """Analyze one gene in one TCGA or CPTAC cohort.
 
     A numeric cutoff is interpreted as TPM. The special value ``"median"``
     applies the exact endpoint-specific median grouping recorded during the

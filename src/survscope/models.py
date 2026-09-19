@@ -8,6 +8,8 @@ from typing import Any
 
 import numpy as np
 
+from .constants import cohort_display_name
+
 
 def _number_or_none(value: float) -> float | None:
     return float(value) if np.isfinite(value) else None
@@ -70,7 +72,7 @@ class EndpointResult:
 
 @dataclass
 class SurvivalAnalysis:
-    """Complete four-endpoint analysis for a gene and TCGA cohort."""
+    """Analysis for a gene and cohort, with unavailable endpoints marked explicitly."""
 
     gene: str
     ensembl: str
@@ -84,7 +86,7 @@ class SurvivalAnalysis:
 
     @property
     def filename_stem(self) -> str:
-        return f"{self.gene}_TCGA_{self.cohort}_KM_survival"
+        return f"{self.gene}_{cohort_display_name(self.cohort).replace('-', '_')}_KM_survival"
 
     def to_dict(self) -> dict[str, Any]:
         return {

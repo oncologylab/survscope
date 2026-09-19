@@ -15,7 +15,12 @@ from typing import Any
 
 import numpy as np
 
-from .constants import DEFAULT_DATA_VERSION, EXPRESSION_SCALE, MISSING_EXPRESSION
+from .constants import (
+    DEFAULT_DATA_VERSION,
+    EXPRESSION_SCALE,
+    MISSING_EXPRESSION,
+    cohort_display_name,
+)
 
 
 def _default_cache_dir() -> Path:
@@ -127,7 +132,7 @@ class DataStore:
         if self._manifest is None:
             self._manifest = json.loads(self._read(self.manifest_name))
             schema = self._manifest.get("schema_version")
-            if schema != 1:
+            if schema not in {1, 2}:
                 raise RuntimeError(f"Unsupported SurvScope data schema: {schema!r}")
         return self._manifest
 
@@ -138,6 +143,7 @@ class DataStore:
                 "label": details["label"],
                 "sample_count": details["sample_count"],
                 "gene_count": details["gene_count"],
+                "program": details.get("program", "TCGA"),
             }
             for code, details in sorted(self.manifest["cohorts"].items())
         ]
@@ -162,9 +168,11 @@ class DataStore:
         cohort = cohort.upper()
         for item in self.manifest["genes"]:
             if query in {item["symbol"].upper(), item["ensembl"].upper()}:
-                if cohort not in item.get("cohorts", []):
-                    raise KeyError(f"{item['symbol']} is not available for TCGA-{cohort}")
-                return item
+                if cohort in item.get("cohorts", []):
+                    return item
+        if any(query in {item['symbol'].upper(), item['ensembl'].upper()}
+               for item in self.manifest["genes"]):
+            raise KeyError(f"{gene} is not available for {cohort_display_name(cohort)}")
         raise KeyError(f"Gene not found in SurvScope data release: {gene}")
 
     def _load_clinical(self, cohort: str) -> dict[str, Any]:
@@ -172,7 +180,7 @@ class DataStore:
         if cohort not in self._clinical:
             details = self.manifest["cohorts"].get(cohort)
             if details is None:
-                raise KeyError(f"Unsupported TCGA cohort: {cohort}")
+                raise KeyError(f"Unsupported cohort: {cohort}")
             self._clinical[cohort] = json.loads(self._read(details["clinical_asset"]))
         return self._clinical[cohort]
 
@@ -196,7 +204,9 @@ class DataStore:
         row_lookup = {record["symbol"].upper(): record for record in meta["genes"]}
         record = row_lookup.get(item["symbol"].upper())
         if record is None:
-            raise KeyError(f"{item['symbol']} is missing from TCGA-{cohort} bucket {bucket}")
+            raise KeyError(
+                f"{item['symbol']} is missing from {cohort_display_name(cohort)} bucket {bucket}"
+            )
         sample_count = int(meta["sample_count"])
         offset = int(record["row"]) * sample_count * np.dtype("<u2").itemsize
         values = np.frombuffer(
@@ -214,7 +224,7 @@ class DataStore:
             clinical=self._load_clinical(cohort),
             cohort_label=self.manifest["cohorts"][cohort]["label"],
             data_version=self.manifest["data_version"],
-            sources=self.manifest["sources"],
+            sources=self.manifest["cohorts"][cohort].get("sources", self.manifest["sources"]),
             scale=int(meta.get("scale", EXPRESSION_SCALE)),
             missing=int(meta.get("missing", MISSING_EXPRESSION)),
         )

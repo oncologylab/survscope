@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/survscope.svg)](https://pypi.org/project/survscope/)
 [![Pages](https://img.shields.io/badge/app-GitHub%20Pages-147d77)](https://oncologylab.github.io/survscope/)
 
-SurvScope creates reproducible, publication-style TCGA Kaplan–Meier survival
+SurvScope creates reproducible, publication-style TCGA and CPTAC Kaplan–Meier survival
 plots from a compact, immutable data release. The website is a pure static
 application: it has no server, sends no biomedical API requests at runtime, and
 can export SVG, vector PDF, PNG, or analysis JSON directly in the browser.
@@ -36,9 +36,21 @@ analysis = survscope.analyze("SRD5A1", "PAAD", cutoff="median")
 outputs = survscope.plot(analysis, formats=("pdf", "svg"), output_dir="plots")
 ```
 
+**Cohort coverage:** 33 TCGA cohorts and 18 CPTAC-3 tumor groups with matched
+RNA expression and overall survival, using separate codes such as `CPTAC-3-PAAD`.
+The additional rare groups can contain only one or two patients; cohort labels
+show sample counts and empty/no-event comparisons return unavailable statistics.
+CPTAC-2 currently lacks usable matched survival outcomes in the sources checked.
+See [CPTAC sources, coverage, and build instructions](docs/cptac.md).
+Protein abundance is not included in the TPM workflow.
+
+```bash
+survscope plot --gene SRD5A1 --cohort CPTAC-3-PAAD --format pdf svg png
+```
+
 ## What is reproduced
 
-The reference figure contract is:
+The TCGA reference figure contract is:
 
 - primary cancer samples (code `01` for solid tumors and LAML code `03` for
   primary peripheral-blood cancer);
@@ -48,7 +60,7 @@ The reference figure contract is:
 - Kaplan–Meier curves, two-sided log-rank p-value, binary Cox HR using Breslow
   ties, and Benjamini–Hochberg q-value across valid endpoints;
 - GDC STAR TPM expression and PanCanAtlas TCGA-CDR survival outcomes;
-- the existing blue/red palette, Liberation Sans Bold typography, annotation
+- the existing blue/red palette, Helvetica/Arial typography, annotation
   formatting, and `{GENE}_TCGA_{COHORT}_KM_survival` filename.
 
 Numeric cutoffs are entered as TPM. Static expression is encoded to 0.001
@@ -71,7 +83,7 @@ Release, Pages artifact, or Actions cache. Case and sample identifiers are not
 included in published assets. See [the data format](docs/data-format.md) for
 the on-disk schema.
 
-The source catalog covers the 33 TCGA-CDR cancer types and every uniquely
+The source catalog covers the 33 TCGA-CDR cancer types, 18 CPTAC-3 groups, and every uniquely
 mapped GENCODE v36 gene symbol present in the corresponding GDC STAR-TPM
 matrix. Ambiguous symbol mappings are excluded rather than silently merged.
 
@@ -101,9 +113,16 @@ The production data release is generated only on an ephemeral GitHub runner:
 
 ```bash
 gh workflow run data-release.yml \
-  -f data_version=2026.07.28 \
-  -f cohorts=all
+  -f data_version=2026.09.18 \
+  -f cohorts=all \
+  -f include_cptac=true \
+  -f tcga_data_version=2026.07.28
 ```
+
+This reuses the verified compact TCGA assets byte for byte and streams the
+CPTAC cohorts. Leave `tcga_data_version` blank to rebuild TCGA from its sources.
+The Python default is `2026.09.18`. Pages serves the active release; download
+older immutable release archives and use `--data-dir` for archived analyses.
 
 ## Development
 

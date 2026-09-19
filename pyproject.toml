@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "survscope"
-version = "0.1.0"
-description = "Reproducible TCGA Kaplan-Meier survival plots from compact static data"
+version = "0.2.0"
+description = "Reproducible TCGA and CPTAC Kaplan-Meier survival plots from compact static data"
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Yaoxiang Li" }]
 requires-python = ">=3.10"
-keywords = ["TCGA", "survival", "Kaplan-Meier", "oncology", "bioinformatics"]
+keywords = ["TCGA", "CPTAC", "survival", "Kaplan-Meier", "oncology", "bioinformatics"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",

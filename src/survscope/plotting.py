@@ -10,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .constants import ENDPOINTS
+from .constants import ENDPOINTS, cohort_display_name
 from .models import PlotOutputs, SurvivalAnalysis
 from .statistics import format_p
 
@@ -50,6 +50,12 @@ def create_figure(analysis: SurvivalAnalysis):
     figure, axes = plt.subplots(2, 2, figsize=(6.8, 6.8))
     for axis, endpoint in zip(axes.flat, ENDPOINTS, strict=True):
         result = analysis.endpoints[endpoint]
+        if result.quality == "unavailable":
+            axis.set_title(f"{analysis.gene} {endpoint}", fontsize=9, fontweight="bold")
+            axis.text(0.5, 0.5, "Endpoint unavailable", ha="center", va="center",
+                      transform=axis.transAxes)
+            axis.set_axis_off()
+            continue
         for label, curve in (("Low", result.low), ("High", result.high)):
             if curve is None:
                 continue
@@ -95,7 +101,7 @@ def create_figure(analysis: SurvivalAnalysis):
         axis.spines[["top", "right"]].set_visible(False)
 
     figure.suptitle(
-        f"{analysis.gene} TCGA-{analysis.cohort} survival",
+        f"{analysis.gene} {cohort_display_name(analysis.cohort)} survival",
         y=0.995,
         fontsize=12,
         fontweight="bold",
@@ -103,7 +109,7 @@ def create_figure(analysis: SurvivalAnalysis):
     figure.text(
         0.5,
         0.958,
-        "Expression: GDC STAR TPM; endpoints: PanCanAtlas TCGA-CDR",
+        f"Expression: {analysis.source_expression}; endpoints: {analysis.source_survival}",
         ha="center",
         va="top",
         fontsize=9,

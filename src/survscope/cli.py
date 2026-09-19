@@ -24,7 +24,7 @@ def _store(args: argparse.Namespace) -> DataStore:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="survscope",
-        description="Reproducible TCGA Kaplan-Meier survival plots.",
+        description="Reproducible TCGA and CPTAC Kaplan-Meier survival plots.",
     )
     parser.add_argument(
         "--data-version",

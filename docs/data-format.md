@@ -23,6 +23,20 @@ The sample policy uses code `01` (Primary Solid Tumor) by default and code `03`
 (Primary Blood Derived Cancer - Peripheral Blood) for LAML. The manifest stores
 the policy and its GDC code-table source explicitly.
 
+New builds include `program` and `sources` in each cohort record. Readers use
+cohort-specific sources, falling back to top-level sources for older releases.
+TCGA codes remain bare abbreviations (`PAAD`); CPTAC codes include the project
+(`CPTAC-3-PAAD`). `requested_cohorts` records intended release coverage. These
+require a schema-2 manifest when CPTAC is present. Legacy TCGA-only manifests
+remain schema 1. Updated readers accept both versions; older Python clients reject
+schema 2 instead of silently applying TCGA titles and provenance to CPTAC.
+Clinical and expression bucket layouts retain their schema-1 representation.
+
+CPTAC records additionally include `selection` (GDC project, site and histology
+filters), `coverage`, `available_endpoints`, allowed `sample_types`, GDC release
+metadata, metadata-response hashes, and a hash of the selected expression file
+provenance. The aggregate hash avoids publishing case/sample/file UUID lists.
+
 The deterministic bucket is the first byte of `SHA256(upper(gene_symbol))`
 modulo 16, formatted as two hexadecimal digits.
 
@@ -32,6 +46,11 @@ modulo 16, formatted as two hexadecimal digits.
 PFI, and DFI. Missing values are JSON `null`. It also carries the TCGA-CDR
 endpoint quality class and note. Sample and case identifiers are intentionally
 omitted.
+
+CPTAC uses the same four array slots, with OS from GDC and DSS/PFI/DFI filled
+with nulls and `quality: "unavailable"`. OS uses `quality: "caution"` rather
+than TCGA-CDR recommendations. Available times are in days, and events are
+binary (death = 1, censored = 0).
 
 ## Expression buckets
 

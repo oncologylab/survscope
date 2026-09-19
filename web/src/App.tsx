@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { loadGeneData, loadManifest } from "./data";
+import { cohortDisplayName } from "./cohorts";
 import { saveJson, savePdf, savePng, saveSvg } from "./export";
 import { SurvivalPlot } from "./SurvivalPlot";
 import { analyzeGeneData } from "./statistics";
@@ -40,6 +41,9 @@ export default function App() {
   useEffect(() => {
     loadManifest()
       .then((value) => {
+        if (!new URLSearchParams(window.location.search).has("cohort") && !value.cohorts.PAAD) {
+          setCohort(Object.keys(value.cohorts)[0] ?? "PAAD");
+        }
         setManifest(value);
         setStatus("");
       })
@@ -62,7 +66,7 @@ export default function App() {
   async function runAnalysis(event?: FormEvent) {
     event?.preventDefault();
     setBusy(true);
-    setStatus(`Loading ${gene.toUpperCase()} in TCGA-${cohort}…`);
+    setStatus(`Loading ${gene.toUpperCase()} in ${cohortDisplayName(cohort)}…`);
     try {
       const cutoff =
         cutoffMode === "median" ? "median" : Number.parseFloat(customCutoff);
@@ -134,7 +138,7 @@ export default function App() {
             </div>
 
             <label>
-              <span>TCGA cohort</span>
+              <span>Cancer cohort</span>
               <select
                 value={cohort}
                 onChange={(event) => {
@@ -143,12 +147,20 @@ export default function App() {
                 }}
                 disabled={!manifest || busy}
               >
-                {manifest &&
-                  Object.entries(manifest.cohorts).map(([code, details]) => (
-                    <option value={code} key={code}>
-                      {code} — {details.label}
-                    </option>
-                  ))}
+                {manifest && ["TCGA", "CPTAC"].map((program) => {
+                  const cohorts = Object.entries(manifest.cohorts).filter(
+                    ([, details]) => (details.program ?? "TCGA") === program,
+                  );
+                  return cohorts.length > 0 && (
+                    <optgroup label={program} key={program}>
+                      {cohorts.map(([code, details]) => (
+                        <option value={code} key={code}>
+                          {cohortDisplayName(code)} — {details.label} (n={details.sample_count})
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
             </label>
 
@@ -223,7 +235,7 @@ export default function App() {
               )}
             </fieldset>
 
-            <button className="primary-button" type="submit" disabled={busy}>
+            <button className="primary-button" type="submit" disabled={busy || !manifest}>
               {busy ? "Working…" : "Create survival plot"}
             </button>
             <p className={`status ${status ? "visible" : ""}`} role="status">
@@ -272,7 +284,8 @@ export default function App() {
                           : "NA"}
                       </p>
                       {(result.qualityNote || result.warning) && (
-                        <small>{result.warning || result.qualityNote}</small>
+                        <small>{result.quality === "unavailable"
+                          ? result.qualityNote : result.warning || result.qualityNote}</small>
                       )}
                     </article>
                   );

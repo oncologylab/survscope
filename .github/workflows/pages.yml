@@ -6,15 +6,15 @@ on:
     paths:
       - "web/**"
       - "scripts/validate_data_release.py"
+      - "src/survscope/validation.py"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
     inputs:
       data_version:
-        description: Data release to deploy
-        required: true
-        default: "2026.07.28"
+        description: Data release to deploy (blank selects latest immutable data release)
+        required: false
   workflow_run:
-    workflows: ["Build TCGA data release"]
+    workflows: ["Build survival data release"]
     types: [completed]
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      DATA_VERSION: ${{ inputs.data_version || '2026.07.28' }}
+      DATA_VERSION: ${{ inputs.data_version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,6 +43,21 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Select immutable data version
+        shell: bash
+        run: |
+          if [[ -z "$DATA_VERSION" ]]; then
+            tag="$(gh release list --limit 100 --exclude-drafts --exclude-pre-releases \
+              --json tagName --jq '[.[].tagName | select(test("^data-v[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}$"))] | sort | last // ""')"
+            DATA_VERSION="${tag#data-v}"
+            DATA_VERSION="${DATA_VERSION:-2026.07.28}"
+          fi
+          if [[ ! "$DATA_VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
+            echo "Invalid DATA_VERSION" >&2
+            exit 2
+          fi
+          echo "DATA_VERSION=$DATA_VERSION" >> "$GITHUB_ENV"
+          echo "VITE_DATA_VERSION=$DATA_VERSION" >> "$GITHUB_ENV"
       - name: Use complete release data when available
         shell: bash
         run: |
@@ -67,18 +82,25 @@ jobs:
               cd "$release_dir"
               sha256sum -c "${archive_name}.sha256"
             )
-            rm -rf "web/public/data/${DATA_VERSION}"
+            rm -rf web/public/data
             mkdir -p "web/public/data/${DATA_VERSION}"
             tar -xf "$release_dir/$archive_name" \
               -C "web/public/data/${DATA_VERSION}"
-            expected=33
+            validation_args=(--required-cohorts
+              ACC BLCA BRCA CESC CHOL COAD DLBC ESCA GBM HNSC KICH KIRC KIRP
+              LAML LGG LIHC LUAD LUSC MESO OV PAAD PCPG PRAD READ SARC SKCM
+              STAD TGCT THCA THYM UCEC UCS UVM)
           else
+            if [[ "$DATA_VERSION" != "2026.07.28" ]]; then
+              echo "Requested immutable release is unavailable: $tag" >&2
+              exit 2
+            fi
             echo "Complete release not found; deploying bundled regression catalog."
-            expected=1
+            validation_args=(--expected-cohorts 1)
           fi
           python scripts/validate_data_release.py \
             --dir "web/public/data/${DATA_VERSION}" \
-            --expected-cohorts "$expected" \
+            "${validation_args[@]}" \
             --max-bytes 891289600 \
             --max-assets 999
       - working-directory: web

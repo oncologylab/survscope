@@ -20,4 +20,4 @@ def fixture_data_dir() -> Path:
 
 @pytest.fixture(scope="session")
 def store(fixture_data_dir: Path) -> DataStore:
-    return DataStore(base=fixture_data_dir, cache=False)
+    return DataStore(base=fixture_data_dir, data_version="2026.07.28", cache=False)

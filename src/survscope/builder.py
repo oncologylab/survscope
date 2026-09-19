@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import copy
 import csv
 import gzip
 import hashlib
 import io
 import json
 import math
+import shutil
 import tempfile
 import urllib.request
 import zipfile
@@ -41,7 +43,9 @@ from .constants import (
     TCGA_CDR_CITATION_URL,
     TCGA_CDR_URL,
 )
+from .cptac import CPTAC_COHORTS, build_cptac_cohort
 from .quality import endpoint_quality
+from .validation import validate_release
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -395,6 +399,7 @@ def build_cohort(
     clinical_name = f"{cohort}-clinical.json"
     (outdir / clinical_name).write_bytes(_json_bytes(clinical))
     cohort_manifest = {
+        "program": "TCGA",
         "label": COHORT_LABELS[cohort],
         "sample_count": len(sample_cases),
         "gene_count": len(genes),
@@ -435,41 +440,103 @@ def build_release(
     wanted_genes: set[str] | None = None,
     survival_public_url: str | None = None,
     expression_public_url: str | None = None,
+    tcga_release: Path | None = None,
 ) -> Path:
     """Build one immutable data-release directory."""
+    data_version = data_version.removeprefix("data-v")
+    if datetime.strptime(data_version, "%Y.%m.%d").strftime("%Y.%m.%d") != data_version:
+        raise ValueError("Data version must use YYYY.MM.DD")
+    cohorts = list(dict.fromkeys(cohort.upper() for cohort in cohorts))
+    unknown = set(cohorts) - set(COHORTS) - set(CPTAC_COHORTS)
+    if not cohorts or unknown:
+        raise ValueError(f"Unsupported or empty cohort selection: {sorted(unknown)}")
+    reused_manifest = None
+    reused_provenance = None
+    if tcga_release is not None:
+        if wanted_genes or expression_file:
+            raise ValueError("--tcga-release cannot be combined with --genes or --expression-file")
+        reused_manifest = validate_release(tcga_release)
+        missing = (set(cohorts) & set(COHORTS)) - set(reused_manifest["cohorts"])
+        if missing:
+            raise ValueError(f"TCGA release is missing requested cohorts: {sorted(missing)}")
+        reused_provenance = {
+            "data_version": reused_manifest["data_version"],
+            "manifest_sha256": hashlib.sha256(
+                next(tcga_release.glob("manifest-*.json")).read_bytes()
+            ).hexdigest(),
+        }
+    if outdir.exists() and any(outdir.iterdir()):
+        raise ValueError("Release directory must be empty; existing data releases are immutable")
     outdir.mkdir(parents=True, exist_ok=True)
-    survival_text = _read_small_source(survival_source, public_url=survival_public_url)
-    probemap_text = _read_small_source(probemap_source)
-    survival = load_survival(survival_text)
-    probemap, ambiguous_count = load_probemap(probemap_text)
+    tcga_sources = {}
+    survival = {}
+    probemap = {}
+    if reused_manifest is not None:
+        tcga_sources = reused_manifest["sources"]
+    elif any(cohort in COHORTS for cohort in cohorts):
+        survival_text = _read_small_source(survival_source, public_url=survival_public_url)
+        probemap_text = _read_small_source(probemap_source)
+        survival = load_survival(survival_text)
+        probemap, ambiguous_count = load_probemap(probemap_text)
+        tcga_sources = {
+            "expression": {
+                "label": "GDC STAR TPM", "pipeline": GDC_PIPELINE_URL,
+                "dataset_template": expression_url_template,
+                "wrangling": "Xena GDC ETL; log2(TPM+1)",
+            },
+            "survival": {
+                "label": "PanCanAtlas TCGA-CDR", "url": survival_text.url,
+                "sha256": survival_text.sha256, "bytes": survival_text.byte_count,
+                "citation": TCGA_CDR_CITATION_URL,
+            },
+            "gene_map": {
+                "label": "GENCODE v36 gene probemap", "url": probemap_text.url,
+                "sha256": probemap_text.sha256, "bytes": probemap_text.byte_count,
+                "ambiguous_symbols_excluded": ambiguous_count,
+            },
+        }
     catalog: dict[tuple[str, str], dict[str, Any]] = {}
     cohort_details = {}
     for cohort in cohorts:
-        expression_source = (
-            expression_file
-            if expression_file is not None
-            else expression_url_template.format(cohort=cohort)
-        )
-        details, genes = build_cohort(
-            cohort,
-            expression_source=expression_source,
-            survival=survival,
-            probemap=probemap,
-            outdir=outdir,
-            wanted_genes=wanted_genes,
-            expression_public_url=(
-                expression_public_url or expression_url_template.format(cohort=cohort)
-            ),
-        )
+        if cohort in CPTAC_COHORTS:
+            if expression_file:
+                raise ValueError("--expression-file is only supported for TCGA builds")
+            details, genes = build_cptac_cohort(cohort, outdir=outdir, wanted_genes=wanted_genes)
+        elif reused_manifest is not None:
+            details = copy.deepcopy(reused_manifest["cohorts"][cohort])
+            if details.get("program", "TCGA") != "TCGA":
+                raise ValueError(f"{cohort} is not TCGA in the supplied compact release")
+            details["program"] = "TCGA"
+            details.setdefault("sources", tcga_sources)
+            details["reused_from"] = reused_provenance
+            for name in [details["clinical_asset"], *details["bucket_assets"].values()]:
+                shutil.copyfile(tcga_release / name, outdir / name)
+            genes = [
+                {key: value for key, value in gene.items() if key != "cohorts"}
+                for gene in reused_manifest["genes"] if cohort in gene["cohorts"]
+            ]
+        else:
+            expression_source = expression_file or expression_url_template.format(cohort=cohort)
+            details, genes = build_cohort(
+                cohort, expression_source=expression_source, survival=survival,
+                probemap=probemap, outdir=outdir, wanted_genes=wanted_genes,
+                expression_public_url=(
+                    expression_public_url or expression_url_template.format(cohort=cohort)
+                ),
+            )
+            details["sources"] = tcga_sources
         cohort_details[cohort] = details
+        print(f"Built {cohort}: {details['sample_count']} patients, "
+              f"{details['gene_count']} genes", flush=True)
         for gene in genes:
-            key = (gene["symbol"], gene["ensembl"])
+            key = (gene["symbol"].upper(), gene["ensembl"])
             entry = catalog.setdefault(key, {**gene, "cohorts": []})
             entry["cohorts"].append(cohort)
 
     checksums = _asset_checksums(outdir)
     manifest = {
-        "schema_version": SCHEMA_VERSION,
+        # Older readers hard-code TCGA names and release-level provenance.
+        "schema_version": 2 if any(code in CPTAC_COHORTS for code in cohorts) else SCHEMA_VERSION,
         "data_version": data_version.removeprefix("data-v"),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "expression_encoding": {
@@ -491,29 +558,11 @@ def build_release(
             "code_table": GDC_SAMPLE_TYPE_CODES_URL,
             "one_sample_per_case": True,
             "case_identifiers_published": False,
+            "cptac": "Explicit project/site/histology filters and primary sample types; "
+                     "see per-cohort selection, coverage, and provenance",
         },
-        "sources": {
-            "expression": {
-                "label": "GDC STAR TPM",
-                "pipeline": GDC_PIPELINE_URL,
-                "dataset_template": expression_url_template,
-                "wrangling": "Xena GDC ETL; log2(TPM+1)",
-            },
-            "survival": {
-                "label": "PanCanAtlas TCGA-CDR",
-                "url": survival_text.url,
-                "sha256": survival_text.sha256,
-                "bytes": survival_text.byte_count,
-                "citation": TCGA_CDR_CITATION_URL,
-            },
-            "gene_map": {
-                "label": "GENCODE v36 gene probemap",
-                "url": probemap_text.url,
-                "sha256": probemap_text.sha256,
-                "bytes": probemap_text.byte_count,
-                "ambiguous_symbols_excluded": ambiguous_count,
-            },
-        },
+        "sources": tcga_sources or next(iter(cohort_details.values()))["sources"],
+        "requested_cohorts": cohorts,
         "cohorts": dict(sorted(cohort_details.items())),
         "genes": sorted(
             catalog.values(),
@@ -537,18 +586,24 @@ def build_release(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="survscope-build-data",
-        description="Stream TCGA sources into compact SurvScope release assets.",
+        description="Stream TCGA and CPTAC sources into compact SurvScope release assets.",
     )
     parser.add_argument(
         "--cohorts",
         nargs="+",
         default=list(COHORTS),
-        help="TCGA abbreviations; defaults to all 33 supported cohorts.",
+        help="TCGA abbreviations or CPTAC-3 codes; defaults to all 33 TCGA cohorts.",
     )
+    parser.add_argument("--include-cptac", action="store_true",
+                        help="Also build all supported CPTAC-3 RNA/OS cohorts.")
     parser.add_argument("--outdir", required=True)
     parser.add_argument("--data-version", default=DEFAULT_DATA_VERSION)
     parser.add_argument("--survival-source", default=TCGA_CDR_URL)
     parser.add_argument("--probemap-source", default=GDC_PROBEMAP_URL)
+    parser.add_argument(
+        "--tcga-release", type=Path,
+        help="Reuse a verified compact TCGA release directory without downloading raw matrices.",
+    )
     parser.add_argument(
         "--expression-file",
         help="Local .tsv.gz for a one-cohort validation build.",
@@ -573,9 +628,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     cohorts = [cohort.upper() for cohort in args.cohorts]
-    unknown = sorted(set(cohorts) - set(COHORTS))
+    if args.include_cptac:
+        cohorts = list(dict.fromkeys([*cohorts, *CPTAC_COHORTS]))
+    unknown = sorted(set(cohorts) - set(COHORTS) - set(CPTAC_COHORTS))
     if unknown:
-        raise SystemExit(f"Unsupported cohorts: {', '.join(unknown)}")
+        raise SystemExit(f"Unsupported cohorts: {', '.join(unknown)}. "
+                         "CPTAC-2 currently lacks usable GDC overall-survival records.")
     if args.expression_file and len(cohorts) != 1:
         raise SystemExit("--expression-file requires exactly one --cohorts value")
     manifest = build_release(
@@ -589,6 +647,7 @@ def main(argv: list[str] | None = None) -> int:
         wanted_genes={gene.upper() for gene in args.genes} if args.genes else None,
         survival_public_url=args.survival_public_url,
         expression_public_url=args.expression_public_url,
+        tcga_release=args.tcga_release,
     )
     print(manifest)
     return 0

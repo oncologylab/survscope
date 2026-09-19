@@ -5,6 +5,7 @@ import { unzipSync } from "fflate";
 import { describe, expect, test } from "vitest";
 
 import { analyzeGeneData, bhFdr } from "./statistics";
+import { cohortDisplayName, figureFilename } from "./cohorts";
 import type {
   BucketMeta,
   ClinicalData,
@@ -12,17 +13,20 @@ import type {
   Manifest,
 } from "./types";
 
-function referenceGene(): GeneData {
-  const root = resolve("public/data/2026.07.28");
+function referenceGene(
+  root = resolve("public/data/2026.07.28"),
+  version = "2026.07.28",
+  cohort = "PAAD",
+): GeneData {
   const manifest = JSON.parse(
-    readFileSync(resolve(root, "manifest-2026.07.28.json"), "utf8"),
+    readFileSync(resolve(root, `manifest-${version}.json`), "utf8"),
   ) as Manifest;
   const index = manifest.genes.find((gene) => gene.symbol === "SRD5A1")!;
   const clinical = JSON.parse(
-    readFileSync(resolve(root, "PAAD-clinical.json"), "utf8"),
+    readFileSync(resolve(root, manifest.cohorts[cohort].clinical_asset), "utf8"),
   ) as ClinicalData;
   const files = unzipSync(
-    readFileSync(resolve(root, manifest.cohorts.PAAD.bucket_assets[index.bucket])),
+    readFileSync(resolve(root, manifest.cohorts[cohort].bucket_assets[index.bucket])),
   );
   const meta = JSON.parse(
     new TextDecoder().decode(files["meta.json"]),
@@ -37,8 +41,10 @@ function referenceGene(): GeneData {
   }
   return {
     gene,
-    cohort: "PAAD",
-    cohortLabel: manifest.cohorts.PAAD.label,
+    cohort,
+    cohortLabel: manifest.cohorts[cohort].label,
+    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources).expression.label,
+    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources).survival.label,
     dataVersion: manifest.data_version,
     expression,
     scale: meta.scale,
@@ -48,6 +54,32 @@ function referenceGene(): GeneData {
 }
 
 describe("browser survival statistics", () => {
+  test("matches the live CPTAC fixture and Python analysis", () => {
+    const data = referenceGene(
+      resolve("../tests/fixtures/cptac/2026.09.18"), "2026.09.18", "CPTAC-3-PAAD",
+    );
+    const result = analyzeGeneData(data, "median");
+    expect(result.endpoints.OS.n).toBe(97);
+    expect(result.endpoints.OS.events).toBe(76);
+    expect(result.endpoints.OS.nLow).toBe(49);
+    expect(result.endpoints.OS.nHigh).toBe(48);
+    // The browser's existing erfc approximation agrees within 5e-8 here.
+    expect(result.endpoints.OS.logrankP).toBeCloseTo(0.21480036623609935, 7);
+    expect(result.endpoints.OS.coxHr).toBeCloseTo(1.333170308908182, 6);
+    expect(result.endpoints.OS.logrankQ).toBe(result.endpoints.OS.logrankP);
+    expect(result.sourceSurvival).toBe("GDC CPTAC overall survival");
+    for (const endpoint of ["DSS", "PFI", "DFI"] as const) {
+      expect(result.endpoints[endpoint].quality).toBe("unavailable");
+      expect(result.endpoints[endpoint].n).toBe(0);
+      expect(result.endpoints[endpoint].logrankP).toBeNaN();
+    }
+    expect(cohortDisplayName(result.cohort)).toBe("CPTAC-3-PAAD");
+    expect(figureFilename(result.gene, result.cohort, "pdf"))
+      .toBe("SRD5A1_CPTAC_3_PAAD_KM_survival.pdf");
+    expect(figureFilename(result.gene, "PAAD", "pdf"))
+      .toBe("SRD5A1_TCGA_PAAD_KM_survival.pdf");
+  });
+
   test("matches the SRD5A1 reference", () => {
     const result = analyzeGeneData(referenceGene(), "median");
     expect(result.endpoints.OS.n).toBe(177);

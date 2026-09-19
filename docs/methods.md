@@ -1,5 +1,11 @@
 # Statistical methods
 
+The TCGA source and selection rules below remain the reference contract.
+CPTAC uses GDC primary-specimen metadata and GDC overall-survival donor
+records; its additional selection, censoring, and missingness rules are in
+[CPTAC methods](cptac.md#survival-and-sample-rules). Both programs use the same
+expression grouping and statistical estimators. Cohorts are never pooled.
+
 For each expression sample, SurvScope uses the corresponding TCGA-CDR case and
 endpoint when expression, time, and event are finite and time is greater than
 zero. Solid-tumor cohorts use TCGA sample code `01` (Primary Solid Tumor).

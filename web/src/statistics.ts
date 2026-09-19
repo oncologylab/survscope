@@ -261,6 +261,8 @@ export function analyzeGeneData(
   });
   return {
     gene: data.gene.symbol,
+    sourceExpression: data.sourceExpression ?? "GDC STAR TPM",
+    sourceSurvival: data.sourceSurvival ?? "PanCanAtlas TCGA-CDR",
     ensembl: data.gene.ensembl,
     cohort: data.cohort,
     cohortLabel: data.cohortLabel,

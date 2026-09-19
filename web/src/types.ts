@@ -9,6 +9,8 @@ export interface GeneRecord {
 }
 
 export interface CohortRecord {
+  program?: "TCGA" | "CPTAC";
+  sources?: Manifest["sources"];
   label: string;
   sample_count: number;
   gene_count: number;
@@ -71,6 +73,8 @@ export interface BucketMeta {
 }
 
 export interface GeneData {
+  sourceExpression?: string;
+  sourceSurvival?: string;
   gene: BucketGene;
   cohort: string;
   cohortLabel: string;
@@ -110,6 +114,8 @@ export interface EndpointResult {
 }
 
 export interface SurvivalAnalysis {
+  sourceExpression: string;
+  sourceSurvival: string;
   gene: string;
   ensembl: string;
   cohort: string;

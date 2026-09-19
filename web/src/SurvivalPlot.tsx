@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { cohortDisplayName } from "./cohorts";
 
 import { ENDPOINTS } from "./types";
 import { formatP } from "./statistics";
@@ -56,6 +57,16 @@ function Panel({
   result: EndpointResult;
   geometry: PanelGeometry;
 }) {
+  if (result.quality === "unavailable") {
+    return (
+      <g>
+        <text x={geometry.left + geometry.width / 2} y={geometry.top - 11}
+          textAnchor="middle" fontSize="9">{gene} {result.endpoint}</text>
+        <text x={geometry.left + geometry.width / 2} y={geometry.top + geometry.height / 2}
+          textAnchor="middle" fontSize="9">Endpoint unavailable</text>
+      </g>
+    );
+  }
   const curveMaximum = Math.max(
     1,
     ...result.low.xMonths,
@@ -230,18 +241,18 @@ export const SurvivalPlot = forwardRef<
       }}
     >
       <title id="plot-title">
-        {analysis.gene} TCGA-{analysis.cohort} survival
+        {analysis.gene} {cohortDisplayName(analysis.cohort)} survival
       </title>
       <desc id="plot-description">
         Four Kaplan-Meier panels for overall, disease-specific,
-        progression-free, and disease-free survival.
+        progression-free, and disease-free survival. Unavailable endpoints are labeled.
       </desc>
       <rect width={WIDTH} height={HEIGHT} fill="#fff" />
       <text x={WIDTH / 2} y="14" textAnchor="middle" fontSize="12">
-        {analysis.gene} TCGA-{analysis.cohort} survival
+        {analysis.gene} {cohortDisplayName(analysis.cohort)} survival
       </text>
       <text x={WIDTH / 2} y="33" textAnchor="middle" fontSize="9">
-        Expression: GDC STAR TPM; endpoints: PanCanAtlas TCGA-CDR
+        Expression: {analysis.sourceExpression}; endpoints: {analysis.sourceSurvival}
       </text>
       {ENDPOINTS.map((endpoint, index) => (
         <Panel
