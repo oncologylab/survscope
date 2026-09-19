@@ -54,12 +54,21 @@ and confirmatory samples can both occur within a GDC project; these cohorts
 are defined by GDC clinical fields, not claimed to reproduce a publication's
 discovery cohort.
 
-All cohort queries were verified against the live API. A full PAAD build
-was also tested: 59,317 uniquely mapped genes, 97 patients, 76 deaths, 19 assets,
-13,946,921 bytes. It streamed 410,381,149 source bytes without saving STAR files.
-The production workflow builds the complete catalog for all 18 CPTAC groups
-and reuses the validated 33-cohort compact TCGA release without changing its
-expression buckets, clinical arrays, or statistical results.
+The published [data-v2026.09.18 release](https://github.com/oncologylab/survscope/releases/tag/data-v2026.09.18)
+contains the full catalogs for all 18 CPTAC groups and all 33 TCGA cohorts:
+59,317 genes, 869 assets, and 818,907,113 bytes. All 561 TCGA data assets match
+the `2026.07.28` release byte for byte. The deployed site is 823,332,414 bytes
+(785.19 MiB), within the 850 MiB budget. Both the release archive and all
+extracted assets passed checksum and coverage validation.
+
+The live browser was checked with SRD5A1 in every one of the 51 cohorts.
+Patient/group counts, exact median cutoffs, and log-rank chi-square statistics
+matched Python exactly. P-values and Cox estimates agreed within the existing
+solvers' numerical precision (maximum observed Cox p-value difference
+6.54e-6). CPTAC lung-cancer SVG/PDF exports retained the 6.8-inch dimensions;
+the 300-dpi PNG was 2040 × 2040 pixels. No external runtime requests or browser
+errors occurred. CI passed 36 Python tests, five browser statistics tests,
+and three browser end-to-end tests, including the original TCGA reference.
 
 ## Sources that informed the implementation
 
