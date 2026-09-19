@@ -14,7 +14,8 @@ can export SVG, vector PDF, PNG, or analysis JSON directly in the browser.
 ## Quick start
 
 ```bash
-python -m pip install survscope
+python -m pip install \
+  https://github.com/oncologylab/survscope/releases/download/v0.2.0/survscope-0.2.0-py3-none-any.whl
 survscope plot \
   --gene SRD5A1 \
   --cohort PAAD \
@@ -26,6 +27,10 @@ survscope plot \
 The command downloads only the static manifest, one small clinical asset, and
 the bucket containing the selected gene. Use `--no-cache` to avoid retaining
 those selected chunks.
+
+The tested Python wheel is published on GitHub Releases. PyPI publication is
+pending its one-time Trusted Publisher registration; maintainers can follow
+the [publishing setup](docs/publishing.md).
 
 Python usage:
 
