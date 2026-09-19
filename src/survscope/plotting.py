@@ -52,8 +52,9 @@ def create_figure(analysis: SurvivalAnalysis):
         result = analysis.endpoints[endpoint]
         if result.quality == "unavailable":
             axis.set_title(f"{analysis.gene} {endpoint}", fontsize=9, fontweight="bold")
-            axis.text(0.5, 0.5, "Endpoint unavailable", ha="center", va="center",
-                      transform=axis.transAxes)
+            axis.text(
+                0.5, 0.5, "Endpoint unavailable", ha="center", va="center", transform=axis.transAxes
+            )
             axis.set_axis_off()
             continue
         for label, curve in (("Low", result.low), ("High", result.high)):
@@ -68,8 +69,7 @@ def create_figure(analysis: SurvivalAnalysis):
                 label=f"{label} n={curve.n}, e={curve.events}",
             )
         annotation = (
-            f"p={format_p(result.logrank_p)} q={format_p(result.logrank_q)}\n"
-            f"HR={result.cox_hr:.2f}"
+            f"p={format_p(result.logrank_p)} q={format_p(result.logrank_q)}\nHR={result.cox_hr:.2f}"
             if np.isfinite(result.cox_hr)
             else f"p={format_p(result.logrank_p)} q={format_p(result.logrank_q)}\nHR=NA"
         )
@@ -115,7 +115,18 @@ def create_figure(analysis: SurvivalAnalysis):
         fontsize=9,
         fontweight="bold",
     )
-    figure.tight_layout(rect=(0, 0, 1, 0.93), h_pad=1.5, w_pad=1.5)
+    if analysis.grouping.get("kind") != "median":
+        figure.text(
+            0.5,
+            0.922,
+            analysis.grouping_label,
+            ha="center",
+            va="top",
+            fontsize=8,
+            fontweight="bold",
+        )
+    top = 0.93 if analysis.grouping.get("kind") == "median" else 0.90
+    figure.tight_layout(rect=(0, 0, 1, top), h_pad=1.5, w_pad=1.5)
     return figure
 
 

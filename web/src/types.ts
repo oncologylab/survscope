@@ -1,6 +1,30 @@
 export const ENDPOINTS = ["OS", "DSS", "PFI", "DFI"] as const;
 export type Endpoint = (typeof ENDPOINTS)[number];
 
+export type GroupingSpec =
+  | { kind: "median" }
+  | { kind: "mean" }
+  | { kind: "tpm"; threshold: number }
+  | { kind: "percentile"; percentile: number }
+  | { kind: "extremes"; lowerPercent: number; upperPercent: number };
+
+export interface RiskPoint {
+  timeMonths: number;
+  survival: number;
+  atRisk: number;
+  events: number;
+  censored: number;
+  greenwood: number | null;
+}
+
+export type CoxStatus =
+  | "ok"
+  | "empty_group"
+  | "no_events"
+  | "no_information"
+  | "separation"
+  | "not_converged";
+
 export interface GeneRecord {
   symbol: string;
   ensembl: string;
@@ -90,6 +114,7 @@ export interface Curve {
   survival: number[];
   n: number;
   events: number;
+  timeline: RiskPoint[];
 }
 
 export interface EndpointResult {
@@ -111,6 +136,11 @@ export interface EndpointResult {
   low: Curve;
   high: Curve;
   warning: string;
+  eligibleN: number;
+  excludedMiddle: number;
+  lowerThreshold: number;
+  upperThreshold: number;
+  coxStatus: CoxStatus;
 }
 
 export interface SurvivalAnalysis {
@@ -120,7 +150,10 @@ export interface SurvivalAnalysis {
   ensembl: string;
   cohort: string;
   cohortLabel: string;
-  cutoff: "median" | number;
+  cutoff: "median" | number | null;
+  grouping: GroupingSpec;
+  groupingLabel: string;
+  statisticsVersion: string;
   dataVersion: string;
   endpoints: Record<Endpoint, EndpointResult>;
 }

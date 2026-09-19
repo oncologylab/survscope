@@ -1,6 +1,12 @@
 import { ENDPOINTS } from "./types";
+import { assignGroups, groupingLabel, normalizeGrouping } from "./grouping";
+import type { GroupingInput } from "./grouping";
+import { boundedMinimum, erfc, numpySum } from "./numeric";
 import type {
   Curve,
+  CoxStatus,
+  GroupingSpec,
+  RiskPoint,
   Endpoint,
   EndpointResult,
   GeneData,
@@ -41,34 +47,10 @@ export function kaplanMeier(time: number[], event: number[]): Curve {
   return {
     xMonths: x,
     survival: y,
+    timeline: kmTimeline(time, event),
     n: time.length,
     events: event.reduce((sum, value) => sum + value, 0),
   };
-}
-
-function erfc(value: number): number {
-  const z = Math.abs(value);
-  const t = 1 / (1 + 0.5 * z);
-  const polynomial =
-    t *
-    (1.00002368 +
-      t *
-        (0.37409196 +
-          t *
-            (0.09678418 +
-              t *
-                (-0.18628806 +
-                  t *
-                    (0.27886807 +
-                      t *
-                        (-1.13520398 +
-                          t *
-                            (1.48851587 +
-                              t * (-0.82215223 + t * 0.17087277))))))));
-  const answer =
-    t *
-    Math.exp(-z * z - 1.26551223 + polynomial);
-  return value >= 0 ? answer : 2 - answer;
 }
 
 export function logrank(
@@ -76,7 +58,8 @@ export function logrank(
   event: number[],
   high: boolean[],
 ): [number, number] {
-  if (!high.some(Boolean) || high.every(Boolean)) return [Number.NaN, Number.NaN];
+  if (!high.some(Boolean) || high.every(Boolean))
+    return [Number.NaN, Number.NaN];
   const eventTimes = Array.from(
     new Set(time.filter((_, index) => event[index] === 1)),
   ).sort((a, b) => a - b);
@@ -103,66 +86,147 @@ export function logrank(
   return [chi2, erfc(Math.sqrt(chi2 / 2))];
 }
 
-function coxTerms(
-  beta: number,
-  time: number[],
-  event: number[],
-  high: boolean[],
-): [number, number] {
-  const eventTimes = Array.from(
-    new Set(time.filter((_, index) => event[index] === 1)),
-  ).sort((a, b) => a - b);
-  let score = high.reduce(
-    (sum, value, index) => sum + (event[index] === 1 && value ? 1 : 0),
-    0,
-  );
-  let information = 0;
-  for (const eventTime of eventTimes) {
-    const deaths = time.filter(
-      (value, index) => value === eventTime && event[index] === 1,
-    ).length;
-    let weightSum = 0;
-    let weightedX = 0;
-    let weightedX2 = 0;
-    for (let index = 0; index < time.length; index += 1) {
-      if (time[index] < eventTime) continue;
-      const x = high[index] ? 1 : 0;
-      const weight = Math.exp(beta * x);
-      weightSum += weight;
-      weightedX += weight * x;
-      weightedX2 += weight * x * x;
-    }
-    const mean = weightedX / weightSum;
-    score -= deaths * mean;
-    information += deaths * (weightedX2 / weightSum - mean * mean);
-  }
-  return [score, information];
-}
+export const COX_MESSAGES: Record<Exclude<CoxStatus, "ok">, string> = {
+  empty_group: "The comparison leaves one expression group empty.",
+  no_events: "No events were observed; a hazard ratio cannot be estimated.",
+  no_information:
+    "The groups have no overlapping event risk sets; the hazard ratio is unavailable.",
+  separation:
+    "The groups are completely separated at event times; no finite hazard ratio exists.",
+  not_converged:
+    "The Cox model did not converge; the hazard ratio is unavailable.",
+};
 
 export function coxBinary(
   time: number[],
   event: number[],
   high: boolean[],
 ): [number, number] {
-  if (
-    !high.some(Boolean) ||
-    high.every(Boolean) ||
-    event.reduce((sum, value) => sum + value, 0) === 0
-  ) {
-    return [Number.NaN, Number.NaN];
+  const { hr, p } = coxFit(time, event, high);
+  return [hr, p];
+}
+
+export function coxFit(time: number[], event: number[], high: boolean[]) {
+  const unavailable = (status: CoxStatus) => ({
+    hr: Number.NaN,
+    p: Number.NaN,
+    status,
+  });
+  if (!high.some(Boolean) || high.every(Boolean))
+    return unavailable("empty_group");
+  if (!event.some((x) => x === 1)) return unavailable("no_events");
+  const eventTimes = [...new Set(time.filter((_, i) => event[i] === 1))].sort(
+    (a, b) => a - b,
+  );
+  let mixedLow = 0,
+    mixedHigh = 0;
+  const sets = eventTimes.map((t) => {
+    const risk = time.flatMap((x, i) => (x >= t ? [i] : []));
+    const deaths = time.flatMap((x, i) =>
+      x === t && event[i] === 1 ? [i] : [],
+    );
+    const nh = risk.filter((i) => high[i]).length,
+      nl = risk.length - nh;
+    const dh = deaths.filter((i) => high[i]).length,
+      d = deaths.length;
+    if (nl && nh) {
+      mixedHigh += dh;
+      mixedLow += d - dh;
+    }
+    return { risk, nh, nl, dh, d };
+  });
+  if (mixedHigh + mixedLow === 0) return unavailable("no_information");
+  if (!mixedHigh || !mixedLow) return unavailable("separation");
+  const score = (beta: number) => {
+    const w = Math.exp(beta);
+    return sets.reduce(
+      (sum, { nl, nh, d, dh }) => sum + dh - (d * nh * w) / (nl + nh * w),
+      0,
+    );
+  };
+  let bound = 8;
+  while (!(score(-bound) > 0 && score(bound) < 0)) {
+    bound *= 2;
+    if (bound > 64) return unavailable("not_converged");
   }
-  let beta = 0;
-  for (let iteration = 0; iteration < 100; iteration += 1) {
-    const [score, information] = coxTerms(beta, time, event, high);
-    if (!(information > 0)) return [Number.NaN, Number.NaN];
-    const step = Math.max(-1, Math.min(1, score / information));
-    beta = Math.max(-8, Math.min(8, beta + step));
-    if (Math.abs(step) < 1e-10) break;
+  const objective = (beta: number) => {
+    const bx = high.map((x) => beta * Number(x));
+    let total = numpySum(bx.filter((_, i) => event[i] === 1));
+    for (const { risk, d } of sets) {
+      total -= d * Math.log(numpySum(risk.map((i) => Math.exp(bx[i]))));
+    }
+    return -total;
+  };
+  const beta = boundedMinimum(objective, -bound, bound);
+  if (!Number.isFinite(beta)) return unavailable("not_converged");
+  let hessian = 0;
+  for (const { risk, d } of sets) {
+    const weights = risk.map((i) => Math.exp(beta * Number(high[i])));
+    const sum = numpySum(weights);
+    const weighted = numpySum(weights.map((w, i) => w * Number(high[risk[i]])));
+    const mean = weighted / sum;
+    hessian -= d * (weighted / sum - mean * mean);
   }
-  const [, information] = coxTerms(beta, time, event, high);
-  if (!(information > 0)) return [Number.NaN, Number.NaN];
-  const z = beta * Math.sqrt(information);
-  return [Math.exp(beta), erfc(Math.abs(z) / Math.SQRT2)];
+  if (!(hessian < 0) || !Number.isFinite(hessian))
+    return unavailable("not_converged");
+  const z = beta / Math.sqrt(-1 / hessian);
+  return {
+    hr: Math.exp(beta),
+    p: erfc(Math.abs(z) / Math.SQRT2),
+    status: "ok" as CoxStatus,
+  };
+}
+
+export function kmTimeline(time: number[], event: number[]): RiskPoint[] {
+  let survival = 1,
+    greenwood = 0;
+  return [...new Set(time)]
+    .sort((a, b) => a - b)
+    .map((at) => {
+      const n = time.filter((x) => x >= at).length;
+      const d = time.filter((x, i) => x === at && event[i] === 1).length;
+      const censored = time.filter((x, i) => x === at && event[i] === 0).length;
+      if (d) {
+        survival *= 1 - d / n;
+        greenwood = n > d ? greenwood + d / (n * (n - d)) : Infinity;
+      }
+      return {
+        timeMonths: at / MONTH_DAYS,
+        survival,
+        atRisk: n,
+        events: d,
+        censored,
+        greenwood: Number.isFinite(greenwood) ? greenwood : null,
+      };
+    });
+}
+
+export function confidenceBounds(
+  survival: number,
+  greenwood: number | null,
+  level = 0.95,
+): [number, number] {
+  const zs: Record<number, number> = {
+    0.9: 1.6448536269514722,
+    0.95: 1.959963984540054,
+    0.99: 2.5758293035489004,
+  };
+  if (!zs[level])
+    throw new Error("Confidence level must be 0.90, 0.95, or 0.99.");
+  if (greenwood === null || !Number.isFinite(greenwood) || survival <= 0)
+    return [NaN, NaN];
+  const margin = zs[level] * Math.sqrt(greenwood);
+  return [
+    survival * Math.exp(-margin),
+    Math.min(1, survival * Math.exp(margin)),
+  ];
+}
+
+export function atRisk(curve: Curve, months: number): number {
+  if (months <= 0) return curve.n;
+  return (
+    curve.timeline.find((point) => point.timeMonths >= months)?.atRisk ?? 0
+  );
 }
 
 export function bhFdr(values: number[]): number[] {
@@ -173,59 +237,76 @@ export function bhFdr(values: number[]): number[] {
     .sort((a, b) => a.value - b.value);
   let running = 1;
   for (let rank = valid.length - 1; rank >= 0; rank -= 1) {
-    running = Math.min(running, (valid[rank].value * valid.length) / (rank + 1));
+    running = Math.min(
+      running,
+      (valid[rank].value * valid.length) / (rank + 1),
+    );
     output[valid[rank].index] = Math.max(0, Math.min(1, running));
   }
   return output;
 }
 
+export function prepareEndpoint(
+  data: GeneData,
+  endpoint: Endpoint,
+  spec: GroupingSpec,
+) {
+  const clinical = data.clinical.endpoints[endpoint];
+  const tpm = Array.from(data.expression, (encoded) =>
+    encoded === data.missing ? NaN : 2 ** (encoded / data.scale) - 1,
+  );
+  const eligible = tpm.flatMap((value, i) =>
+    Number.isFinite(value) &&
+    finite(clinical.time[i]) &&
+    (clinical.event[i] === 0 || clinical.event[i] === 1) &&
+    clinical.time[i]! > 0
+      ? [i]
+      : [],
+  );
+  const assignment = assignGroups(
+    eligible.map((i) => tpm[i]),
+    eligible,
+    data.gene.medians[endpoint],
+    spec,
+  );
+  const included = eligible.flatMap((_, i) =>
+    assignment.low[i] || assignment.high[i] ? [i] : [],
+  );
+  const indices = included.map((i) => eligible[i]);
+  return {
+    clinical,
+    indices,
+    time: indices.map((i) => clinical.time[i]!),
+    event: indices.map((i) => clinical.event[i]!),
+    high: included.map((i) => assignment.high[i]),
+    eligibleN: eligible.length,
+    excludedMiddle: eligible.length - included.length,
+    lower: assignment.lower,
+    upper: assignment.upper,
+  };
+}
+
 function analyzeEndpoint(
   data: GeneData,
   endpoint: Endpoint,
-  cutoff: "median" | number,
+  spec: GroupingSpec,
 ): EndpointResult {
-  const clinical = data.clinical.endpoints[endpoint];
-  const tpm = Array.from(data.expression, (encoded) =>
-    encoded === data.missing ? Number.NaN : 2 ** (encoded / data.scale) - 1,
-  );
-  const validIndices = tpm
-    .map((value, index) => ({ value, index }))
-    .filter(
-      ({ value, index }) =>
-        Number.isFinite(value) &&
-        finite(clinical.time[index]) &&
-        finite(clinical.event[index]) &&
-        (clinical.time[index] as number) > 0,
-    )
-    .map(({ index }) => index);
-  const time = validIndices.map((index) => clinical.time[index] as number);
-  const event = validIndices.map((index) => clinical.event[index] as number);
-  const endpointTpm = validIndices.map((index) => tpm[index]);
-  const median = data.gene.medians[endpoint];
-  const cutoffTpm =
-    cutoff === "median"
-      ? (median.cutoff_tpm ?? Number.NaN)
-      : cutoff;
-  const flipSet = new Set(cutoff === "median" ? median.flips : []);
-  const high = validIndices.map((globalIndex, localIndex) => {
-    const encodedHigh = endpointTpm[localIndex] > cutoffTpm;
-    return flipSet.has(globalIndex) ? !encodedHigh : encodedHigh;
-  });
-  const lowTime = time.filter((_, index) => !high[index]);
-  const lowEvent = event.filter((_, index) => !high[index]);
-  const highTime = time.filter((_, index) => high[index]);
-  const highEvent = event.filter((_, index) => high[index]);
+  const {
+    clinical,
+    time,
+    event,
+    high,
+    eligibleN,
+    excludedMiddle,
+    lower,
+    upper,
+  } = prepareEndpoint(data, endpoint, spec);
+  const lowTime = time.filter((_, i) => !high[i]),
+    lowEvent = event.filter((_, i) => !high[i]);
+  const highTime = time.filter((_, i) => high[i]),
+    highEvent = event.filter((_, i) => high[i]);
   const [chi2, p] = logrank(time, event, high);
-  const [hr, coxP] = coxBinary(time, event, high);
-  let warning = "";
-  if (time.length === 0) warning = "No endpoint-valid samples.";
-  else if (lowTime.length === 0 || highTime.length === 0)
-    warning = "The cutoff leaves one expression group empty.";
-  else if (
-    lowEvent.reduce((sum, value) => sum + value, 0) === 0 ||
-    highEvent.reduce((sum, value) => sum + value, 0) === 0
-  )
-    warning = "At least one group has no observed events.";
+  const fit = coxFit(time, event, high);
   return {
     endpoint,
     quality: clinical.quality,
@@ -233,41 +314,59 @@ function analyzeEndpoint(
     n: time.length,
     nLow: lowTime.length,
     nHigh: highTime.length,
-    events: event.reduce((sum, value) => sum + value, 0),
-    eventsLow: lowEvent.reduce((sum, value) => sum + value, 0),
-    eventsHigh: highEvent.reduce((sum, value) => sum + value, 0),
-    cutoffTpm,
+    events: event.reduce((sum, x) => sum + x, 0),
+    eventsLow: lowEvent.reduce((sum, x) => sum + x, 0),
+    eventsHigh: highEvent.reduce((sum, x) => sum + x, 0),
+    cutoffTpm: lower === upper ? lower : NaN,
+    lowerThreshold: lower,
+    upperThreshold: upper,
+    eligibleN,
+    excludedMiddle,
+    coxStatus: fit.status,
     logrankChi2: chi2,
     logrankP: p,
-    logrankQ: Number.NaN,
-    coxHr: hr,
-    coxP,
+    logrankQ: NaN,
+    coxHr: fit.hr,
+    coxP: fit.p,
     low: kaplanMeier(lowTime, lowEvent),
     high: kaplanMeier(highTime, highEvent),
-    warning,
+    warning: !time.length
+      ? "No endpoint-valid samples."
+      : fit.status === "ok"
+        ? ""
+        : COX_MESSAGES[fit.status],
   };
 }
 
 export function analyzeGeneData(
   data: GeneData,
-  cutoff: "median" | number,
+  grouping: GroupingInput = "median",
 ): SurvivalAnalysis {
+  const spec = normalizeGrouping(grouping);
   const endpointResults = ENDPOINTS.map((endpoint) =>
-    analyzeEndpoint(data, endpoint, cutoff),
+    analyzeEndpoint(data, endpoint, spec),
   );
   const adjusted = bhFdr(endpointResults.map((result) => result.logrankP));
-  endpointResults.forEach((result, index) => {
-    result.logrankQ = adjusted[index];
+  endpointResults.forEach((result, i) => {
+    result.logrankQ = adjusted[i];
   });
   return {
     gene: data.gene.symbol,
-    sourceExpression: data.sourceExpression ?? "GDC STAR TPM",
-    sourceSurvival: data.sourceSurvival ?? "PanCanAtlas TCGA-CDR",
     ensembl: data.gene.ensembl,
     cohort: data.cohort,
     cohortLabel: data.cohortLabel,
-    cutoff,
+    sourceExpression: data.sourceExpression ?? "GDC STAR TPM",
+    sourceSurvival: data.sourceSurvival ?? "PanCanAtlas TCGA-CDR",
     dataVersion: data.dataVersion,
+    cutoff:
+      spec.kind === "median"
+        ? "median"
+        : spec.kind === "tpm"
+          ? spec.threshold
+          : null,
+    grouping: spec,
+    groupingLabel: groupingLabel(spec),
+    statisticsVersion: "1",
     endpoints: Object.fromEntries(
       endpointResults.map((result) => [result.endpoint, result]),
     ) as SurvivalAnalysis["endpoints"],

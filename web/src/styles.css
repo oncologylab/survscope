@@ -311,8 +311,7 @@ button:disabled {
   overflow: auto;
   background:
     linear-gradient(90deg, rgb(30 48 45 / 3%) 1px, transparent 1px),
-    linear-gradient(rgb(30 48 45 / 3%) 1px, transparent 1px),
-    #ebeae4;
+    linear-gradient(rgb(30 48 45 / 3%) 1px, transparent 1px), #ebeae4;
   background-size: 18px 18px;
   border: 1px solid #deddd7;
 }
@@ -514,7 +513,6 @@ footer a {
   .quality-strip {
     grid-template-columns: repeat(2, 1fr);
   }
-
 }
 
 @media (max-width: 640px) {
@@ -550,4 +548,405 @@ footer a {
     display: inline-block;
     margin-top: 10px;
   }
+}
+
+/* Analysis and editing share the same paper-and-ink workspace. */
+.header-actions,
+.figure-toolbar,
+.zoom-toolbar,
+.button-row,
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-actions {
+  gap: 14px;
+}
+.header-actions button,
+.figure-toolbar button,
+.zoom-toolbar button,
+.editor-controls button {
+  border: 1px solid #bfc8c1;
+  border-radius: 4px;
+  background: #fffefb;
+  color: #31534d;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+button:disabled {
+  cursor: default;
+}
+.header-actions button:hover,
+.figure-toolbar button:hover:not(:disabled),
+.zoom-toolbar button:hover:not(:disabled),
+.editor-controls button:hover:not(:disabled) {
+  background: #eaf4f1;
+}
+.file-input {
+  display: none;
+}
+.controls .comparison-control {
+  display: block;
+  margin: 16px 0 0;
+}
+.controls .comparison-control > label {
+  display: block;
+}
+.controls input[type="number"],
+.editor-controls input:not([type="checkbox"]):not([type="color"]),
+.editor-controls select,
+.editor-controls textarea {
+  width: 100%;
+  padding: 8px 10px;
+  min-height: 34px;
+  border: 1px solid #c9c8c1;
+  border-radius: 4px;
+  background: #faf9f5;
+  color: var(--ink);
+  font: inherit;
+}
+.controls input[type="number"] {
+  font-size: 13px;
+}
+.help-text {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.text-button {
+  border: 0;
+  background: transparent;
+  color: var(--teal-dark);
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.field-error {
+  display: block;
+  color: #a04432;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 4px 0;
+}
+.group-preview {
+  margin-top: 12px;
+  padding: 9px 11px;
+  background: #f2f5ef;
+  border: 1px solid #dce0d5;
+  border-radius: 4px;
+  font-size: 10px;
+}
+.group-preview > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 5px;
+  color: #43544b;
+}
+.group-preview p {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 6px;
+  margin: 4px 0;
+}
+.group-preview p > span:nth-child(2) {
+  text-align: right;
+}
+.group-preview small {
+  color: var(--muted);
+}
+.figure-toolbar {
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.figure-toolbar .edit-button {
+  border-color: var(--teal);
+  color: var(--teal-dark);
+}
+.global-status {
+  flex-shrink: 0;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  color: #7b5122;
+  background: #fcf0d8;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.plot-stage {
+  position: relative;
+  padding: 0;
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+.figure-canvas {
+  flex: none;
+  position: relative;
+}
+.plot-stage.fitted .figure-canvas {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+.figure-canvas .survival-plot {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+.plot-stage.zoomed {
+  display: block;
+}
+.plot-stage.zoomed .figure-canvas {
+  margin: 24px;
+}
+.plot-stage.panning {
+  cursor: grab;
+  touch-action: none;
+}
+.zoom-toolbar {
+  margin-top: 10px;
+  flex-wrap: wrap;
+  color: #4d5a55;
+  font-size: 11px;
+}
+.zoom-toolbar button[aria-pressed="true"] {
+  color: white;
+  background: var(--teal);
+}
+.zoom-toolbar small {
+  margin-left: auto;
+  max-width: 190px;
+  line-height: 1.4;
+}
+.editor-controls {
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 12px;
+}
+.editor-intro h2 {
+  font-size: 22px;
+}
+.editor-intro p {
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 12px;
+}
+.editor-controls label {
+  display: block;
+  margin: 8px 0;
+}
+.editor-controls label > span:first-child {
+  display: block;
+  margin-bottom: 5px;
+  color: #42534b;
+  font-size: 11px;
+  font-weight: 600;
+}
+.editor-controls details {
+  border-top: 1px solid var(--line);
+  padding: 12px 0 4px;
+  margin-top: 12px;
+}
+.editor-controls summary {
+  cursor: pointer;
+  color: #283f37;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.editor-controls textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.editor-controls .selected-properties {
+  background: #edf5ef;
+  margin: 14px -8px 0;
+  padding: 12px 8px;
+  border: 1px solid #cbdace;
+  border-radius: 5px;
+}
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.property-grid > label {
+  min-width: 0;
+}
+.editor-controls .check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.editor-controls .check span {
+  margin: 0;
+  font-weight: 400;
+}
+.editor-controls input[type="checkbox"] {
+  accent-color: var(--teal);
+}
+.editor-controls .color-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.color-field input {
+  padding: 0;
+  height: 28px;
+  width: 36px;
+  background: transparent;
+  border: 0;
+}
+.button-row {
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.order-row {
+  justify-content: space-between;
+  margin: 6px 0;
+}
+.is-editing .workspace {
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+}
+.is-editing .result {
+  padding: 18px;
+}
+.is-editing .result-heading h2 {
+  font-size: 22px;
+}
+.is-editing .result-heading p {
+  display: none;
+}
+.help-dialog {
+  max-width: 720px;
+  max-height: 85dvh;
+  width: calc(100% - 36px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 32px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 30px 100px #0004;
+}
+.help-dialog::backdrop {
+  background: #18352b80;
+  backdrop-filter: blur(2px);
+}
+.help-dialog h2 {
+  margin-right: 24px;
+}
+.help-dialog h3 {
+  margin-top: 26px;
+  font-size: 16px;
+}
+.help-dialog p,
+.help-dialog li,
+.help-dialog dd {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4d5a55;
+}
+.help-dialog dt {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 10px;
+}
+.help-dialog dd {
+  margin: 0;
+}
+.help-dialog a {
+  color: var(--teal-dark);
+}
+.dialog-close {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 28px;
+}
+@media (max-width: 980px) {
+  .header-actions {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .header-actions .data-version {
+    display: none;
+  }
+  .header-actions button {
+    font-size: 10px;
+    padding: 6px;
+  }
+  .controls {
+    padding: 24px;
+  }
+  .controls > label {
+    margin-top: 18px;
+  }
+  .controls .primary-button {
+    margin-top: 16px;
+  }
+  .group-preview {
+    font-size: 11px;
+  }
+  .plot-stage.fitted .figure-canvas {
+    width: 100%;
+    height: auto;
+  }
+  .plot-stage.fitted {
+    min-height: 0;
+  }
+  .is-editing .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+  .is-editing .result {
+    order: 0;
+  }
+  .is-editing .editor-controls {
+    order: 1;
+    max-height: 65dvh;
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+  .is-editing .plot-stage {
+    max-height: 65dvh;
+  }
+  .is-editing .plot-stage.zoomed {
+    height: 55dvh;
+  }
+  .zoom-toolbar small {
+    display: none;
+  }
+  .help-dialog {
+    padding: 24px;
+  }
+}
+
+.pending-status {
+  margin: 0;
+  padding: 7px 12px;
+  background: #fff6d7;
+  color: #73561c;
+  font-size: 12px;
 }

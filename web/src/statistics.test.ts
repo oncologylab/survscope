@@ -6,12 +6,7 @@ import { describe, expect, test } from "vitest";
 
 import { analyzeGeneData, bhFdr } from "./statistics";
 import { cohortDisplayName, figureFilename } from "./cohorts";
-import type {
-  BucketMeta,
-  ClinicalData,
-  GeneData,
-  Manifest,
-} from "./types";
+import type { BucketMeta, ClinicalData, GeneData, Manifest } from "./types";
 
 function referenceGene(
   root = resolve("public/data/2026.07.28"),
@@ -23,17 +18,26 @@ function referenceGene(
   ) as Manifest;
   const index = manifest.genes.find((gene) => gene.symbol === "SRD5A1")!;
   const clinical = JSON.parse(
-    readFileSync(resolve(root, manifest.cohorts[cohort].clinical_asset), "utf8"),
+    readFileSync(
+      resolve(root, manifest.cohorts[cohort].clinical_asset),
+      "utf8",
+    ),
   ) as ClinicalData;
   const files = unzipSync(
-    readFileSync(resolve(root, manifest.cohorts[cohort].bucket_assets[index.bucket])),
+    readFileSync(
+      resolve(root, manifest.cohorts[cohort].bucket_assets[index.bucket]),
+    ),
   );
   const meta = JSON.parse(
     new TextDecoder().decode(files["meta.json"]),
   ) as BucketMeta;
   const gene = meta.genes.find((item) => item.symbol === "SRD5A1")!;
   const matrix = files["expression.u16le"];
-  const view = new DataView(matrix.buffer, matrix.byteOffset, matrix.byteLength);
+  const view = new DataView(
+    matrix.buffer,
+    matrix.byteOffset,
+    matrix.byteLength,
+  );
   const expression = new Uint16Array(meta.sample_count);
   const offset = gene.row * meta.sample_count * 2;
   for (let sample = 0; sample < meta.sample_count; sample += 1) {
@@ -43,8 +47,10 @@ function referenceGene(
     gene,
     cohort,
     cohortLabel: manifest.cohorts[cohort].label,
-    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources).expression.label,
-    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources).survival.label,
+    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources)
+      .expression.label,
+    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources)
+      .survival.label,
     dataVersion: manifest.data_version,
     expression,
     scale: meta.scale,
@@ -56,16 +62,18 @@ function referenceGene(
 describe("browser survival statistics", () => {
   test("matches the live CPTAC fixture and Python analysis", () => {
     const data = referenceGene(
-      resolve("../tests/fixtures/cptac/2026.09.18"), "2026.09.18", "CPTAC-3-PAAD",
+      resolve("../tests/fixtures/cptac/2026.09.18"),
+      "2026.09.18",
+      "CPTAC-3-PAAD",
     );
     const result = analyzeGeneData(data, "median");
     expect(result.endpoints.OS.n).toBe(97);
     expect(result.endpoints.OS.events).toBe(76);
     expect(result.endpoints.OS.nLow).toBe(49);
     expect(result.endpoints.OS.nHigh).toBe(48);
-    // The browser's existing erfc approximation agrees within 5e-8 here.
-    expect(result.endpoints.OS.logrankP).toBeCloseTo(0.21480036623609935, 7);
-    expect(result.endpoints.OS.coxHr).toBeCloseTo(1.333170308908182, 6);
+    // Preserve the Python reference through the matching bounded Cox solver.
+    expect(result.endpoints.OS.logrankP).toBeCloseTo(0.21480036623609935, 12);
+    expect(result.endpoints.OS.coxHr).toBeCloseTo(1.333170308908182, 8);
     expect(result.endpoints.OS.logrankQ).toBe(result.endpoints.OS.logrankP);
     expect(result.sourceSurvival).toBe("GDC CPTAC overall survival");
     for (const endpoint of ["DSS", "PFI", "DFI"] as const) {
@@ -74,21 +82,23 @@ describe("browser survival statistics", () => {
       expect(result.endpoints[endpoint].logrankP).toBeNaN();
     }
     expect(cohortDisplayName(result.cohort)).toBe("CPTAC-3-PAAD");
-    expect(figureFilename(result.gene, result.cohort, "pdf"))
-      .toBe("SRD5A1_CPTAC_3_PAAD_KM_survival.pdf");
-    expect(figureFilename(result.gene, "PAAD", "pdf"))
-      .toBe("SRD5A1_TCGA_PAAD_KM_survival.pdf");
+    expect(figureFilename(result.gene, result.cohort, "pdf")).toBe(
+      "SRD5A1_CPTAC_3_PAAD_KM_survival.pdf",
+    );
+    expect(figureFilename(result.gene, "PAAD", "pdf")).toBe(
+      "SRD5A1_TCGA_PAAD_KM_survival.pdf",
+    );
   });
 
   test("matches the SRD5A1 reference", () => {
     const result = analyzeGeneData(referenceGene(), "median");
     expect(result.endpoints.OS.n).toBe(177);
     expect(result.endpoints.OS.nLow).toBe(89);
-    expect(result.endpoints.OS.logrankP).toBeCloseTo(0.0017777122420538, 8);
-    expect(result.endpoints.OS.logrankQ).toBeCloseTo(0.0068997729476924, 8);
-    expect(result.endpoints.OS.coxHr).toBeCloseTo(1.929912608978088, 6);
+    expect(result.endpoints.OS.logrankP).toBeCloseTo(0.0017777122420538, 12);
+    expect(result.endpoints.OS.logrankQ).toBeCloseTo(0.0068997729476924, 12);
+    expect(result.endpoints.OS.coxHr).toBeCloseTo(1.929912608978088, 8);
     expect(result.endpoints.DFI.n).toBe(69);
-    expect(result.endpoints.DFI.coxHr).toBeCloseTo(2.143639694009769, 5);
+    expect(result.endpoints.DFI.coxHr).toBeCloseTo(2.143639694009769, 8);
   });
 
   test("supports custom TPM cutoffs", () => {

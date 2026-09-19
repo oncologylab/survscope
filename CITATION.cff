@@ -8,5 +8,5 @@ authors:
 repository-code: "https://github.com/oncologylab/survscope"
 url: "https://oncologylab.github.io/survscope/"
 license: MIT
-version: 0.1.0
-date-released: 2026-07-29
+version: 0.3.0
+date-released: 2026-09-19

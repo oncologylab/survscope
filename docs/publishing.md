@@ -1,12 +1,12 @@
 # Python package publishing
 
-The [v0.2.0 GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.2.0)
+The [v0.3.0 GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.3.0)
 contains the tested wheel and source distribution. The website and immutable
 data release are already public. Install the GitHub wheel directly:
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.2.0/survscope-0.2.0-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.3.0/survscope-0.3.0-py3-none-any.whl
 ```
 
 The first PyPI upload was rejected with `invalid-publisher`: the signed GitHub
@@ -33,7 +33,8 @@ Publishing settings. See PyPI's instructions for
 [creating a project with a pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/)
 and [diagnosing publisher mismatches](https://docs.pypi.org/trusted-publishers/troubleshooting/).
 
-After registration, retry the failed publishing job:
+After registration, retry the publishing job for the latest software release.
+For the historical first upload, the command was:
 
 ```bash
 gh run rerun 35413131991 --failed
