@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use SurvScope, please cite this software and the TCGA-CDR publication."
+message: "If you use SurvScope, please cite this software and the cohort-specific data references provided by Cite this analysis (see docs/citations.md)."
 title: "SurvScope"
 type: software
 authors:
@@ -8,5 +8,5 @@ authors:
 repository-code: "https://github.com/oncologylab/survscope"
 url: "https://oncologylab.github.io/survscope/"
 license: MIT
-version: 0.3.0
-date-released: 2026-09-19
+version: 0.4.0
+date-released: 2026-09-21

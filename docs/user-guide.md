@@ -19,7 +19,7 @@ Every comparison makes two groups, lower and higher expression. The selector off
 | Percentile | A chosen dividing point; for example, the 75th percentile | None with usable expression and follow-up |
 | Lowest/highest quarter | The bottom 25% versus the top 25% | Middle expression values |
 | Lowest/highest third | The bottom third versus the top third | Middle expression values |
-| Custom extreme groups | For example, the lowest 20% versus the highest 30% | The gap between those groups |
+| Custom percentile groups | For example, the lowest 20% versus the highest 30% | The gap between those groups |
 | Custom TPM threshold | At or below a number you enter versus above it | None with usable expression and follow-up |
 
 TPM measures a gene's RNA abundance relative to the other RNA in a sample. The mean uses TPM values, not their logarithms. Equal values stay together, so a “quarter” or “half” may not contain exactly that proportion of patients. If many patients have the same value, a group can even be empty. SurvScope shows the actual group sizes before you create the plot.
@@ -28,7 +28,7 @@ Each outcome uses patients with valid follow-up for that outcome. Its dividing v
 
 The median retains the original source grouping. Other choices use compact expression values rounded to 0.001 in `log2(TPM+1)` units. Very close expression values can therefore share a value; see [methods](methods.md) for the reproducibility details.
 
-Select **Create survival plot** after changing a gene, cohort, or comparison. A notice tells you when your current selections differ from the displayed result. Comparing extremes may reveal a different pattern, but it also uses fewer patients. SurvScope does not automatically search for a cutoff that makes a p-value smaller.
+Select **Create survival plot** after changing a gene, cohort, or comparison. A notice tells you when your current selections differ from the displayed result. Comparing selected lower and upper percentiles uses fewer patients and can change the observed pattern. SurvScope does not automatically search for a cutoff that makes a p-value smaller.
 
 ![Choosing a comparison and checking patient counts](images/comparison.png)
 
@@ -51,7 +51,7 @@ CPTAC currently supports OS only. Its remaining panels say **Endpoint unavailabl
 - **HR** is the unadjusted hazard ratio for higher versus lower expression. Above 1 indicates a higher modeled event hazard in the higher-expression group. Interpretation assumes proportional hazards; the application does not test this assumption or adjust for stage, treatment, age, or other factors.
 - **NA** means the statistic cannot be estimated. Empty groups, no events, lack of overlapping risk sets, or complete separation can cause this. The available curves may still be shown.
 
-In **Edit figure → Survival details**, you can add:
+In **Properties → Survival details**, you can add:
 
 - **Confidence bands:** pointwise uncertainty around each curve, at 90%, 95%, or 99%. Wider bands indicate less precision. The bands do not provide a separate test of the difference between curves.
 - **Censor marks:** a plus sign where a patient's observed follow-up ends without the recorded event. Several patients can share a mark.
@@ -61,11 +61,26 @@ These three additions are off initially, preserving the original appearance. Res
 
 ## Edit the figure
 
-Select **Edit figure**. The controls switch to figure properties, and the figure itself becomes selectable.
+Your figure is ready to edit as soon as it appears. Double-click a title, axis label, group name, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
+
+The workspace fills wide displays. **Analysis** sits on the left and **Properties / Layers** on the right; use the rail buttons to open or close them. Drag the panel boundaries to adjust their widths. On smaller screens, the panels open as drawers so the figure keeps its space. **Reset workspace** restores the panel sizes and Fit view without changing your figure.
 
 ![The figure editor with a selected title](images/editor.png)
 
 Click a title, axis label, legend, statistics block, curve, or panel. You can also choose **Selected item**, which helps with overlapping or hidden items. Drag labels, legends, statistics, panels, and annotations to move them. A selected panel has a corner handle for resizing. An arrow or line has a handle for moving its endpoint. Curve selection changes line appearance while keeping the data attached to its axes.
+
+Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange selection** aligns objects to each other or to the artboard, and distributes three or more objects evenly. **Snap** shows alignment guides near object edges and centers. In **Layers**, hide or lock objects, or select overlapping items. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
+
+| Shortcut | Action outside a text field |
+| --- | --- |
+| V / T / H / Z | Selection / Type / Hand / Zoom |
+| Space (hold) | Temporarily pan |
+| Arrow / Shift+Arrow | Move selection by 1 / 10 points |
+| Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z | Undo / redo |
+| Ctrl/Cmd+C / Ctrl/Cmd+V | Copy / paste selected annotations within the workspace |
+| Delete | Remove selected annotations |
+
+With Type, click an empty part of the artboard to create a note. Drag with Line or Arrow to draw a new annotation. A text object's corner handle scales its type; panel resizing keeps type and stroke sizes fixed. While typing, Ctrl/Cmd+B and Ctrl/Cmd+I format the selected text. Browser shortcuts such as Save and Bookmark remain available.
 
 The editor offers:
 
@@ -74,7 +89,7 @@ The editor offers:
 - **Axes:** show months, years, or days; set a displayed time range and tick spacing; zoom into a survival range. Axis limits do not truncate follow-up or refit the model. Extremely dense requested ticks are thinned to keep the figure responsive.
 - **Legend and annotations:** rename the lower/higher group labels and add notes, lines, or arrows. Text supports multiple lines. Computed statistical values update with the analysis and cannot be overwritten in the editor.
 
-Use **Fit**, the zoom buttons, and **Pan tool** to inspect details without changing export dimensions. With focus on the figure, arrow keys move the selected item by one point; hold Shift for ten points. **Undo/Redo** also respond to Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. **Reset figure** returns to the original appearance and can itself be undone.
+Use **Fit**, **100%**, the zoom buttons, and the **Hand tool** to inspect details without changing export dimensions. With focus on the figure, arrow keys move the selected item by one point; hold Shift for ten points. **Undo/Redo** also respond to Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. **Reset figure** returns to the original appearance and can itself be undone.
 
 A new gene, cohort, or comparison retains styling and layout, refreshes automatic labels, and clears custom label text and annotations tied to the previous result. Save a project first if you want to keep those edits. When making a smaller figure, check that labels and panels have enough room; the editor allows deliberate overlaps.
 
@@ -95,9 +110,19 @@ For example, 6.8 inches at 300 DPI produces a 2040 × 2040 PNG. Very large PNGs 
 
 A URL records gene, cohort, and comparison choices. Share the project file when you also want to share the exact edited figure. Projects include aggregate curve data, not patient identifiers or a raw expression matrix.
 
+## Cite an analysis
+
+Choose **Cite this analysis** to see the references for the result currently displayed. **Copy references**, **Download BibTeX**, and **Download RIS** help you transfer them to a manuscript or reference manager. The methods box includes the gene, cohort, grouping rule, outcome counts, exclusions, software/data versions, and the relevant program acknowledgement.
+
+TCGA and CPTAC have separate source citations. Original cohort papers are included when their association has been verified; the actual patients used by SurvScope may be a subset or come from an updated source snapshot. If no paper has been verified for a rare classification, the panel says so and provides its source dataset and resource references. An upstream version that was not recorded is displayed as **not recorded**.
+
+![The citation panel with source references and downloads](images/citations.png)
+
+Save the project to keep this citation snapshot with the figure. [Full references and source information](citations.md).
+
 ## Common questions
 
-**Why do the group counts differ from the cohort count?** Missing expression, missing outcomes, or nonpositive follow-up time exclude a patient from that outcome. Extreme comparisons also leave out the middle expression values.
+**Why do the group counts differ from the cohort count?** Missing expression, missing outcomes, or nonpositive follow-up time exclude a patient from that outcome. Custom percentile comparisons also leave out the middle expression values.
 
 **Why did a percentile not split the group evenly?** Equal expression values are kept together. Percentiles define expression thresholds, not an arbitrary ordering of people with the same value.
 

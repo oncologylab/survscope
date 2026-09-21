@@ -1,5 +1,6 @@
 import { figureFilename } from "./cohorts";
 import { defaultFigure } from "./figure";
+import { attachProvenance } from "./citations";
 import { embeddedFonts } from "./fonts";
 import type { FigureSettings } from "./figure";
 import type { SurvivalAnalysis } from "./types";
@@ -33,7 +34,7 @@ export async function exportSvg(
     (element as SVGElement).style.removeProperty("cursor");
   });
   clone.style.removeProperty("touch-action");
-  const fonts = await embeddedFonts(settings.fontFamily);
+  const fonts = await figureFonts(settings);
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent = fonts
     .map(
@@ -78,7 +79,7 @@ export async function pngResolution(blob: Blob, dpi: number): Promise<Blob> {
   view.setUint32(17, (crc ^ 0xffffffff) >>> 0);
   const parts: Uint8Array<ArrayBuffer>[] = [bytes.slice(0, 33), chunk];
   const input = new DataView(bytes.buffer);
-  for (let at = 33; at < bytes.length; ) {
+  for (let at = 33; at < bytes.length;) {
     const size = input.getUint32(at) + 12;
     if (String.fromCharCode(...bytes.subarray(at + 4, at + 8)) !== "pHYs")
       parts.push(bytes.slice(at, at + size));
@@ -154,7 +155,7 @@ export async function savePdf(
     compress: true,
     putOnlyUsedFonts: true,
   });
-  for (const font of await embeddedFonts(settings.fontFamily)) {
+  for (const font of await figureFonts(settings)) {
     pdf.addFileToVFS(font.name, font.data);
     pdf.addFont(font.name, font.family, font.pdf);
   }
@@ -166,9 +167,24 @@ export async function savePdf(
 }
 export function saveJson(analysis: SurvivalAnalysis): void {
   download(
-    new Blob([`${JSON.stringify(analysis, null, 2)}\n`], {
-      type: "application/json",
-    }),
+    new Blob(
+      [
+        `${JSON.stringify(analysis.provenance ? analysis : attachProvenance(analysis), null, 2)}\n`,
+      ],
+      {
+        type: "application/json",
+      },
+    ),
     figureFilename(analysis.gene, analysis.cohort, "json"),
   );
+}
+
+async function figureFonts(settings: FigureSettings) {
+  const families = new Set([
+    settings.fontFamily,
+    ...Object.values(settings.elements).flatMap((s) =>
+      s.fontFamily ? [s.fontFamily] : [],
+    ),
+  ]);
+  return (await Promise.all([...families].map(embeddedFonts))).flat();
 }

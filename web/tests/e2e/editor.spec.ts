@@ -18,13 +18,13 @@ test("edits text, drags and nudges elements, resizes panels, and restores a save
 }) => {
   await page.goto("?gene=SRD5A1&cohort=PAAD&cutoff=median");
   await expect(page.locator("svg.survival-plot")).toBeVisible();
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
   const title = page.locator('[data-element="title"]');
   await title.click();
   await page
     .getByLabel("Text", { exact: true })
     .fill("My survival figure\nExploratory comparison");
-  await expect(title.locator("tspan")).toHaveCount(2);
+  await expect(title.locator("text > tspan")).toHaveCount(2);
   await title.click();
   await page.keyboard.press("ArrowRight");
   await expect(title).toHaveAttribute("transform", "translate(1,0)");
@@ -39,7 +39,7 @@ test("edits text, drags and nudges elements, resizes panels, and restores a save
     { steps: 5 },
   );
   await page.mouse.up();
-  expect(await title.getAttribute("transform")).not.toBe("translate(0,0)");
+  await expect(title).not.toHaveAttribute("transform", "translate(0,0)");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(title).toHaveAttribute("transform", "translate(0,0)");
   await page
@@ -56,11 +56,13 @@ test("edits text, drags and nudges elements, resizes panels, and restores a save
     steps: 5,
   });
   await page.mouse.up();
-  expect(
-    Number(
-      await page.getByLabel("Panel width (pt)", { exact: true }).inputValue(),
-    ),
-  ).toBeGreaterThan(previous);
+  await expect
+    .poll(async () =>
+      Number(
+        await page.getByLabel("Panel width (pt)", { exact: true }).inputValue(),
+      ),
+    )
+    .toBeGreaterThan(previous);
   const saved = (await download(page, "Save project"))!;
   const file = JSON.parse(readFileSync(saved, "utf8"));
   expect(file.settings.elements.title.text).toContain("My survival figure");
@@ -84,7 +86,7 @@ test("exports edited physical dimensions, embedded fonts, overlays, and clean ve
       external.push(r.url());
   });
   await page.goto("?gene=SRD5A1&cohort=PAAD&cutoff=median");
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
   await number(page, "Width (inches)", "8");
   await number(page, "Height (inches)", "5");
   await expect(page.locator("svg.survival-plot")).toHaveCSS(
@@ -139,7 +141,7 @@ test("exports edited physical dimensions, embedded fonts, overlays, and clean ve
   expect(external).toEqual([]);
 });
 
-test("previews extreme groups and preserves style across analyses while refreshing labels", async ({
+test("previews percentile groups and preserves style across analyses while refreshing labels", async ({
   page,
 }) => {
   await page.goto("?gene=SRD5A1&cohort=PAAD&cutoff=median");
@@ -159,15 +161,15 @@ test("previews extreme groups and preserves style across analyses while refreshi
   await expect(page.locator('[data-element="grouping"]')).toContainText(
     "Lowest 25%",
   );
-  await expect(page).toHaveURL(/grouping=extremes/);
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page).toHaveURL(/grouping=percentile_groups/);
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
   await page.getByLabel("Font", { exact: true }).selectOption("Mono");
   await page.getByLabel("Selected item", { exact: true }).selectOption("title");
   await page.getByLabel("Text", { exact: true }).fill("Old gene title");
   await page.getByText("Legend and annotations", { exact: true }).click();
   await page.getByRole("button", { name: "Add arrow", exact: true }).click();
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(1);
-  await page.getByRole("button", { name: "Done editing", exact: true }).click();
+
   await page
     .getByLabel("Gene symbol or Ensembl ID", { exact: true })
     .fill("ITGA2");
@@ -178,7 +180,7 @@ test("previews extreme groups and preserves style across analyses while refreshi
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(0);
   await expect(page.locator("svg.survival-plot")).toHaveCSS(
     "font-family",
-    '"SurvScope Mono"',
+    /^"?SurvScope Mono"?$/,
   );
 });
 
@@ -188,6 +190,8 @@ test("opens archived results without silently recomputing and rejects malformed 
   await page.goto("?gene=SRD5A1&cohort=PAAD&cutoff=median");
   const saved = (await download(page, "Save project"))!;
   const file = JSON.parse(readFileSync(saved, "utf8"));
+  file.version = 1;
+  delete file.analysis.provenance;
   file.analysis.dataVersion = "2020.01.01";
   await page.getByLabel("Open figure file").setInputFiles({
     name: "old.survscope.json",
@@ -195,7 +199,7 @@ test("opens archived results without silently recomputing and rejects malformed 
     buffer: Buffer.from(JSON.stringify(file)),
   });
   await expect(page.locator(".data-version")).toContainText("2020.01.01");
-  await page.getByRole("button", { name: "Done editing", exact: true }).click();
+
   await page
     .getByRole("button", { name: "Create survival plot", exact: true })
     .click();
@@ -216,7 +220,8 @@ test("keeps the guide and editor usable on a phone", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
+  await page.getByRole("button", { name: "Toggle Properties panel" }).click();
   await expect(page.getByLabel("Figure properties")).toBeVisible();
   await page.getByLabel("Selected item", { exact: true }).selectOption("title");
   await page.getByLabel("Text", { exact: true }).fill("Mobile edit");
@@ -234,7 +239,7 @@ test("reuses presets, rearranges outcomes, and applies consistent axes to all pa
   page,
 }) => {
   await page.goto("");
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
   await page.getByLabel("Font", { exact: true }).selectOption("Mono");
   await page.getByText("Outcomes and layout", { exact: true }).click();
   await page.getByLabel("Move DSS earlier").click();
@@ -266,9 +271,9 @@ test("reuses presets, rearranges outcomes, and applies consistent axes to all pa
   await expect(page.locator('[data-element="panel.DFI"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Zoom in", exact: true }).click();
   await page.getByRole("button", { name: "Zoom in", exact: true }).click();
-  await page.getByRole("button", { name: "Pan tool", exact: true }).click();
+  await page.getByRole("button", { name: "Hand tool", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Pan tool on", exact: true }),
+    page.getByRole("button", { name: "Hand tool", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   const stage = page.locator(".plot-stage"),
     b = (await stage.boundingBox())!;
@@ -284,7 +289,7 @@ test("reading the guide does not move or undo a selected figure item", async ({
   page,
 }) => {
   await page.goto("");
-  await page.getByRole("button", { name: "Edit figure", exact: true }).click();
+  await expect(page.locator("svg.survival-plot")).toBeVisible();
   const title = page.locator('[data-element="title"]');
   await title.click();
   await page.keyboard.press("ArrowRight");

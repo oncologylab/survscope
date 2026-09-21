@@ -34,9 +34,9 @@ analyze_case <- function(item) {
     valid <- is.finite(tpm) & is.finite(time) & time > 0 & event %in% c(0, 1)
     indices <- which(valid); x <- tpm[valid]; time <- time[valid]; event <- event[valid]
     median <- data$gene$medians[[endpoint]]
-    kind <- spec$kind
+    kind <- if (spec$kind == "extremes") "percentile_groups" else spec$kind
     if (kind == "percentile" && spec$percentile == 50) kind <- "median"
-    if (kind == "extremes" && spec$lowerPercent + spec$upperPercent == 100) {
+    if (kind == "percentile_groups" && spec$lowerPercent + spec$upperPercent == 100) {
       kind <- if (spec$lowerPercent == 50) "median" else "percentile"
       spec$percentile <- spec$lowerPercent
     }
@@ -51,7 +51,7 @@ analyze_case <- function(item) {
       } else {
         if (kind == "mean") lower <- upper <- mean(x)
         if (kind == "percentile") lower <- upper <- unname(quantile(x, spec$percentile / 100, type = 7))
-        if (kind == "extremes") {
+        if (kind == "percentile_groups") {
           lower <- unname(quantile(x, spec$lowerPercent / 100, type = 7))
           upper <- unname(quantile(x, 1 - spec$upperPercent / 100, type = 7))
         }

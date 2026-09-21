@@ -12,10 +12,12 @@
 ## Make your first figure
 
 1. Choose a cancer cohort and enter a gene symbol, such as **SRD5A1** or **TP53**.
-2. Choose how to compare lower and higher expression. Start with the median, or try a percentile, the lowest/highest quarters or thirds, custom extreme groups, the mean, or a TPM threshold. Check the patient counts before running.
+2. Choose how to compare lower and higher expression. Start with the median, or try a percentile, the lowest/highest quarters or thirds, custom percentile groups, the mean, or a TPM threshold. Check the patient counts before running.
 3. Select **Create survival plot**. Each panel shows a different outcome, when available.
-4. Select **Edit figure** to change labels, colors, fonts, dimensions, axes, panel layout, and annotations. Click and drag items directly on the figure. Optional confidence bands, censor marks, and number-at-risk tables add context.
+4. **Double-click text on the figure to edit it.** Select and drag objects; use Properties for fonts, colors, dimensions, axes, and layout, or Layers to hide and lock objects. Optional confidence bands, censor marks, and number-at-risk tables add context.
 5. Download **SVG**, **PDF**, or **PNG**. **Save project** lets you reopen the results and keep editing; a style preset reuses the appearance for another analysis.
+
+The workspace fills your screen, with collapsible Analysis and Properties panels. Familiar Selection (V), Type (T), Hand (H), and Zoom (Z) tools help you arrange the figure. Text supports bold, italic, superscripts, and subscripts.
 
 The original blue/red, four-panel, 6.8-inch figure remains the default. Editing the figure's appearance does not change the calculated results.
 
@@ -29,20 +31,26 @@ TCGA provides overall survival (OS), disease-specific survival (DSS), progressio
 
 A curve estimates the fraction of patients who remain event-free over time. The legend gives patients (`n`) and events (`e`) in each group. The p-value compares the curves; the hazard ratio compares higher with lower expression. These are unadjusted associations, not proof that a gene causes a difference or predicts an individual's outcome.
 
-Comparing expression extremes leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
+Comparing selected lower and upper percentile groups leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
 
 JavaScript calculations are checked against Python and independently executed R `survival`. Group membership, event counts, and risk counts agree exactly in the validation suite. Numerical tolerances and the preserved PAAD reference estimates are documented in [methods and validation](docs/methods.md#validation).
 
+## Cite the data behind your figure
+
+Choose **Cite this analysis** beside the save/export controls. Copy the references, download **BibTeX** or **RIS** for a reference manager, or copy a methods paragraph with your gene, cohort, group sizes, exclusions, and data version. Citations follow the displayed result, even while you are choosing the next analysis.
+
+TCGA analyses cite **TCGA-CDR** for survival outcomes, **UCSC Xena** for data distribution, and **GDC** for the data resource. CPTAC analyses cite **CPTAC-3** and **GDC** and its survival documentation. Verified original cohort papers appear alongside those sources. The analyzed patients may differ from the publication's original cohort. [Full references and citation guidance](docs/citations.md).
+
 ## Use Python or the command line
 
-Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.3.0):
+Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.0):
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.3.0/survscope-0.3.0-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.4.0/survscope-0.4.0-py3-none-any.whl
 survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
 survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
-  --grouping extremes --lower-percent 25 --upper-percent 25 --json --outdir plots
+  --grouping percentile_groups --lower-percent 25 --upper-percent 25 --json --outdir plots
 ```
 
 ```python
@@ -51,7 +59,7 @@ from survscope import GroupingSpec
 
 result = survscope.analyze(
     "SRD5A1", "PAAD",
-    grouping=GroupingSpec("extremes", lower_percent=25, upper_percent=25),
+    grouping=GroupingSpec("percentile_groups", lower_percent=25, upper_percent=25),
 )
 survscope.plot(result, formats=("pdf", "svg"), output_dir="plots")
 ```
@@ -68,6 +76,6 @@ The website displays its data version. Data releases are immutable; saved projec
 - [Development and releases](docs/development.md): local setup, checks, and deployment
 - [Data format](docs/data-format.md): compact assets and provenance
 
-For scientific use, cite [Liu et al., TCGA-CDR, Cell (2018)](https://doi.org/10.1016/j.cell.2018.02.052), the [GDC expression pipeline](https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/), and the source project for your cohort. SurvScope is research software, not a diagnostic or clinical decision-making tool.
+For scientific use, include the software and the references provided by **Cite this analysis** for your selected cohort. SurvScope is research software, not a diagnostic or clinical decision-making tool.
 
 Source code uses the [MIT License](LICENSE). Bundled fonts and numerical code retain their [third-party notices](web/public/third-party-notices.txt); data retain their original terms and citations.

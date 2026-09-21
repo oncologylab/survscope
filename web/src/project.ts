@@ -1,5 +1,9 @@
 import { defaultFigure, reusableStyle } from "./figure";
 import type { Annotation, ElementStyle, FigureSettings } from "./figure";
+import { resolveProvenance, attachProvenance } from "./citations";
+import type { AnalysisProvenance } from "./citations";
+import { SOFTWARE_VERSION } from "./version";
+export { SOFTWARE_VERSION } from "./version";
 import { normalizeGrouping } from "./grouping";
 import { ENDPOINTS } from "./types";
 import type {
@@ -10,17 +14,16 @@ import type {
   SurvivalAnalysis,
 } from "./types";
 
-export const SOFTWARE_VERSION = "0.3.0";
 export interface FigureProject {
   format: "survscope-project";
-  version: 1;
+  version: 2;
   softwareVersion: string;
   analysis: SurvivalAnalysis;
   settings: FigureSettings;
 }
 export interface FigurePreset {
   format: "survscope-preset";
-  version: 1;
+  version: 2;
   settings: FigureSettings;
 }
 const failure = (message: string): never => {
@@ -152,7 +155,13 @@ export function validateSettings(value: unknown): FigureSettings {
     "title",
     "source",
     "grouping",
+    "label.low",
+    "label.high",
+    ...array(raw.annotations, 100).map(
+      (a) => `annotation.${text(object(a).id, 100)}`,
+    ),
     ...ENDPOINTS.flatMap((ep) => [
+      `panel.${ep}`,
       `title.${ep}`,
       `xlabel.${ep}`,
       `ylabel.${ep}`,
@@ -167,6 +176,11 @@ export function validateSettings(value: unknown): FigureSettings {
     const s = object(value),
       style: ElementStyle = {};
     const keys = [
+      "runs",
+      "fontFamily",
+      "align",
+      "rotation",
+      "locked",
       "dx",
       "dy",
       "text",
@@ -180,10 +194,49 @@ export function validateSettings(value: unknown): FigureSettings {
     ];
     if (Object.keys(s).some((key) => !keys.includes(key)))
       failure("an item style is unsupported.");
+    if (s.fontFamily !== undefined)
+      style.fontFamily = choice(s.fontFamily, [
+        "Sans",
+        "Serif",
+        "Mono",
+      ] as const);
+    if (s.align !== undefined)
+      style.align = choice(s.align, ["start", "middle", "end"] as const);
+    if (s.rotation !== undefined)
+      style.rotation = number(s.rotation, -360, 360);
+    if (s.runs !== undefined) {
+      if (
+        !/^(title|source|grouping|xlabel|ylabel|label|annotation)(\.|$)/.test(
+          id,
+        )
+      )
+        failure("computed values cannot be replaced with text.");
+      style.runs = array(s.runs, 1000).map((value) => {
+        const run = object(value);
+        if (
+          Object.keys(run).some(
+            (k) => !["text", "bold", "italic", "script"].includes(k),
+          )
+        )
+          failure("unsupported text formatting.");
+        return {
+          text: text(run.text, 500),
+          ...(run.bold === undefined ? {} : { bold: boolean(run.bold) }),
+          ...(run.italic === undefined ? {} : { italic: boolean(run.italic) }),
+          ...(run.script === undefined
+            ? {}
+            : { script: choice(run.script, ["super", "sub"] as const) }),
+        };
+      });
+      text(
+        style.runs.map((r) => r.text).join(""),
+        id.startsWith("label.") ? 40 : 500,
+      );
+    }
     if (s.dx !== undefined) style.dx = number(s.dx, -10000, 10000);
     if (s.dy !== undefined) style.dy = number(s.dy, -10000, 10000);
     if (s.text !== undefined) {
-      if (!/^(title|source|grouping|xlabel|ylabel)(\.|$)/.test(id))
+      if (!/^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(id))
         failure("computed values cannot be replaced with text.");
       style.text = text(s.text, 500);
     }
@@ -191,11 +244,11 @@ export function validateSettings(value: unknown): FigureSettings {
     if (s.lineWidth !== undefined)
       style.lineWidth = number(s.lineWidth, 0.2, 12);
     if (s.color !== undefined) style.color = color(s.color);
-    for (const key of ["bold", "italic", "hidden"] as const)
+    for (const key of ["bold", "italic", "hidden", "locked"] as const)
       if (s[key] !== undefined) style[key] = boolean(s[key]);
     if (s.dash !== undefined)
       style.dash = choice(s.dash, ["solid", "dashed", "dotted"] as const);
-    if (id.startsWith("curve.") && (style.dx || style.dy))
+    if (id.startsWith("curve.") && (style.dx || style.dy || style.rotation))
       failure("survival curves cannot be moved independently of their axes.");
     result.elements[id] = style;
   }
@@ -349,7 +402,62 @@ function validateAnalysis(value: unknown): SurvivalAnalysis {
       failure("analysis counts are inconsistent.");
     result.endpoints[ep] = entry;
   }
+  if (a.provenance !== undefined)
+    result.provenance = validateProvenance(a.provenance, result);
   return result;
+}
+
+function validateProvenance(
+  value: unknown,
+  analysis: SurvivalAnalysis,
+): AnalysisProvenance {
+  const p = object(value);
+  if (
+    p.version !== 1 ||
+    p.dataVersion !== analysis.dataVersion ||
+    p.cohort !== analysis.cohort
+  )
+    failure("citation provenance does not match this analysis.");
+  const url = (value: unknown) => {
+    const s = text(value, 2000);
+    if (!/^https:\/\/[^\s]+$/.test(s)) failure("a citation URL is invalid.");
+    return s;
+  };
+  const program = choice(p.program, ["TCGA", "CPTAC"] as const);
+  if (program !== (analysis.cohort.startsWith("CPTAC-") ? "CPTAC" : "TCGA"))
+    failure("citation program does not match this analysis.");
+  return {
+    version: 1,
+    program,
+    project: text(p.project, 100),
+    cohort: analysis.cohort,
+    dataVersion: analysis.dataVersion,
+    softwareVersion: text(p.softwareVersion, 40),
+    upstreamRelease:
+      p.upstreamRelease === null ? null : text(p.upstreamRelease),
+    assetDataVersion:
+      p.assetDataVersion === null ? null : text(p.assetDataVersion, 10),
+    expressionSource: text(p.expressionSource),
+    survivalSource: text(p.survivalSource),
+    acknowledgement: text(p.acknowledgement, 2000),
+    cohortPublicationNote: text(p.cohortPublicationNote, 2000),
+    citations: array(p.citations, 64).map((value) => {
+      const c = object(value);
+      const result = {
+        id: text(c.id, 100),
+        role: text(c.role, 200),
+        authors: array(c.authors, 500).map((a) => text(a, 200)),
+        title: text(c.title, 2000),
+        url: url(c.url),
+      } as AnalysisProvenance["citations"][number];
+      if (c.year !== undefined) result.year = number(c.year, 1800, 2200);
+      for (const key of ["journal", "volume", "issue", "pages", "doi"] as const)
+        if (c[key] !== undefined) result[key] = text(c[key], 500);
+      if (result.doi && !/^10\.\d{4,9}\/[^\s]+$/.test(result.doi))
+        failure("a citation DOI is invalid.");
+      return result;
+    }),
+  };
 }
 
 export function projectFile(
@@ -358,16 +466,16 @@ export function projectFile(
 ): FigureProject {
   return {
     format: "survscope-project",
-    version: 1,
+    version: 2,
     softwareVersion: SOFTWARE_VERSION,
-    analysis,
+    analysis: analysis.provenance ? analysis : attachProvenance(analysis),
     settings,
   };
 }
 export function presetFile(settings: FigureSettings): FigurePreset {
   return {
     format: "survscope-preset",
-    version: 1,
+    version: 2,
     settings: reusableStyle(settings),
   };
 }
@@ -380,23 +488,34 @@ export function readFigureFile(contents: string): FigureProject | FigurePreset {
   } catch {
     return failure("choose a valid SurvScope project or preset JSON file.");
   }
-  if (raw.version !== 1) failure("this file version is unsupported.");
+  if (raw.version !== 1 && raw.version !== 2)
+    failure("this file version is unsupported.");
   const settings = validateSettings(raw.settings);
   if (raw.format === "survscope-preset")
     return {
       format: raw.format,
-      version: 1,
+      version: 2,
       settings: reusableStyle(settings),
     };
   if (raw.format !== "survscope-project")
     failure(
       "choose a project file, rather than the analysis-only JSON export.",
     );
+  const analysis = validateAnalysis(raw.analysis);
+  if (!analysis.provenance) {
+    analysis.provenance = resolveProvenance(analysis);
+    analysis.provenance.softwareVersion = text(raw.softwareVersion, 40);
+    const software = analysis.provenance.citations.find(
+      (c) => c.id === "survscope",
+    );
+    if (software)
+      software.title = `SurvScope ${analysis.provenance.softwareVersion}`;
+  }
   return {
     format: "survscope-project",
-    version: 1,
+    version: 2,
     softwareVersion: text(raw.softwareVersion, 40),
-    analysis: validateAnalysis(raw.analysis),
+    analysis,
     settings,
   };
 }

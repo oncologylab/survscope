@@ -32,9 +32,9 @@ GROUPINGS = [
     {"kind": "tpm", "threshold": 10},
     {"kind": "percentile", "percentile": 75},
     {"kind": "percentile", "percentile": 50},
-    {"kind": "extremes", "lowerPercent": 25, "upperPercent": 25},
-    {"kind": "extremes", "lowerPercent": 100 / 3, "upperPercent": 100 / 3},
-    {"kind": "extremes", "lowerPercent": 20, "upperPercent": 30},
+    {"kind": "percentile_groups", "lowerPercent": 25, "upperPercent": 25},
+    {"kind": "percentile_groups", "lowerPercent": 100 / 3, "upperPercent": 100 / 3},
+    {"kind": "percentile_groups", "lowerPercent": 20, "upperPercent": 30},
 ]
 FIELDS = {
     "n": "n",

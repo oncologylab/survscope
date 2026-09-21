@@ -1,0 +1,214 @@
+{
+  "2026.09.18": {
+    "ACC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "BLCA": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "BRCA": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "CESC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "CHOL": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "COAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "CPTAC-3-ASTRO": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-FHRCC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-GBM": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-GLIOMA": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-HNSC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-KICH": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-KIRP": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-LAML": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-LUAD": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-LUSC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-OLIGO": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-PAAD": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-RCC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-SCCNOS": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-SKCM": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-STAD": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-UCEC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "CPTAC-3-UTUC": {
+      "upstreamRelease": "Data Release 46.0 - August 10, 2026",
+      "assetDataVersion": null
+    },
+    "DLBC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "ESCA": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "GBM": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "HNSC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "KICH": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "KIRC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "KIRP": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "LAML": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "LGG": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "LIHC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "LUAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "LUSC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "MESO": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "OV": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "PAAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "PCPG": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "PRAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "READ": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "SARC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "SKCM": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "STAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "TGCT": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "THCA": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "THYM": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "UCEC": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "UCS": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    },
+    "UVM": {
+      "upstreamRelease": null,
+      "assetDataVersion": "2026.07.28"
+    }
+  },
+  "2026.07.28": {
+    "PAAD": {
+      "upstreamRelease": null,
+      "assetDataVersion": null
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-09-21T16:41:11.856Z",
+  "browser": "140.0.7339.185",
+  "platform": "linux 6.17.0-35-generic",
+  "cpu": "AMD EPYC-Milan Processor",
+  "cores": 32,
+  "viewport": {
+    "width": 3840,
+    "height": 2160,
+    "deviceScaleFactor": 1
+  },
+  "workload": {
+    "gene": "TP53",
+    "cohort": "BRCA",
+    "dataVersion": "2026.09.18",
+    "annotations": 100,
+    "overlays": [
+      "confidence",
+      "censors",
+      "riskTable"
+    ],
+    "svgNodes": 4038,
+    "dragSteps": 120,
+    "warmupRuns": 1
+  },
+  "results": [
+    {
+      "cpuSlowdown": 1,
+      "runs": [
+        {
+          "frames": 123,
+          "p95FrameMs": 16.700000000000728,
+          "maxFrameMs": 16.800000000000182,
+          "longTasks": 0,
+          "maxLongTaskMs": 0
+        },
+        {
+          "frames": 123,
+          "p95FrameMs": 16.799999999999272,
+          "maxFrameMs": 16.800000000000182,
+          "longTasks": 0,
+          "maxLongTaskMs": 0
+        },
+        {
+          "frames": 123,
+          "p95FrameMs": 16.700000000000728,
+          "maxFrameMs": 16.80000000000109,
+          "longTasks": 0,
+          "maxLongTaskMs": 0
+        }
+      ],
+      "medianP95FrameMs": 16.700000000000728,
+      "pass": true
+    },
+    {
+      "cpuSlowdown": 4,
+      "runs": [
+        {
+          "frames": 126,
+          "p95FrameMs": 16.799999999999272,
+          "maxFrameMs": 66.59999999999854,
+          "longTasks": 1,
+          "maxLongTaskMs": 64
+        },
+        {
+          "frames": 126,
+          "p95FrameMs": 16.700000000000728,
+          "maxFrameMs": 66.5,
+          "longTasks": 1,
+          "maxLongTaskMs": 64
+        },
+        {
+          "frames": 125,
+          "p95FrameMs": 16.799999999999272,
+          "maxFrameMs": 50,
+          "longTasks": 1,
+          "maxLongTaskMs": 56
+        }
+      ],
+      "medianP95FrameMs": 16.799999999999272,
+      "pass": true
+    }
+  ]
+}

@@ -9,7 +9,19 @@ export interface PanelBox {
   width: number;
   height: number;
 }
+export interface TextRun {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  script?: "super" | "sub";
+}
+export type EditorTool = "select" | "type" | "hand" | "zoom" | "line" | "arrow";
 export interface ElementStyle {
+  runs?: TextRun[];
+  fontFamily?: FontFamily;
+  align?: "start" | "middle" | "end";
+  rotation?: number;
+  locked?: boolean;
   dx?: number;
   dy?: number;
   text?: string;
@@ -162,7 +174,11 @@ export function reusableStyle(settings: FigureSettings): FigureSettings {
   result.annotations = [];
   result.lowLabel = "Low";
   result.highLabel = "High";
-  for (const style of Object.values(result.elements)) delete style.text;
+  for (const [id, style] of Object.entries(result.elements)) {
+    delete style.text;
+    delete style.runs;
+    if (id.startsWith("annotation.")) delete result.elements[id];
+  }
   return result;
 }
 
@@ -203,6 +219,7 @@ export function elementName(id: string | null): string {
           xlabel: "Time label",
           ylabel: "Survival label",
           legend: "Legend",
+          label: "Group name",
           statistics: "Statistics",
           curve: "Curve",
           low: "Low",

@@ -2,9 +2,11 @@ import { useEffect, useRef } from "react";
 export function HelpGuide({
   open,
   close,
+  cite,
 }: {
   open: boolean;
   close: () => void;
+  cite: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -42,8 +44,8 @@ export function HelpGuide({
           <strong>Create survival plot</strong>.
         </li>
         <li>
-          Use <strong>Edit figure</strong> to change labels, colors, layout, and
-          size. Click and drag an item to move it.
+          Double-click a label to edit directly on the figure. Select objects to
+          change colors, layout, and size in Properties.
         </li>
         <li>
           Download SVG or PDF for a vector figure, or PNG for an image. Save a
@@ -54,8 +56,8 @@ export function HelpGuide({
       <p>
         The median divides patients around the middle expression value. The mean
         uses the average. Percentiles let you choose another dividing point.
-        Extreme groups compare the lower and upper ends and leave middle
-        patients out, so fewer patients contribute to the result. Equal
+        Custom percentile groups compare the lower and upper ends and leave
+        middle patients out, so fewer patients contribute to the result. Equal
         expression values stay together in new groupings; actual group sizes may
         differ from the requested percentages.
       </p>
@@ -109,6 +111,31 @@ export function HelpGuide({
         These are observational comparisons. A visible gap or small p-value does
         not establish that the gene causes a survival difference or predicts
         treatment benefit.
+      </p>
+      <h3>Editing and navigation</h3>
+      <p>
+        V selects objects, T edits text, H pans, and Z zooms. Hold Space to pan
+        temporarily. Shift-click or drag a selection rectangle for multiple
+        objects. Use Arrange selection to align or distribute objects, and
+        Layers to hide or lock them. Text supports bold, italic, superscripts,
+        and subscripts. Enter starts a new line; Escape finishes typing. Undo
+        restores a completed edit or movement.
+      </p>
+      <p>
+        Analysis and Properties can be collapsed to give the figure more space.
+        Fit fills the available canvas; 100% shows the figure at its nominal
+        screen size. These controls do not change export dimensions.
+      </p>
+      <h3>Citing your data</h3>
+      <p>
+        Use{" "}
+        <button type="button" onClick={cite}>
+          Cite this analysis
+        </button>{" "}
+        for references, BibTeX or RIS downloads, a methods paragraph, and the
+        data-program acknowledgement. References follow the displayed analysis.
+        TCGA and CPTAC use different clinical sources; current CPTAC analyses
+        use RNA expression and overall survival.
       </p>
       <h3>Keeping your work</h3>
       <p>

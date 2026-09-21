@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -65,15 +65,15 @@ def normalize_grouping(
             raise ValueError(f"{name} must be a finite number.")
         return float(value)
 
-    spec = grouping
-    if spec.kind not in {"median", "mean", "tpm", "percentile", "extremes"}:
+    spec = replace(grouping, kind="percentile_groups") if grouping.kind == "extremes" else grouping
+    if spec.kind not in {"median", "mean", "tpm", "percentile", "percentile_groups"}:
         raise ValueError(f"Unsupported grouping: {spec.kind}")
     expected = {
         "median": set(),
         "mean": set(),
         "tpm": {"threshold"},
         "percentile": {"percentile"},
-        "extremes": {"lowerPercent", "upperPercent"},
+        "percentile_groups": {"lowerPercent", "upperPercent"},
     }[spec.kind]
     if set(spec.to_dict()) - {"kind"} != expected:
         raise ValueError("Grouping parameters do not match the selected comparison.")
@@ -85,7 +85,7 @@ def normalize_grouping(
             raise ValueError("Percentile must be greater than 0 and less than 100.")
         if spec.percentile == 50:
             return GroupingSpec()
-    elif spec.kind == "extremes":
+    elif spec.kind == "percentile_groups":
         lower = number(spec.lower_percent, "Lower percentage")
         upper = number(spec.upper_percent, "Upper percentage")
         if not (0 < lower < 100 and 0 < upper < 100 and lower + upper <= 100):
