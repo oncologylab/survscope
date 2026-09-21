@@ -2,17 +2,14 @@ import { forwardRef, memo, useImperativeHandle, useRef } from "react";
 import type { ReactNode } from "react";
 import { RichSvgText } from "./RichSvgText";
 import { objectStyle } from "./editorModel";
+import { legendEntry, testedOutcomeCount } from "./plotLabels";
 import { usePlotInteraction } from "./PlotInteraction";
 import type { PlotEditor } from "./PlotInteraction";
 import { cohortDisplayName } from "./cohorts";
 import { atRisk, confidenceBounds, formatP } from "./statistics";
 import { dashArray, defaultFigure, displayTime, timeInMonths } from "./figure";
 import type { FigureSettings } from "./figure";
-import type {
-  Curve,
-  EndpointResult,
-  SurvivalAnalysis,
-} from "./types";
+import type { Curve, EndpointResult, SurvivalAnalysis } from "./types";
 
 interface Geometry {
   left: number;
@@ -59,6 +56,7 @@ const PlotArtwork = memo(function PlotArtwork({
 }) {
   const width = settings.widthIn * 72,
     height = settings.heightIn * 72;
+  const showQ = settings.showQ && testedOutcomeCount(analysis) > 1;
   function element(id: string, children: ReactNode) {
     const style = settings.elements[id] ?? {};
     if (style.hidden) return null;
@@ -203,7 +201,7 @@ const PlotArtwork = memo(function PlotArtwork({
     const statStyle = settings.elements[`statistics.${ep}`] ?? {};
     const statText = [
       settings.showP ? `p=${formatP(result.logrankP)}` : "",
-      settings.showQ ? `q=${formatP(result.logrankQ)}` : "",
+      showQ ? `q=${formatP(result.logrankQ)}` : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -362,34 +360,34 @@ const PlotArtwork = memo(function PlotArtwork({
               fontWeight={legendStyle.bold === false ? 400 : 700}
               fontStyle={legendStyle.italic ? "italic" : "normal"}
             >
-              {(["low", "high"] as const).map((group, i) => (
-                <g key={group} transform={`translate(0,${13 * i})`}>
-                  <line
-                    x1="0"
-                    y1="0"
-                    x2="18"
-                    y2="0"
-                    stroke={color(group)}
-                    strokeWidth={lineWidth(group)}
-                    strokeDasharray={dash(group)}
-                  />
-                  <RichSvgText
-                    id={`label.${group}`}
-                    value={
-                      group === "low" ? settings.lowLabel : settings.highLabel
-                    }
-                    x={23}
-                    y={3}
-                    size={8 * settings.fontScale}
-                    anchor="start"
-                    style={{
-                      ...legendStyle,
-                      ...settings.elements[`label.${group}`],
-                    }}
-                    suffix={` n=${result[group].n}, e=${result[group].events}`}
-                  />
-                </g>
-              ))}
+              {(["low", "high"] as const).map((group, i) => {
+                const label = legendEntry(settings, result, group);
+                return (
+                  <g key={group} transform={`translate(0,${13 * i})`}>
+                    <line
+                      x1="0"
+                      y1="0"
+                      x2="18"
+                      y2="0"
+                      stroke={color(group)}
+                      strokeWidth={lineWidth(group)}
+                      strokeDasharray={dash(group)}
+                    />
+                    {element(
+                      `label.${group}.${ep}`,
+                      <RichSvgText
+                        id={`label.${group}.${ep}`}
+                        value={label.value}
+                        x={23}
+                        y={3}
+                        size={8 * settings.fontScale}
+                        anchor="start"
+                        style={label.style}
+                      />,
+                    )}
+                  </g>
+                );
+              })}
             </g>,
           )}
         {element(

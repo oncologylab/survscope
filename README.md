@@ -29,9 +29,9 @@ TCGA provides overall survival (OS), disease-specific survival (DSS), progressio
 
 ## Read the results carefully
 
-A curve estimates the fraction of patients who remain event-free over time. The legend gives patients (`n`) and events (`e`) in each group. The p-value compares the curves; the hazard ratio compares higher with lower expression. These are unadjusted associations, not proof that a gene causes a difference or predicts an individual's outcome.
+A curve estimates the fraction of patients who remain event-free over time. The legend gives patients (`n`) and observed events (`e`) in each group. Patients without an observed event are censored, so `e ≤ n`. Double-click a whole legend entry to edit its displayed text; the calculated counts remain in the analysis results. The p-value compares the curves; the hazard ratio compares higher with lower expression. These are unadjusted associations, not proof that a gene causes a difference or predicts an individual's outcome.
 
-Comparing selected lower and upper percentile groups leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
+Comparing selected lower and upper percentile groups leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. With one tested outcome, as in current CPTAC analyses, `q = p`; the figure shows p alone. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
 
 JavaScript calculations are checked against Python and independently executed R `survival`. Group membership, event counts, and risk counts agree exactly in the validation suite. Numerical tolerances and the preserved PAAD reference estimates are documented in [methods and validation](docs/methods.md#validation).
 
@@ -43,11 +43,11 @@ TCGA analyses cite **TCGA-CDR** for survival outcomes, **UCSC Xena** for data di
 
 ## Use Python or the command line
 
-Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.1):
+Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.2):
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.4.1/survscope-0.4.1-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.4.2/survscope-0.4.2-py3-none-any.whl
 survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
 survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
   --grouping percentile_groups --lower-percent 25 --upper-percent 25 --json --outdir plots

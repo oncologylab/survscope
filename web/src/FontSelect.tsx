@@ -33,9 +33,9 @@ export function FontSelect({
       >
         Aa Bb 0123 α β
       </span>
-      <small className="font-note">
-        {font.name} · {font.note}
-      </small>
+      {font.label !== font.name && (
+        <small className="font-note">{font.name}</small>
+      )}
     </label>
   );
 }

@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { locked } from "./editorModel";
 import { IconButton } from "./IconButton";
 import { FontSelect } from "./FontSelect";
+import {
+  isSharedGroupLabel,
+  legendEntry,
+  qValueExplanation,
+  testedOutcomeCount,
+} from "./plotLabels";
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
 import {
@@ -84,10 +90,12 @@ function Check({
   label,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="check">
@@ -95,6 +103,7 @@ function Check({
         aria-label={label}
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
       />
       <span>{label}</span>
@@ -153,17 +162,29 @@ export function FigureEditor({
     edit((next) => {
       next[key] = value;
       if (key === "lowLabel" || key === "highLabel") {
-        const style =
-          next.elements[key === "lowLabel" ? "label.low" : "label.high"];
-        if (style) {
-          delete style.runs;
-          delete style.text;
+        const prefix = key === "lowLabel" ? "label.low" : "label.high";
+        for (const [id, style] of Object.entries(next.elements)) {
+          if (id === prefix || id.startsWith(`${prefix}.`)) {
+            delete style.runs;
+            delete style.text;
+          }
         }
       }
     });
   const width = settings.widthIn * 72,
     height = settings.heightIn * 72;
-  const style = selected ? (settings.elements[selected] ?? {}) : {};
+  const labelParts = selected?.split(".");
+  const isLegendEntry =
+    selected?.startsWith("label.") && labelParts?.length === 3;
+  const style = isLegendEntry
+    ? legendEntry(
+        settings,
+        analysis.endpoints[labelParts[2] as Endpoint],
+        labelParts[1] as "low" | "high",
+      ).style
+    : selected
+      ? (settings.elements[selected] ?? {})
+      : {};
   const item = settings.annotations.find(
     (a) => `annotation.${a.id}` === selected,
   );
@@ -176,6 +197,12 @@ export function FigureEditor({
     /^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(selected);
   function textDefault(id: string) {
     const [kind, ep] = id.split(".");
+    if (kind === "label" && id.split(".").length === 3)
+      return legendEntry(
+        settings,
+        analysis.endpoints[id.split(".")[2] as Endpoint],
+        ep as "low" | "high",
+      ).value;
     if (kind === "label")
       return ep === "low" ? settings.lowLabel : settings.highLabel;
     if (kind === "source")
@@ -200,10 +227,18 @@ export function FigureEditor({
     edit((next) => {
       const target = (next.elements[selected!] ??= {});
       (target as Record<string, unknown>)[key] = value;
-      if (key === "text" && selected?.startsWith("label.")) {
+      if (key === "text" && selected && isSharedGroupLabel(selected)) {
         next[selected === "label.low" ? "lowLabel" : "highLabel"] = value;
         delete target.text;
+        for (const [id, entry] of Object.entries(next.elements)) {
+          if (id.startsWith(`${selected}.`)) {
+            delete entry.text;
+            delete entry.runs;
+          }
+        }
       }
+      if (isLegendEntry && style.runs && (key === "bold" || key === "italic"))
+        target.text = style.runs.map((run) => run.text).join("");
       if (key === "text" || key === "bold" || key === "italic")
         delete target.runs;
     });
@@ -219,6 +254,8 @@ export function FigureEditor({
       `xlabel.${ep}`,
       `ylabel.${ep}`,
       `legend.${ep}`,
+      `label.low.${ep}`,
+      `label.high.${ep}`,
       `statistics.${ep}`,
       `curve.low.${ep}`,
       `curve.high.${ep}`,
@@ -229,14 +266,7 @@ export function FigureEditor({
   return (
     <aside className="editor-controls" aria-label="Figure properties">
       <div className="selected-item-field">
-        <div className="field-label-with-help">
-          <label htmlFor="selected-figure-item">Selected item</label>
-          <IconButton
-            icon="info"
-            label="Editing help"
-            description="Double-click text to type directly on the figure. Select an item to adjust its appearance here."
-          />
-        </div>
+        <label htmlFor="selected-figure-item">Selected item</label>
         <select
           id="selected-figure-item"
           aria-label="Selected item"
@@ -263,8 +293,12 @@ export function FigureEditor({
                 <span>Text</span>
                 <textarea
                   aria-label="Text"
-                  maxLength={500}
-                  value={style.text ?? textDefault(selected)}
+                  maxLength={isSharedGroupLabel(selected) ? 40 : 500}
+                  value={
+                    style.runs?.map((run) => run.text).join("") ??
+                    style.text ??
+                    textDefault(selected)
+                  }
                   onChange={(e) => styleField("text", e.target.value)}
                 />
               </label>
@@ -280,7 +314,12 @@ export function FigureEditor({
                   <span>Text alignment</span>
                   <select
                     aria-label="Text alignment"
-                    value={style.align ?? (item ? "start" : "middle")}
+                    value={
+                      style.align ??
+                      (item || selected.startsWith("label.")
+                        ? "start"
+                        : "middle")
+                    }
                     onChange={(e) => styleField("align", e.target.value)}
                   >
                     <option value="start">Left</option>
@@ -425,14 +464,14 @@ export function FigureEditor({
                 <div className="property-grid">
                   {!isCurve && (
                     <>
-                      {!selected.startsWith("label.") && (
+                      {!isSharedGroupLabel(selected) && (
                         <NumberField
                           label="Horizontal offset (pt)"
                           value={style.dx ?? 0}
                           onChange={(value) => styleField("dx", value)}
                         />
                       )}
-                      {!selected.startsWith("label.") && (
+                      {!isSharedGroupLabel(selected) && (
                         <NumberField
                           label="Vertical offset (pt)"
                           value={style.dy ?? 0}
@@ -790,11 +829,19 @@ export function FigureEditor({
           checked={settings.showP}
           onChange={(v) => field("showP", v)}
         />
-        <Check
-          label="Show adjusted q-value"
-          checked={settings.showQ}
-          onChange={(v) => field("showQ", v)}
-        />
+        <div className="check-with-help">
+          <Check
+            label="Show adjusted q-value"
+            checked={settings.showQ && testedOutcomeCount(analysis) > 1}
+            disabled={testedOutcomeCount(analysis) < 2}
+            onChange={(v) => field("showQ", v)}
+          />
+          <IconButton
+            icon="info"
+            label="About p and q"
+            description={qValueExplanation(analysis)}
+          />
+        </div>
         <Check
           label="Show hazard ratio"
           checked={settings.showHr}

@@ -111,7 +111,7 @@ CPTAC OS receives a **caution** badge because follow-up completeness varies.
 The TCGA-CDR quality recommendations are not assigned to CPTAC. DSS, PFI and DFI
 are null arrays marked **unavailable**, with explicit unavailable figure panels.
 No recurrence field is relabeled as a TCGA-CDR endpoint. BH adjustment includes
-only finite endpoint p-values, so CPTAC's OS q-value equals its OS p-value.
+only finite endpoint p-values, so CPTAC's OS q-value equals its OS p-value. The figure shows p alone for this single-test case; both values remain in analysis JSON.
 
 Solid-tumor cohorts use GDC `Primary Tumor` sample metadata. AML accepts primary
 bone marrow or peripheral-blood cancer specimens, preferring bone marrow when

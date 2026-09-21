@@ -82,6 +82,7 @@ def test_reference_figure_contract(store, tmp_path: Path):
     assert 'width="489.6pt"' in svg
     assert "SRD5A1 TCGA-PAAD survival" in svg
     assert "PanCanAtlas TCGA-CDR" in svg
+    assert "p=0.0018 q=0.0069" in svg
     assert outputs.paths[2].stat().st_size > 20_000
 
 

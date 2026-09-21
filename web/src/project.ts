@@ -167,6 +167,8 @@ export function validateSettings(value: unknown): FigureSettings {
       `xlabel.${ep}`,
       `ylabel.${ep}`,
       `legend.${ep}`,
+      `label.low.${ep}`,
+      `label.high.${ep}`,
       `statistics.${ep}`,
       `curve.low.${ep}`,
       `curve.high.${ep}`,
@@ -227,7 +229,7 @@ export function validateSettings(value: unknown): FigureSettings {
       });
       text(
         style.runs.map((r) => r.text).join(""),
-        id.startsWith("label.") ? 40 : 500,
+        /^label\.(low|high)$/.test(id) ? 40 : 500,
       );
     }
     if (s.dx !== undefined) style.dx = number(s.dx, -10000, 10000);

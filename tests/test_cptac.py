@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from survscope import analyze
+from survscope import analyze, plot
 from survscope.builder import SourceText, build_release
 from survscope.cptac import (
     CPTAC_COHORTS,
@@ -331,7 +331,7 @@ def test_gdc_pagination_and_incomplete_response(monkeypatch):
         client.search("cases", {}, "case_id")
 
 
-def test_live_cptac_fixture_analysis_and_reference_contract():
+def test_live_cptac_fixture_analysis_and_reference_contract(tmp_path):
     store = DataStore(base=CPTAC_FIXTURE, data_version="2026.09.18", cache=False)
     result = analyze("SRD5A1", "CPTAC-3-PAAD", store=store)
     assert result.filename_stem == "SRD5A1_CPTAC_3_PAAD_KM_survival"
@@ -342,6 +342,9 @@ def test_live_cptac_fixture_analysis_and_reference_contract():
     assert result.endpoints["OS"].logrank_q == result.endpoints["OS"].logrank_p
     assert all(result.endpoints[ep].quality == "unavailable" for ep in ("DSS", "PFI", "DFI"))
     assert all(np.isnan(result.endpoints[ep].cox_hr) for ep in ("DSS", "PFI", "DFI"))
+    figure = plot(result, formats=("svg",), output_dir=tmp_path).paths[0].read_text()
+    assert "p=0.21" in figure
+    assert "q=" not in figure
 
 
 def test_release_validation_detects_tampering_and_missing_coverage(tmp_path):

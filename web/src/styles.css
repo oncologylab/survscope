@@ -855,11 +855,6 @@ button:disabled {
   align-items: center;
   margin: 0;
 }
-.canvas-hint {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--muted);
-}
 .studio .plot-stage {
   flex: 1;
   display: block;
@@ -935,16 +930,11 @@ button:disabled {
 .studio .arrange-controls {
   margin: 10px 12px 0;
   font-size: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
 }
-.studio .arrange-controls summary {
-  cursor: pointer;
-  padding: 5px 0;
-}
-.studio .arrange-controls label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 8px 0;
+.studio .arrange-controls .button-row + .button-row {
+  margin-top: 5px;
 }
 .studio .button-row {
   gap: 5px;
@@ -1096,9 +1086,6 @@ button:disabled {
     box-shadow: 8px 0 24px #0002;
   }
   .studio .analysis-dock .dock-resizer {
-    display: none;
-  }
-  .canvas-hint {
     display: none;
   }
 }
@@ -1302,39 +1289,34 @@ button:disabled {
   margin-top: 4px;
   color: #d7e5df;
 }
-.arrange-controls summary .command-icon {
-  width: 16px;
-  height: 16px;
-  margin: 0 3px;
-}
 .selection-count {
-  float: right;
+  align-self: center;
+  margin-left: auto;
   min-width: 22px;
   padding: 2px 5px;
   border-radius: 4px;
   background: #e8eeea;
   text-align: center;
 }
-.alignment-reference {
-  color: var(--muted);
-  font-size: 11px;
-}
-.field-label-with-help {
+.check-with-help {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
 }
-.field-label-with-help label {
+.selected-item-field > label {
+  display: block;
+  margin-bottom: 4px;
   color: #42534b;
   font-size: 11px;
   font-weight: 600;
 }
-.field-label-with-help .command-icon {
+.check-with-help .command-icon {
   width: 16px;
   height: 16px;
 }
-.studio .layer-row .icon-button {
+.studio .layer-row .icon-button,
+.studio .arrange-controls .icon-button {
   width: 28px;
   height: 28px;
   padding: 5px;

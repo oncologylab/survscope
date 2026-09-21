@@ -1,5 +1,6 @@
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
+import { isSharedGroupLabel } from "./plotLabels";
 import type {
   Annotation,
   ElementStyle,
@@ -13,8 +14,6 @@ export interface Bounds {
   width: number;
   height: number;
 }
-export const styleKey = (id: string) =>
-  id.startsWith("label.") ? id.split(".").slice(0, 2).join(".") : id;
 export function objectStyle(
   settings: FigureSettings,
   id: string,
@@ -22,7 +21,7 @@ export function objectStyle(
   const a = settings.annotations.find((a) => `annotation.${a.id}` === id);
   return {
     ...(a ? { fontSize: a.fontSize, color: a.color } : {}),
-    ...settings.elements[styleKey(id)],
+    ...settings.elements[id],
   };
 }
 export function isText(id: string, settings: FigureSettings) {
@@ -35,6 +34,7 @@ export function isText(id: string, settings: FigureSettings) {
 }
 export function parentId(id: string): string | null {
   const ep = id.split(".").at(-1) as Endpoint;
+  if (id.startsWith("label.") && ENDPOINTS.includes(ep)) return `legend.${ep}`;
   return ENDPOINTS.includes(ep) && !id.startsWith("panel.")
     ? `panel.${ep}`
     : null;
@@ -42,7 +42,10 @@ export function parentId(id: string): string | null {
 export function locked(settings: FigureSettings, id: string): boolean {
   return !!(
     objectStyle(settings, id).locked ||
-    (parentId(id) && settings.elements[parentId(id)!]?.locked)
+    (id.startsWith("label.") &&
+      !isSharedGroupLabel(id) &&
+      settings.elements[id.split(".").slice(0, 2).join(".")]?.locked) ||
+    (parentId(id) && locked(settings, parentId(id)!))
   );
 }
 export function roots(ids: string[], settings: FigureSettings): string[] {
@@ -50,9 +53,13 @@ export function roots(ids: string[], settings: FigureSettings): string[] {
     (id) =>
       !locked(settings, id) &&
       !id.startsWith("curve.") &&
-      !id.startsWith("label.") &&
-      !ids.includes(parentId(id) ?? ""),
+      !isSharedGroupLabel(id) &&
+      !hasSelectedAncestor(id, ids),
   );
+}
+function hasSelectedAncestor(id: string, ids: string[]): boolean {
+  const parent = parentId(id);
+  return !!parent && (ids.includes(parent) || hasSelectedAncestor(parent, ids));
 }
 export function clampMovement(
   settings: FigureSettings,
@@ -121,6 +128,8 @@ export function objectIds(
       `xlabel.${ep}`,
       `ylabel.${ep}`,
       `legend.${ep}`,
+      `label.low.${ep}`,
+      `label.high.${ep}`,
       `statistics.${ep}`,
       `curve.low.${ep}`,
       `curve.high.${ep}`,
@@ -160,8 +169,7 @@ export function updateText(
 ): FigureSettings {
   const next = structuredClone(settings),
     value = runs.map((r) => r.text).join("");
-  const key = styleKey(id),
-    style = (next.elements[key] ??= {});
+  const style = (next.elements[id] ??= {});
   style.runs = runs;
   if (id === "label.low" || id === "label.high")
     next[id === "label.low" ? "lowLabel" : "highLabel"] = value;

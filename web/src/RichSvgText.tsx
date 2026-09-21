@@ -18,7 +18,6 @@ export function RichSvgText({
   style = {},
   anchor = "middle",
   rotation = 0,
-  suffix = "",
 }: {
   id: string;
   value: string;
@@ -28,7 +27,6 @@ export function RichSvgText({
   style?: ElementStyle;
   anchor?: "start" | "middle" | "end";
   rotation?: number;
-  suffix?: string;
 }) {
   if (style.hidden) return null;
   const fontSize = style.fontSize ?? size;
@@ -74,11 +72,6 @@ export function RichSvgText({
                 </tspan>
               );
             })}
-            {suffix && i === splitLines(runs).length - 1 && (
-              <tspan dy={-previous} fontSize={fontSize}>
-                {suffix}
-              </tspan>
-            )}
           </tspan>
         );
       })}

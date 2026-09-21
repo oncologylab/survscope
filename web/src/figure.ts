@@ -209,6 +209,10 @@ export function timeInMonths(
 }
 export function elementName(id: string | null): string {
   if (!id) return "Figure";
+  if (/^label\.(low|high)\./.test(id)) {
+    const [, group, endpoint] = id.split(".");
+    return `Legend · ${group === "low" ? "Low" : "High"} · ${endpoint}`;
+  }
   return id
     .split(".")
     .map(

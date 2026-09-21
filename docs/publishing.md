@@ -1,12 +1,12 @@
 # Python package publishing
 
-The [v0.4.1 GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.1)
+The [v0.4.2 GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.2)
 contains the tested wheel and source distribution. The website and immutable
 data release are already public. Install the GitHub wheel directly:
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.4.1/survscope-0.4.1-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.4.2/survscope-0.4.2-py3-none-any.whl
 ```
 
 The first PyPI upload was rejected with `invalid-publisher`: the signed GitHub

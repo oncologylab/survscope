@@ -88,10 +88,16 @@ export function HelpGuide({
       <h3>Understanding the numbers</h3>
       <p>
         <strong>n</strong> is the number of patients and <strong>e</strong> is
-        the number of observed events. The log-rank <strong>p-value</strong>{" "}
-        tests a difference between the curves. The <strong>q-value</strong>{" "}
-        adjusts for the available outcomes in this one gene/grouping analysis;
-        it does not adjust for trying other genes or grouping choices.
+        the number of observed events. Patients whose follow-up ends without the
+        event are censored, so e cannot exceed n. The counts are equal when
+        every included patient has an observed event. For OS, the event is
+        death. The log-rank <strong>p-value</strong> tests a difference between
+        the curves. The <strong>q-value</strong> adjusts for the available
+        outcomes in this one gene/grouping analysis; it does not adjust for
+        trying other genes or grouping choices. With one tested outcome, as in
+        current CPTAC analyses, q equals p and the figure shows p only. With
+        several outcomes, some adjusted values can still equal p; rounding can
+        also make close values look the same.
       </p>
       <p>
         The <strong>hazard ratio (HR)</strong> compares higher with lower
@@ -115,17 +121,25 @@ export function HelpGuide({
       <h3>Editing and navigation</h3>
       <p>
         Hover over an icon or focus it with Tab to see its command and shortcut.
-        Arrange uses alignment and distribution icons; the artboard icon switches
-        between page and selection alignment. Eye and padlock icons control
-        visibility and locking in Layers.
+        The top of Properties has alignment and distribution icons; the artboard
+        icon switches between page and selection alignment. Eye and padlock
+        icons control visibility and locking in Layers.
       </p>
       <p>
         V selects objects, T edits text, H pans, and Z zooms. Hold Space to pan
         temporarily. Shift-click or drag a selection rectangle for multiple
-        objects. Use Arrange selection to align or distribute objects, and
-        Layers to hide or lock them. Text supports bold, italic, superscripts,
-        and subscripts. Enter starts a new line; Escape finishes typing. Undo
-        restores a completed edit or movement.
+        objects. Use the alignment icons to arrange objects, and Layers to hide
+        or lock them. Text supports bold, italic, superscripts, and subscripts.
+        Enter starts a new line; Escape finishes typing. Undo restores a
+        completed edit or movement.
+      </p>
+      <p>
+        Double-click a complete legend entry to edit its name, n, and e
+        together. Each outcome has its own entries. These edits affect figure
+        text only; analysis JSON and citations retain the calculated counts.
+        Reset the selected item to restore its automatic label. The lower/higher
+        group name fields rename all outcomes and restore their automatic
+        counts.
       </p>
       <p>
         Analysis and Properties can be collapsed to give the figure more space.

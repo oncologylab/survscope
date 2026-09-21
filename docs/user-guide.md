@@ -45,9 +45,9 @@ A Kaplan–Meier curve starts at 1 (100%). It steps down when an event occurs. A
 
 CPTAC currently supports OS only. Its remaining panels say **Endpoint unavailable**. TCGA quality labels reproduce the source's recommendations; a **caution** or **not recommended** outcome needs particular care. CPTAC has a separate caution about follow-up completeness. Very small groups may have no usable group comparison.
 
-- **n** is the number of patients in a group; **e** is the number of events.
+- **n** is the number of patients with usable follow-up in a group; **e** counts patients with an observed event. For OS, that event is death. The other patients are censored: follow-up ended without the event being observed. Therefore **e ≤ n**; equality is possible when every included patient has an event.
 - **p** is the two-sided log-rank p-value. It concerns the difference between these two curves, not whether the finding will reproduce elsewhere.
-- **q** adjusts the available endpoint p-values for this one gene, cohort, and comparison. It does not correct for trying many genes, cohorts, or cutoffs.
+- **q** adjusts the available endpoint p-values for this one gene, cohort, and comparison. With only one tested outcome (current CPTAC analyses), **q = p**, so the figure shows p alone. With several outcomes, some BH-adjusted values can also equal p, and rounded values may look equal. Hiding panels does not change the adjustment. It does not correct for trying many genes, cohorts, or cutoffs; analysis JSON keeps the full-precision values.
 - **HR** is the unadjusted hazard ratio for higher versus lower expression. Above 1 indicates a higher modeled event hazard in the higher-expression group. Interpretation assumes proportional hazards; the application does not test this assumption or adjust for stage, treatment, age, or other factors.
 - **NA** means the statistic cannot be estimated. Empty groups, no events, lack of overlapping risk sets, or complete separation can cause this. The available curves may still be shown.
 
@@ -61,9 +61,9 @@ These three additions are off initially, preserving the original appearance. Res
 
 ## Edit the figure
 
-Your figure is ready to edit as soon as it appears. Double-click a title, axis label, group name, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
+Your figure is ready to edit as soon as it appears. Double-click a title, axis label, complete legend entry, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
 
-The editing commands use familiar icons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Alignment, distribution, copying, annotation order, and text formatting use the same icon controls. Unavailable actions are dimmed. The information icon beside **Selected item** explains direct editing.
+The editing commands use familiar icons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Alignment, distribution, copying, annotation order, and text formatting use the same icon controls. Unavailable actions are dimmed. The compact toolbar at the top of Properties has alignment and annotation commands; its number badge shows how many objects are selected.
 
 The workspace fills wide displays. **Analysis** sits on the left and **Properties / Layers** on the right; use the rail buttons to open or close them. Drag the panel boundaries to adjust their widths. On smaller screens, the panels open as drawers so the figure keeps its space. **Reset workspace** restores the panel sizes and Fit view without changing your figure.
 
@@ -90,7 +90,7 @@ The editor offers:
 - **Size and appearance:** width and height in inches, font family, text scale, colors, line width, and solid/dashed/dotted curves. Titles and labels also have individual text and style controls; Enter in a numeric field applies the value.
 - **Outcomes and layout:** show selected panels, arrange a grid or row/column, and change their order. This changes presentation only; q-values still reflect all valid outcomes from the analysis.
 - **Axes:** show months, years, or days; set a displayed time range and tick spacing; zoom into a survival range. Axis limits do not truncate follow-up or refit the model. Extremely dense requested ticks are thinned to keep the figure responsive.
-- **Legend and annotations:** rename the lower/higher group labels and add notes, lines, or arrows. Text supports multiple lines. Computed statistical values update with the analysis and cannot be overwritten in the editor.
+- **Legend and annotations:** double-click any complete legend entry, including its `n=…` and `e=…`, to edit and format all its text. Each outcome has separate entries. Legend edits change the figure only; the analysis JSON, curves, and citations retain the original calculated counts. **Reset selected item** restores the automatic entry. The lower/higher group-name fields apply names across all outcomes and restore their automatic counts. Add notes, lines, or arrows, and use multiple lines when needed. Calculated p, q, and HR values remain linked to the analysis.
 
 Use **Fit**, **100%**, the zoom buttons, and the **Hand tool** to inspect details without changing export dimensions. With focus on the figure, arrow keys move the selected item by one point; hold Shift for ten points. **Undo/Redo** also respond to Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. **Reset figure** returns to the original appearance and can itself be undone.
 
@@ -140,6 +140,10 @@ TCGA and CPTAC have separate source citations. Original cohort papers are includ
 Save the project to keep this citation snapshot with the figure. [Full references and source information](citations.md).
 
 ## Common questions
+
+**Why is n larger than e?** A patient can contribute follow-up without having an observed event. For example, n=100 and e=30 means 30 events and 70 censored observations. n and e can be equal; e cannot exceed n.
+
+**Why are p and q equal in CPTAC?** Current CPTAC data provide overall survival only. Benjamini–Hochberg adjustment of one test leaves its p-value unchanged. The figure omits the duplicate q label, while JSON retains both values. The information icon next to the q control explains how many outcomes were tested.
 
 **Why do the group counts differ from the cohort count?** Missing expression, missing outcomes, or nonpositive follow-up time exclude a patient from that outcome. Custom percentile comparisons also leave out the middle expression values.
 

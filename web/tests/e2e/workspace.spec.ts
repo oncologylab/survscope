@@ -49,7 +49,7 @@ test("edits characters directly and saves an active editing session with rich fo
   expect(rich.every((r: any) => !r.bold && r.italic)).toBe(true);
 });
 
-test("edits rotated multiline text and shared legend names without changing counts", async ({
+test("edits rotated multiline text and whole legend entries without changing analysis", async ({
   page,
 }) => {
   await start(page);
@@ -63,18 +63,49 @@ test("edits rotated multiline text and shared legend names without changing coun
   await expect(page.locator('[data-element="ylabel.OS"]')).toContainText(
     "Survival βProbability",
   );
-  await page.locator('[data-text-id="label.low"]').first().dblclick();
-  await input.fill("Lower RNA");
+  const before = await saved(page);
+  const os = before.analysis.endpoints.OS;
+  const label = page.locator('[data-text-id="label.low.OS"]');
+  const dssLabel = page.locator('[data-text-id="label.low.DSS"]');
+  const dssBefore = await dssLabel.textContent();
+  await label.dblclick();
+  await expect(input).toHaveText(`Low n=${os.low.n}, e=${os.low.events}`);
+  const fullLabel = `Lower RNA (participants = ${os.low.n}; observed events = ${os.low.events})`;
+  await input.fill(fullLabel);
+  await input.press("ControlOrMeta+a");
+  await input.press("ControlOrMeta+i");
   await input.press("Escape");
-  for (const node of await page.locator('[data-text-id="label.low"]').all())
-    await expect(node).toContainText("Lower RNA n=");
+  await expect(label).toHaveText(fullLabel);
+  await expect(dssLabel).toHaveText(dssBefore!);
   const file = await saved(page);
-  expect(file.settings.lowLabel).toBe("Lower RNA");
+  expect(file.settings.elements["label.low.OS"].text).toBe(fullLabel);
+  expect(file.settings.lowLabel).toBe("Low");
+  expect(file.analysis).toEqual(before.analysis);
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(label).toHaveText(`Low n=${os.low.n}, e=${os.low.events}`);
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(label).toHaveText(fullLabel);
+  await page.getByLabel("Open figure file").setInputFiles({
+    name: "edited-legend.survscope.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
+  await expect(label).toHaveText(fullLabel);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "SVG", exact: true }).click();
+  const svg = readFileSync((await (await download).path())!, "utf8");
+  expect(svg).toContain(fullLabel);
+  await page
+    .getByLabel("Selected item", { exact: true })
+    .selectOption("label.low.OS");
+  await page
+    .getByRole("button", { name: "Reset selected item", exact: true })
+    .click();
+  await expect(label).toHaveText(`Low n=${os.low.n}, e=${os.low.events}`);
   await page.getByText("Legend and annotations", { exact: true }).click();
   await page.getByLabel("Lower group label").fill("Low group");
-  await expect(
-    page.locator('[data-text-id="label.low"]').first(),
-  ).toContainText("Low group n=");
+  await expect(label).toContainText("Low group n=");
+  await expect(dssLabel).toContainText("Low group n=");
   expect(file.analysis.endpoints.OS.n).toBe(177);
   expect(file.analysis.endpoints.OS.logrankP).toBeCloseTo(
     0.0017777122420538,
@@ -117,12 +148,47 @@ test("supports multiple selection, alignment, layers, locking and history", asyn
   await page.getByRole("button", { name: "Lock Title", exact: true }).click();
   await page.getByRole("tab", { name: "Properties", exact: true }).click();
   await page.getByLabel("Selected item", { exact: true }).selectOption("title");
-  await page.getByLabel("Arrange selection (1)", { exact: true }).click();
   await page
     .getByRole("button", { name: "Align to artboard", exact: true })
     .click();
   await page.getByRole("button", { name: "Align left", exact: true }).click();
   expect((await saved(page)).settings.elements.title.dx).toBeLessThan(0);
+});
+
+test("opens shared rich legends from older projects and formats the complete entry", async ({
+  page,
+}) => {
+  await start(page);
+  const file = await saved(page);
+  file.settings.lowLabel = "Lower RNA";
+  file.settings.elements["label.low"] = {
+    runs: [{ text: "Lower RNA", italic: true }],
+  };
+  file.settings.elements["legend.OS"] = { dx: 9, dy: 6 };
+  await page
+    .getByLabel("Open figure file")
+    .setInputFiles({
+      name: "older-project.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(file)),
+    });
+  const label = page.locator('[data-text-id="label.low.OS"]');
+  const value = `Lower RNA n=${file.analysis.endpoints.OS.low.n}, e=${file.analysis.endpoints.OS.low.events}`;
+  await expect(label).toHaveText(value);
+  await expect(label.locator('tspan[font-style="italic"]')).toContainText(
+    "Lower RNA",
+  );
+  await label.dblclick();
+  const editor = page.getByRole("textbox", { name: "Edit plot text" });
+  await expect(editor).toHaveText(value);
+  await editor.press("Escape");
+  await expect(
+    page.getByLabel("Horizontal offset (pt)", { exact: true }),
+  ).toHaveValue("0");
+  await page.getByRole("button", { name: "Bold text", exact: true }).click();
+  await expect(label).toHaveText(value);
+  await expect(label.locator('tspan[font-weight="700"]')).toHaveCount(0);
+  expect((await saved(page)).analysis).toEqual(file.analysis);
 });
 
 test("creates text and line annotations with tools, duplicates, reorders and deletes them", async ({
@@ -139,7 +205,6 @@ test("creates text and line annotations with tools, duplicates, reorders and del
   await input.fill("Note");
   await input.press("Escape");
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(1);
-  await page.getByLabel("Arrange selection (1)", { exact: true }).click();
   await page.getByRole("button", { name: "Duplicate", exact: true }).click();
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(2);
   await page.getByRole("button", { name: "Send to back", exact: true }).click();
