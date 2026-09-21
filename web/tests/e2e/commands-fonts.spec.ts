@@ -18,7 +18,8 @@ test("icon commands expose hover and keyboard help without losing editing shortc
   await expect(page.getByRole("tooltip")).toHaveCount(0);
 
   await page.locator('[data-element="title"]').click();
-  await page.getByLabel("Arrange selection (1)", { exact: true }).click();
+  const arrange = page.getByLabel("Arrange selection (1)", { exact: true });
+  await expect(arrange).toHaveText("1");
   const artboard = page.getByRole("button", {
     name: "Align to artboard",
     exact: true,
@@ -31,8 +32,12 @@ test("icon commands expose hover and keyboard help without losing editing shortc
   await expect(
     page.getByRole("button", { name: "Copy", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Editing help", exact: true }).focus();
-  await expect(page.getByRole("tooltip")).toContainText("Double-click text");
+  await page.mouse.move(0, 0);
+  await expect(
+    page.getByText("Double-click text to type directly on the figure.", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
 
   await page.locator('[data-element="title"]').dblclick();
   const editor = page.getByRole("textbox", { name: "Edit plot text" });

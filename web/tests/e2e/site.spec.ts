@@ -109,6 +109,23 @@ test("loads CPTAC alongside TCGA and exports source-aware figures using same-ori
   await expect(page.getByText(/n=97 · events=76/)).toBeVisible();
   await expect(page.locator("optgroup[label='TCGA']")).toHaveCount(1);
   await expect(page.locator("optgroup[label='CPTAC']")).toHaveCount(1);
+  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
+    "p=",
+  );
+  await expect(
+    page.locator('[data-element="statistics.OS"]'),
+  ).not.toContainText("q=");
+  await page.getByText("Survival details", { exact: true }).click();
+  await expect(
+    page.getByLabel("Show adjusted q-value", { exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "About p and q", exact: true })
+    .hover();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "One tested outcome: q equals p",
+  );
+  await page.mouse.move(0, 0);
   for (const kind of ["SVG", "JSON"]) {
     const downloaded = page.waitForEvent("download");
     await page.getByRole("button", { name: kind, exact: true }).click();
@@ -122,6 +139,10 @@ test("loads CPTAC alongside TCGA and exports source-aware figures using same-ori
     if (kind === "SVG") {
       expect(text).toContain('width="6.8in"');
       expect(text).toContain('height="6.8in"');
+      expect(text).not.toContain("q=");
+    } else {
+      const result = JSON.parse(text);
+      expect(result.endpoints.OS.logrankQ).toBe(result.endpoints.OS.logrankP);
     }
   }
   await page.getByLabel("Cancer cohort").selectOption("PAAD");
@@ -129,5 +150,21 @@ test("loads CPTAC alongside TCGA and exports source-aware figures using same-ori
   await expect(
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
   ).toBeVisible();
+  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
+    "q=",
+  );
+  await expect(
+    page.getByLabel("Show adjusted q-value", { exact: true }),
+  ).toBeEnabled();
+  await page.getByText("Outcomes and layout", { exact: true }).click();
+  for (const endpoint of ["DSS", "PFI", "DFI"])
+    await page.getByLabel(endpoint, { exact: true }).uncheck();
+  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
+    "q=",
+  );
+  await page
+    .getByRole("button", { name: "About p and q", exact: true })
+    .hover();
+  await expect(page.getByRole("tooltip")).toContainText("4 tested outcomes");
   expect(externalRequests).toEqual([]);
 });

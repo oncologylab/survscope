@@ -48,6 +48,7 @@ def create_figure(analysis: SurvivalAnalysis):
     """Create but do not save the canonical 6.8-inch figure."""
     apply_plot_style()
     figure, axes = plt.subplots(2, 2, figsize=(6.8, 6.8))
+    show_q = sum(np.isfinite(result.logrank_p) for result in analysis.endpoints.values()) > 1
     for axis, endpoint in zip(axes.flat, ENDPOINTS, strict=True):
         result = analysis.endpoints[endpoint]
         if result.quality == "unavailable":
@@ -68,11 +69,11 @@ def create_figure(analysis: SurvivalAnalysis):
                 linewidth=2.1,
                 label=f"{label} n={curve.n}, e={curve.events}",
             )
-        annotation = (
-            f"p={format_p(result.logrank_p)} q={format_p(result.logrank_q)}\nHR={result.cox_hr:.2f}"
-            if np.isfinite(result.cox_hr)
-            else f"p={format_p(result.logrank_p)} q={format_p(result.logrank_q)}\nHR=NA"
-        )
+        annotation = f"p={format_p(result.logrank_p)}"
+        if show_q:
+            annotation += f" q={format_p(result.logrank_q)}"
+        hr = f"{result.cox_hr:.2f}" if np.isfinite(result.cox_hr) else "NA"
+        annotation += f"\nHR={hr}"
         axis.text(
             0.97,
             0.06,

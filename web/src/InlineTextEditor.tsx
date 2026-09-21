@@ -155,7 +155,7 @@ export function InlineTextEditor({
         const next = instance.state.apply(tr);
         if (
           next.doc.textContent.length + next.doc.childCount - 1 <=
-          (target.id.startsWith("label.") ? 40 : 500)
+          (/^label\.(low|high)$/.test(target.id) ? 40 : 500)
         ) {
           instance.updateState(next);
           const { from, to, empty } = next.selection;

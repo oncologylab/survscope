@@ -4,11 +4,12 @@ import { flushSync } from "react-dom";
 import { SurvivalPlot } from "./SurvivalPlot";
 import { FigureEditor } from "./FigureEditor";
 import { InlineTextEditor } from "./InlineTextEditor";
-import { Icon, IconButton } from "./IconButton";
+import { IconButton } from "./IconButton";
+import { legendEntry } from "./plotLabels";
 import type { TextTarget } from "./InlineTextEditor";
 import { defaultFigure, elementName } from "./figure";
 import type { EditorTool, FigureSettings } from "./figure";
-import type { SurvivalAnalysis } from "./types";
+import type { Endpoint, SurvivalAnalysis } from "./types";
 import type { useHistory } from "./useHistory";
 import {
   alignObjects,
@@ -190,7 +191,15 @@ export function FigureWorkspace(p: Props) {
       node.closest<SVGGraphicsElement>("[data-element]")?.dataset.element;
     if (locked(settings, id) || (parent && locked(settings, parent))) return;
     if (id.startsWith("label.")) setSelection([id]);
-    const style = objectStyle(settings, id),
+    const parts = id.split(".");
+    const style =
+        id.startsWith("label.") && parts.length === 3 && analysis
+          ? legendEntry(
+              settings,
+              analysis.endpoints[parts[2] as Endpoint],
+              parts[1] as "low" | "high",
+            ).style
+          : objectStyle(settings, id),
       matrix = plotRef
         .current!.getScreenCTM()!
         .inverse()
@@ -532,11 +541,7 @@ export function FigureWorkspace(p: Props) {
                     ? `${analysis.gene} · ${analysis.cohort}`
                     : "Your survival figure"}
                 </h2>
-                <p>
-                  {p.snapshot
-                    ? "Saved project"
-                    : "Select, edit, and arrange directly on the figure."}
-                </p>
+                {p.snapshot && <p>Saved project</p>}
               </div>
               <div className="export-buttons">
                 {(["svg", "pdf", "png", "json"] as const).map((kind) => (
@@ -588,9 +593,6 @@ export function FigureWorkspace(p: Props) {
                 />
                 Snap
               </label>
-              <span className="canvas-hint">
-                Double-click text to edit · Space to pan
-              </span>
             </div>
             {p.pending && (
               <p className="pending-status">
@@ -748,36 +750,26 @@ export function FigureWorkspace(p: Props) {
               </div>
               {analysis && (
                 <div className="inspector-content">
-                  <details className="arrange-controls">
-                    <summary
-                      aria-label={`Arrange selection (${selection.length})`}
-                    >
-                      <Icon name="properties" /> Arrange{" "}
-                      <span className="selection-count">
-                        {selection.length}
-                      </span>
-                    </summary>
-                    <div
-                      className="button-row"
-                      role="group"
-                      aria-label="Alignment reference"
-                    >
-                      <IconButton
-                        icon="artboard"
-                        label="Align to artboard"
-                        description="Align to page edges. When off, use the selection bounds."
-                        aria-pressed={artboard}
-                        onClick={() => setArtboard((value) => !value)}
-                      />
-                      <span className="alignment-reference">
-                        {artboard ? "Artboard" : "Selection"}
-                      </span>
-                    </div>
+                  <section
+                    className="arrange-controls"
+                    aria-label={`Arrange selection (${selection.length})`}
+                  >
                     <div
                       className="button-row"
                       role="group"
                       aria-label="Align and distribute"
                     >
+                      <IconButton
+                        icon="artboard"
+                        label="Align to artboard"
+                        description={
+                          artboard
+                            ? "Using the page edges. Click to align within the selection."
+                            : "Using the selection bounds. Click to align to the page edges."
+                        }
+                        aria-pressed={artboard}
+                        onClick={() => setArtboard((value) => !value)}
+                      />
                       {(
                         [
                           ["left", "align-left", "Align left"],
@@ -875,8 +867,15 @@ export function FigureWorkspace(p: Props) {
                         disabled={!hasSelectedAnnotations}
                         onClick={remove}
                       />
+                      <span
+                        className="selection-count"
+                        aria-label={`${selection.length} selected`}
+                        title={`${selection.length} selected`}
+                      >
+                        {selection.length}
+                      </span>
                     </div>
-                  </details>
+                  </section>
                   {tab === "properties" ? (
                     <FigureEditor
                       settings={settings}

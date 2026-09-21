@@ -17,7 +17,7 @@ __all__ = [
     "search_genes",
 ]
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 
 def available_cohorts(store: DataStore | None = None) -> list[dict]:

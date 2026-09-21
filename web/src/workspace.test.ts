@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { defaultFigure } from "./figure";
+import { defaultFigure, reusableStyle } from "./figure";
+import { legendEntry, testedOutcomeCount } from "./plotLabels";
 import { alignObjects, moveObjects, roots, updateText } from "./editorModel";
 import {
   normalizeGrouping,
@@ -95,6 +96,55 @@ describe("compatible neutral grouping names", () => {
   });
 });
 describe("document editing and migration", () => {
+  test("full legend edits are per outcome and leave analysis counts intact", () => {
+    const result = analysis();
+    const original = structuredClone(result);
+    const settings = updateText(defaultFigure(), "label.low.OS", [
+      {
+        text: "Lower expression: participants = 999; observed events = 2",
+        italic: true,
+      },
+    ]);
+    const reopened = readFigureFile(
+      JSON.stringify(projectFile(result, settings)),
+    );
+    expect(reopened.settings.elements["label.low.OS"].runs).toEqual(
+      settings.elements["label.low.OS"].runs,
+    );
+    expect(reopened.settings.lowLabel).toBe("Low");
+    expect(reopened.settings.elements["label.low.DSS"]).toBeUndefined();
+    expect(result).toEqual(original);
+    expect(reopened.format).toBe("survscope-project");
+    if (reopened.format === "survscope-project")
+      expect(reopened.analysis.endpoints.OS.n).toBe(result.endpoints.OS.n);
+    expect(
+      reusableStyle(settings).elements["label.low.OS"].text,
+    ).toBeUndefined();
+    expect(
+      reusableStyle(settings).elements["label.low.OS"].runs,
+    ).toBeUndefined();
+  });
+  test("older shared rich legend names retain their formatting and automatic counts", () => {
+    const settings = updateText(defaultFigure(), "label.low", [
+      { text: "Lower RNA", italic: true },
+    ]);
+    const result = analysis();
+    const label = legendEntry(settings, result.endpoints.OS, "low");
+    expect(label.value).toBe(
+      `Lower RNA n=${result.endpoints.OS.low.n}, e=${result.endpoints.OS.low.events}`,
+    );
+    expect(label.style.runs?.[0]).toEqual({ text: "Lower RNA", italic: true });
+    const edited = updateText(settings, "label.low.OS", [
+      { text: "Custom full entry" },
+    ]);
+    expect(legendEntry(edited, result.endpoints.OS, "low").style.runs).toEqual([
+      { text: "Custom full entry" },
+    ]);
+    expect(
+      legendEntry(edited, result.endpoints.DSS, "low").style.runs?.[0].text,
+    ).toBe("Lower RNA");
+    expect(testedOutcomeCount(result)).toBe(4);
+  });
   test("moves a selected parent once and respects locks", () => {
     const s = defaultFigure(),
       n = moveObjects(s, ["panel.OS", "title.OS", "curve.low.OS"], 10, 20);
@@ -103,6 +153,13 @@ describe("document editing and migration", () => {
     s.elements["panel.OS"] = { locked: true };
     expect(roots(["panel.OS", "title.OS"], s)).toEqual([]);
     expect(moveObjects(s, ["title.OS"], 10, 20)).toEqual(s);
+    const legend = defaultFigure();
+    expect(roots(["legend.OS", "label.low.OS"], legend)).toEqual(["legend.OS"]);
+    expect(roots(["panel.OS", "legend.OS", "label.low.OS"], legend)).toEqual([
+      "panel.OS",
+    ]);
+    legend.elements["legend.OS"] = { locked: true };
+    expect(roots(["label.low.OS"], legend)).toEqual([]);
     const group = defaultFigure();
     const atEdge = moveObjects(group, ["panel.OS", "source"], 1000, 1000);
     expect(atEdge.panels.OS.x + atEdge.panels.OS.width).toBeCloseTo(1);

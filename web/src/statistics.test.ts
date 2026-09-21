@@ -4,7 +4,8 @@ import { resolve } from "node:path";
 import { unzipSync } from "fflate";
 import { describe, expect, test } from "vitest";
 
-import { analyzeGeneData, bhFdr } from "./statistics";
+import { analyzeGeneData, bhFdr, kaplanMeier } from "./statistics";
+import { testedOutcomeCount } from "./plotLabels";
 import { cohortDisplayName, figureFilename } from "./cohorts";
 import type { BucketMeta, ClinicalData, GeneData, Manifest } from "./types";
 
@@ -75,6 +76,7 @@ describe("browser survival statistics", () => {
     expect(result.endpoints.OS.logrankP).toBeCloseTo(0.21480036623609935, 12);
     expect(result.endpoints.OS.coxHr).toBeCloseTo(1.333170308908182, 8);
     expect(result.endpoints.OS.logrankQ).toBe(result.endpoints.OS.logrankP);
+    expect(testedOutcomeCount(result)).toBe(1);
     expect(result.sourceSurvival).toBe("GDC CPTAC overall survival");
     for (const endpoint of ["DSS", "PFI", "DFI"] as const) {
       expect(result.endpoints[endpoint].quality).toBe("unavailable");
@@ -113,6 +115,23 @@ describe("browser survival statistics", () => {
     expect(result[1]).toBeNaN();
     expect(result[2]).toBeCloseTo(0.04);
     expect(result[3]).toBeCloseTo(0.04);
+    expect(bhFdr([0.2, NaN, NaN, NaN])[0]).toBe(0.2);
+    expect(testedOutcomeCount(analyzeGeneData(referenceGene()))).toBe(4);
+  });
+
+  test("events count a subset of patients, with equality when every patient has an event", () => {
+    for (const events of [
+      [0, 0, 0],
+      [1, 0, 1],
+      [1, 1, 1],
+    ]) {
+      const curve = kaplanMeier([10, 20, 30], events);
+      expect(curve.n).toBe(3);
+      expect(curve.events).toBe(events.reduce((sum, event) => sum + event, 0));
+      expect(
+        curve.timeline.reduce((sum, point) => sum + point.censored, 0),
+      ).toBe(curve.n - curve.events);
+    }
   });
 
   test("renders an endpoint with a null median and no observations as NA", () => {
