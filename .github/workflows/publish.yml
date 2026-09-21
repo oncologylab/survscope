@@ -3,11 +3,60 @@ name: Publish Python package
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  verify-publisher:
+    name: Verify PyPI Trusted Publisher
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: pypi
+      url: https://pypi.org/p/survscope
+    permissions:
+      id-token: write
+    steps:
+      - name: Verify the GitHub identity with PyPI
+        shell: python
+        run: |
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          identity_request = urllib.request.Request(
+              os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] + "&audience=pypi",
+              headers={
+                  "Authorization": "Bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]
+              },
+          )
+          with urllib.request.urlopen(identity_request, timeout=30) as response:
+              identity = json.load(response)["value"]
+          print(f"::add-mask::{identity}", flush=True)
+
+          exchange = urllib.request.Request(
+              "https://pypi.org/_/oidc/mint-token",
+              data=json.dumps({"token": identity}).encode(),
+              headers={"Content-Type": "application/json"},
+          )
+          try:
+              with urllib.request.urlopen(exchange, timeout=30) as response:
+                  credential = json.load(response).get("token")
+          except urllib.error.HTTPError as error:
+              raise SystemExit(
+                  f"PyPI rejected the GitHub identity (HTTP {error.code}). "
+                  "Check the project's Trusted Publisher settings: oncologylab/survscope, "
+                  "publish.yml, environment pypi."
+              ) from None
+          if not isinstance(credential, str) or not credential.startswith("pypi-"):
+              raise SystemExit("PyPI did not return an upload credential.")
+          print(f"::add-mask::{credential}", flush=True)
+          print("PyPI Trusted Publisher verified. No distributions were uploaded.")
+
   build:
     if: startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
