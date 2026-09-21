@@ -43,11 +43,10 @@ TCGA analyses cite **TCGA-CDR** for survival outcomes, **UCSC Xena** for data di
 
 ## Use Python or the command line
 
-Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.3):
+Install from [PyPI](https://pypi.org/project/survscope/):
 
 ```bash
-python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.4.3/survscope-0.4.3-py3-none-any.whl
+python -m pip install survscope
 survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
 survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
   --grouping percentile_groups --lower-percent 25 --upper-percent 25 --json --outdir plots
@@ -64,7 +63,7 @@ result = survscope.analyze(
 survscope.plot(result, formats=("pdf", "svg"), output_dir="plots")
 ```
 
-The Python package shares the comparison methods and the default figure. Q-values are off by default here too; add `--show-q` on the command line or `show_q=True` to `survscope.plot(...)` to include them. Analysis JSON retains the calculated p- and q-values regardless of figure settings. The interactive editor and its project files are browser features. PyPI publication awaits its one-time [Trusted Publisher setup](docs/publishing.md); use the GitHub wheel meanwhile.
+The Python package shares the comparison methods and the default figure. Q-values are off by default here too; add `--show-q` on the command line or `show_q=True` to `survscope.plot(...)` to include them. Analysis JSON retains the calculated p- and q-values regardless of figure settings. The interactive editor and its project files are browser features. Tested distributions are also available in the [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.3).
 
 ## Reproducibility and further reading
 

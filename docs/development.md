@@ -88,7 +88,7 @@ Pages deployment starts after a successful main-branch CI run, a successful main
 
 The site serves only the selected release. For archived calculations, extract the immutable GitHub release and pass both `--data-version` and `--data-dir` (or their `DataStore` equivalents). A browser project can reopen its saved aggregate results without fetching archived assets; switching to current data requires **New analysis**.
 
-Build Python distributions with `python -m build` and check them with `python -m twine check dist/*`. Publish tested wheels/source distributions to a new software GitHub release. PyPI uses only GitHub OIDC Trusted Publishing; see [registration and publishing](publishing.md). Do not add API-token secrets.
+Build Python distributions with `python -m build` and check them with `python -m twine check dist/*`. Publish tested wheels/source distributions to a new software GitHub release. Automated PyPI publishing uses GitHub OIDC Trusted Publishing; see [registration and publishing](publishing.md). Do not add API-token secrets.
 
 ## Editor and project format
 
