@@ -111,6 +111,9 @@ export function usePlotInteraction(
       .map((id) => allNodes.find((n) => n.dataset.element === id))
       .filter(Boolean) as SVGGraphicsElement[];
     const bounds = unionBounds(nodes.map((n) => nodeBounds(n, inverse)));
+    const lineNode = resize?.startsWith("annotation.")
+      ? nodes[0]?.querySelector<SVGLineElement>("line")
+      : null;
     const targets = allNodes
       .filter(
         (n) =>
@@ -136,6 +139,14 @@ export function usePlotInteraction(
       ids,
       original: settings,
       resize,
+      lineEndpoint: lineNode
+        ? {
+            node: lineNode,
+            x: Number(lineNode.getAttribute("x2")),
+            y: Number(lineNode.getAttribute("y2")),
+            handle: target.closest("[data-resize]"),
+          }
+        : null,
       nodes,
       transforms: nodes.map((n) => n.getAttribute("transform")),
       bounds,
@@ -233,6 +244,14 @@ export function usePlotInteraction(
       r.setAttribute("height", String(Math.abs(d.dy)));
       return;
     }
+    if (d.lineEndpoint) {
+      const { node, x, y, handle } = d.lineEndpoint;
+      node.setAttribute("x2", String(x + d.dx));
+      node.setAttribute("y2", String(y + d.dy));
+      handle?.setAttribute("x", String(x + d.dx - 3));
+      handle?.setAttribute("y", String(y + d.dy - 3));
+      return;
+    }
     for (const [i, node] of (d.nodes as SVGGraphicsElement[]).entries()) {
       let transform = `translate(${d.dx} ${d.dy})`;
       if (d.resize && d.bounds) {
@@ -270,6 +289,13 @@ export function usePlotInteraction(
     cancelAnimationFrame(raf.current);
     // Include the final pointer move even if it arrived before the next frame.
     paint();
+    if (d.lineEndpoint) {
+      const { node, x, y, handle } = d.lineEndpoint;
+      node.setAttribute("x2", String(x));
+      node.setAttribute("y2", String(y));
+      handle?.setAttribute("x", String(x - 3));
+      handle?.setAttribute("y", String(y - 3));
+    }
     for (const [i, node] of (d.nodes as SVGGraphicsElement[]).entries()) {
       if (d.transforms[i] === null) node.removeAttribute("transform");
       else node.setAttribute("transform", d.transforms[i]);
@@ -366,60 +392,70 @@ export function usePlotInteraction(
   const selection = editor && (
     <g data-editor-only="true">
       <g ref={overlay}>
-        {boxes.map(({ id, box: b }) => (
-          <g key={id}>
-            <rect
-              x={b.x - 3}
-              y={b.y - 3}
-              width={b.width + 6}
-              height={b.height + 6}
-              fill="none"
-              stroke="#147d77"
-              strokeWidth="1"
-              vectorEffect="non-scaling-stroke"
-              pointerEvents="none"
-            />
-            {boxes.length === 1 &&
-              !locked(settings, id) &&
-              (id.startsWith("panel.") ||
-                id.startsWith("annotation.") ||
-                isText(id, settings)) && (
-                <rect
-                  data-resize={id}
-                  aria-label={
-                    id.startsWith("panel.")
-                      ? "Resize panel"
-                      : isText(id, settings)
-                        ? "Resize text"
-                        : "Move line endpoint"
-                  }
-                  x={
-                    id.startsWith("panel.")
-                      ? (settings.panels[id.split(".")[1] as Endpoint].x +
-                          settings.panels[id.split(".")[1] as Endpoint].width) *
-                          settings.widthIn *
-                          72 -
-                        3
-                      : b.x + b.width
-                  }
-                  y={
-                    id.startsWith("panel.")
-                      ? (settings.panels[id.split(".")[1] as Endpoint].y +
-                          settings.panels[id.split(".")[1] as Endpoint]
-                            .height) *
-                          settings.heightIn *
-                          72 -
-                        3
-                      : b.y + b.height
-                  }
-                  width="6"
-                  height="6"
-                  fill="#147d77"
-                  style={{ cursor: "nwse-resize" }}
-                />
-              )}
-          </g>
-        ))}
+        {boxes.map(({ id, box: b }) => {
+          const line = settings.annotations.find(
+            (a) => `annotation.${a.id}` === id && a.kind !== "text",
+          );
+          return (
+            <g key={id}>
+              <rect
+                x={b.x - 3}
+                y={b.y - 3}
+                width={b.width + 6}
+                height={b.height + 6}
+                fill="none"
+                stroke="#147d77"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+                pointerEvents="none"
+              />
+              {boxes.length === 1 &&
+                !locked(settings, id) &&
+                (id.startsWith("panel.") ||
+                  id.startsWith("annotation.") ||
+                  isText(id, settings)) && (
+                  <rect
+                    data-resize={id}
+                    aria-label={
+                      id.startsWith("panel.")
+                        ? "Resize panel"
+                        : isText(id, settings)
+                          ? "Resize text"
+                          : "Move line endpoint"
+                    }
+                    x={
+                      id.startsWith("panel.")
+                        ? (settings.panels[id.split(".")[1] as Endpoint].x +
+                            settings.panels[id.split(".")[1] as Endpoint]
+                              .width) *
+                            settings.widthIn *
+                            72 -
+                          3
+                        : line
+                          ? line.x2 * settings.widthIn * 72 - 3
+                          : b.x + b.width
+                    }
+                    y={
+                      id.startsWith("panel.")
+                        ? (settings.panels[id.split(".")[1] as Endpoint].y +
+                            settings.panels[id.split(".")[1] as Endpoint]
+                              .height) *
+                            settings.heightIn *
+                            72 -
+                          3
+                        : line
+                          ? line.y2 * settings.heightIn * 72 - 3
+                          : b.y + b.height
+                    }
+                    width="6"
+                    height="6"
+                    fill="#147d77"
+                    style={{ cursor: "nwse-resize" }}
+                  />
+                )}
+            </g>
+          );
+        })}
       </g>
       <rect
         ref={marquee}

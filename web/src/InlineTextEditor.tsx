@@ -259,7 +259,9 @@ export function InlineTextEditor({
         className="inline-text-editor"
         style={{
           transformOrigin: "0 0",
-          transform: `matrix(${a * scale},${b * scale},${c * scale},${d * scale},${e * scale},${f * scale})`,
+          // Lay out text at its displayed font size. Scaling a small HTML font
+          // afterward changes glyph advances relative to SVG in some browsers.
+          transform: `matrix(${a},${b},${c},${d},${e * scale},${f * scale})`,
           left: 0,
           top: 0,
         }}
@@ -268,12 +270,12 @@ export function InlineTextEditor({
           ref={host}
           style={{
             position: "absolute",
-            left: target.x,
-            top: target.y - target.fontSize * 0.91,
+            left: target.x * scale,
+            top: (target.y - target.fontSize * 0.91) * scale,
             transform: `translateX(${factor * 100}%)`,
-            minWidth: Math.max(24, target.width),
+            minWidth: Math.max(24, target.width) * scale,
             width: "max-content",
-            fontSize: target.fontSize,
+            fontSize: target.fontSize * scale,
             fontFamily: target.family,
             color: target.style.color ?? "#111111",
             textAlign:

@@ -145,17 +145,51 @@ test("creates text and line annotations with tools, duplicates, reorders and del
   expect(first.text).toBe("Note");
   await page.getByRole("button", { name: "Arrow tool", exact: true }).click();
   await page.mouse.move(
-    canvas.x + canvas.width * 0.5,
-    canvas.y + canvas.height * 0.45,
+    canvas.x + canvas.width * 0.58,
+    canvas.y + canvas.height * 0.52,
   );
   await page.mouse.down();
   await page.mouse.move(
-    canvas.x + canvas.width * 0.58,
-    canvas.y + canvas.height * 0.52,
+    canvas.x + canvas.width * 0.5,
+    canvas.y + canvas.height * 0.45,
     { steps: 5 },
   );
   await page.mouse.up();
-  expect((await saved(page)).settings.annotations.at(-1).kind).toBe("arrow");
+  const arrow = (await saved(page)).settings.annotations.at(-1);
+  expect(arrow.kind).toBe("arrow");
+  await page
+    .getByRole("button", { name: "Selection tool", exact: true })
+    .click();
+  const endpoint = page.getByLabel("Move line endpoint");
+  const handle = (await endpoint.boundingBox())!;
+  expect(handle.x + handle.width / 2).toBeCloseTo(
+    canvas.x + arrow.x2 * canvas.width,
+    0,
+  );
+  expect(handle.y + handle.height / 2).toBeCloseTo(
+    canvas.y + arrow.y2 * canvas.height,
+    0,
+  );
+  await page.mouse.move(
+    handle.x + handle.width / 2,
+    handle.y + handle.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    handle.x + handle.width / 2 - 15,
+    handle.y + handle.height / 2 + 20,
+    { steps: 5 },
+  );
+  const line = page.locator(`[data-element="annotation.${arrow.id}"] line`);
+  await expect
+    .poll(async () => Number(await line.getAttribute("y2")))
+    .toBeCloseTo((arrow.y2 + 20 / canvas.height) * 6.8 * 72, 3);
+  await page.mouse.up();
+  const resized = (await saved(page)).settings.annotations.at(-1);
+  expect(resized.x).toBe(arrow.x);
+  expect(resized.y).toBe(arrow.y);
+  expect(resized.x2).toBeCloseTo(arrow.x2 - 15 / canvas.width, 5);
+  expect(resized.y2).toBeCloseTo(arrow.y2 + 20 / canvas.height, 5);
   await page
     .getByRole("button", { name: "Delete annotations", exact: true })
     .click();
