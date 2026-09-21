@@ -1,6 +1,6 @@
 # Cite the data behind your analysis
 
-Use **Cite this analysis** in SurvScope to copy references or download BibTeX/RIS for your reference manager. The accompanying methods paragraph includes your gene, cohort, comparison, group sizes, exclusions, and recorded versions. Save a project to keep these references with your edited figure.
+Use **Cite this analysis** in SurvScope to copy references or download BibTeX/RIS for your reference manager. The accompanying methods paragraph includes your gene, cohort, comparison, group sizes, exclusions, and recorded versions. It describes unadjusted p-values by default and includes BH adjustment when you enable the optional q-value display. Save a project to keep these references with your edited figure.
 
 Cite SurvScope as software and the original data resources relevant to your selected cohort. A TCGA analysis and a CPTAC analysis have different clinical sources.
 

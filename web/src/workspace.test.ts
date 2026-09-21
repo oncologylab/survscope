@@ -289,6 +289,9 @@ describe("data citations", () => {
     );
     expect(methodsText(a)).toContain("0 middle patients excluded");
     expect(methodsText(a)).toContain("Cox model with Breslow ties");
+    expect(methodsText(a)).toContain("without multiple-testing adjustment");
+    expect(methodsText(a)).not.toContain("q-values");
+    expect(methodsText(a, true)).toContain("across the 4 outcomes");
     const file = projectFile(a, defaultFigure());
     file.analysis.provenance!.cohort = "BRCA";
     expect(() => readFigureFile(JSON.stringify(file))).toThrow(/provenance/);
