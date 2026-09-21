@@ -10,7 +10,6 @@ import { dashArray, defaultFigure, displayTime, timeInMonths } from "./figure";
 import type { FigureSettings } from "./figure";
 import type {
   Curve,
-  Endpoint,
   EndpointResult,
   SurvivalAnalysis,
 } from "./types";

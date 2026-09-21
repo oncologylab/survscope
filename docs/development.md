@@ -21,6 +21,23 @@ npm run dev
 
 The local development site includes a six-gene TCGA-PAAD fixture (`2026.07.28`). The separate CPTAC fixture is under `tests/fixtures/cptac/2026.09.18`; integration tests serve both from the test site's origin. A local browser test uses installed Chrome; CI uses Playwright Chromium. All runtime requests, including fonts and data, must remain same-origin.
 
+### Keeping the workspace clean
+
+Keep downloaded releases, one-off exports, previews, and validation output in the ignored `data-build/` directory. These files are disposable working copies; keep any report intended as lasting evidence in `docs/` with its date and provenance. The checked-in TCGA/CPTAC fixtures, bundled fonts and licenses, and historical validation reports remain part of the project.
+
+After stopping local previews and tests, inspect generated files with this command from the repository root. Replace `-ndX` with `-fdX` to remove the listed files:
+
+```bash
+git clean -ndX -- build/ dist/ site/ .coverage htmlcov/ \
+  .pytest_cache/ .ruff_cache/ src/survscope/__pycache__/ \
+  tests/__pycache__/ scripts/__pycache__/ web/dist/ web/.vite/ \
+  web/test-results/ web/playwright-report/ 'web/*.tsbuildinfo'
+```
+
+Review `git clean -ndX -- data-build/` separately, then use `git clean -fdX -- data-build/` when its exports and downloaded data are no longer needed. Published releases can be downloaded again. These commands preserve tracked files and the active `.venv/`, `web/node_modules/`, and editable Python package metadata. Avoid an unscoped `git clean -fdX`, which would remove those development dependencies too.
+
+`npm run build` also checks for unused TypeScript imports, local variables, and parameters.
+
 ## Independent statistical validation
 
 On Ubuntu 24.04, install the independently versioned reference package with:
@@ -65,7 +82,7 @@ This reuses checksummed compact TCGA assets and builds CPTAC. Leave `tcga_data_v
 
 ## Deployment and software publishing
 
-Software (`v0.4.0`, …) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
+Software (`v0.4.1`, …) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
 
 Pages deployment starts after a successful main-branch CI run, a successful main-branch data-release workflow, or an explicit main-branch dispatch. It checks out that triggering commit, runs Python and browser checks, verifies the full data release, and validates statistics across its deployed cohort catalog. Deployment requires passing tests and a complete built site below **891,289,600 bytes (850 MiB)**. The release archive stays immutable; fonts/editor code count toward the final site budget.
 
@@ -75,7 +92,9 @@ Build Python distributions with `python -m build` and check them with `python -m
 
 ## Editor and project format
 
-The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Export fonts are bundled Liberation Sans/Serif/Mono with their OFL notice, and fetched from the site's own origin. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release; statistical artwork is memoized separately from selection and viewport state.
+The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Seven export font families are bundled with their OFL notices and fetched from the site's own origin. [Font provenance](fonts.md) records the sources; new assets have pinned upstream revisions and SHA-256 checksums. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release; statistical artwork is memoized separately from selection and viewport state. Icon commands use local SVG paths, accessible button names, and tooltips shown on hover or keyboard focus; tooltip changes do not rerender the plot.
+
+Dependency upgrades are maintained manually. Dependabot version-update configuration is intentionally absent, and GitHub's automatic security-update pull requests are disabled. Keep the CI dependency audit; do not reintroduce bot PRs or branches without a maintainer request.
 
 Project JSON uses `format: "survscope-project"`, `version: 2`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Version 1 imports retain their appearance and results. Version 2 adds validated text runs (bold/italic/super/sub), per-object fonts/alignment/rotation, lock/visibility flags, and an analysis-provenance/citation snapshot. Custom text is rendered as SVG text; the locally bundled ProseMirror overlay edits only the active object and never stores arbitrary HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
 

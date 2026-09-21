@@ -4,6 +4,7 @@ import { flushSync } from "react-dom";
 import { SurvivalPlot } from "./SurvivalPlot";
 import { FigureEditor } from "./FigureEditor";
 import { InlineTextEditor } from "./InlineTextEditor";
+import { Icon, IconButton } from "./IconButton";
 import type { TextTarget } from "./InlineTextEditor";
 import { defaultFigure, elementName } from "./figure";
 import type { EditorTool, FigureSettings } from "./figure";
@@ -87,6 +88,10 @@ export function FigureWorkspace(p: Props) {
     [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [textTarget, setTextTarget] = useState<TextTarget | null>(null),
     [artboard, setArtboard] = useState(false);
+  const [clipboardReady, setClipboardReady] = useState(false);
+  const hasSelectedAnnotations = selection.some(
+    (id) => id.startsWith("annotation.") && !locked(settings, id),
+  );
   const stage = useRef<HTMLDivElement>(null),
     pan = useRef<{ x: number; y: number; left: number; top: number } | null>(
       null,
@@ -226,6 +231,7 @@ export function FigureWorkspace(p: Props) {
         ]),
       ),
     };
+    setClipboardReady(annotations.length > 0);
   }
   function paste() {
     if (!clipboard.current || !clipboard.current.annotations.length) return;
@@ -276,6 +282,7 @@ export function FigureWorkspace(p: Props) {
       )
         return;
       if (e.code === "Space") {
+        if ((e.target as Element)?.closest("button")) return;
         e.preventDefault();
         setSpace(true);
         return;
@@ -395,7 +402,7 @@ export function FigureWorkspace(p: Props) {
   }
   return (
     <div
-      className="app-shell studio"
+      className="studio"
       style={
         {
           "--analysis-width": `${prefs.left}px`,
@@ -408,101 +415,84 @@ export function FigureWorkspace(p: Props) {
           SurvScope
         </a>
         <nav className="header-actions" aria-label="Figure actions">
-          <button type="button" onClick={p.onNew}>
-            New analysis
-          </button>
-          <button type="button" onClick={p.onOpen}>
-            Open project
-          </button>
-          <button
-            type="button"
+          <IconButton icon="new" label="New analysis" onClick={p.onNew} />
+          <IconButton icon="open" label="Open project" onClick={p.onOpen} />
+          <IconButton
+            icon="save"
+            label="Save project"
             onClick={p.onSave}
             disabled={!analysis || p.busy}
-          >
-            Save project
-          </button>
-          <button
-            type="button"
+          />
+          <IconButton
+            icon="undo"
+            label="Undo"
+            shortcut="Ctrl/⌘ Z"
             onClick={history.undo}
             disabled={!history.canUndo}
-          >
-            Undo
-          </button>
-          <button
-            type="button"
+          />
+          <IconButton
+            icon="redo"
+            label="Redo"
+            shortcut="Ctrl/⌘ Shift Z"
             onClick={history.redo}
             disabled={!history.canRedo}
-          >
-            Redo
-          </button>
-          <button type="button" onClick={p.onCite} disabled={!analysis}>
-            Cite this analysis
-          </button>
-          <button type="button" onClick={p.onHelp}>
-            How to use
-          </button>
+          />
+          <IconButton
+            icon="cite"
+            label="Cite this analysis"
+            onClick={p.onCite}
+            disabled={!analysis}
+          />
+          <IconButton icon="help" label="How to use" onClick={p.onHelp} />
         </nav>
       </header>
       <main>
-        <section
-          className={`workspace studio-workspace ${prefs.analysis ? "analysis-open" : ""} ${prefs.properties ? "properties-open" : ""}`}
-          aria-label="Survival plot workspace"
-        >
+        <section className="workspace" aria-label="Survival plot workspace">
           <nav className="tools-rail" aria-label="Figure tools">
             {(
               [
-                ["select", "Selection", "V", "↖"],
-                ["type", "Type", "T", "T"],
-                ["hand", "Hand", "H", "✋"],
-                ["zoom", "Zoom", "Z", "⌕"],
-                ["line", "Line", "", "╱"],
-                ["arrow", "Arrow", "", "↗"],
+                ["select", "Selection", "V"],
+                ["type", "Type", "T"],
+                ["hand", "Hand", "H"],
+                ["zoom", "Zoom", "Z"],
+                ["line", "Line", ""],
+                ["arrow", "Arrow", ""],
               ] as const
-            ).map(([value, label, key, icon]) => (
-              <button
-                type="button"
+            ).map(([value, label, key]) => (
+              <IconButton
+                icon={value}
                 key={value}
-                title={`${label}${key ? ` (${key})` : ""}`}
-                aria-label={`${label} tool`}
+                label={`${label} tool`}
+                shortcut={key || undefined}
                 aria-pressed={activeTool === value}
                 onClick={() => setTool(value)}
-              >
-                {icon}
-              </button>
+              />
             ))}
             <hr />
-            <button
-              type="button"
-              title="Analysis panel"
-              aria-label="Toggle Analysis panel"
+            <IconButton
+              icon="analysis"
+              label="Toggle Analysis panel"
               aria-pressed={prefs.analysis}
               onClick={() => setPrefs((v) => ({ ...v, analysis: !v.analysis }))}
-            >
-              A
-            </button>
-            <button
-              type="button"
-              title="Properties and Layers"
-              aria-label="Toggle Properties panel"
+            />
+            <IconButton
+              icon="properties"
+              label="Toggle Properties panel"
               aria-pressed={prefs.properties}
               onClick={() =>
                 setPrefs((v) => ({ ...v, properties: !v.properties }))
               }
-            >
-              ☷
-            </button>
+            />
           </nav>
           {prefs.analysis && (
             <div className="analysis-dock">
               <div className="dock-heading">
                 <strong>Analysis</strong>
-                <button
-                  type="button"
-                  aria-label="Close Analysis panel"
+                <IconButton
+                  icon="close"
+                  label="Close Analysis panel"
                   onClick={() => setPrefs((v) => ({ ...v, analysis: false }))}
-                >
-                  ×
-                </button>
+                />
               </div>
               {p.analysisControls}
               <div
@@ -562,31 +552,31 @@ export function FigureWorkspace(p: Props) {
               </div>
             </div>
             <div className="zoom-toolbar">
-              <button
-                type="button"
+              <IconButton
+                icon="fit"
+                label="Fit"
+                description="Fit the complete artboard in the available canvas."
                 onClick={() => setZoom(null)}
                 aria-pressed={zoom === null}
+              />
+              <button
+                type="button"
+                title="Actual size (100%)"
+                onClick={() => zoomAt(1 / scale)}
               >
-                Fit
-              </button>
-              <button type="button" onClick={() => zoomAt(1 / scale)}>
                 100%
               </button>
-              <button
-                type="button"
-                aria-label="Zoom out"
+              <IconButton
+                icon="minus"
+                label="Zoom out"
                 onClick={() => zoomAt(0.8)}
-              >
-                −
-              </button>
+              />
               <span aria-label="Magnification">{Math.round(scale * 100)}%</span>
-              <button
-                type="button"
-                aria-label="Zoom in"
+              <IconButton
+                icon="plus"
+                label="Zoom in"
                 onClick={() => zoomAt(1.25)}
-              >
-                +
-              </button>
+              />
               <label className="check">
                 <input
                   type="checkbox"
@@ -750,64 +740,141 @@ export function FigureWorkspace(p: Props) {
                     Layers
                   </button>
                 </div>
-                <button
-                  type="button"
-                  aria-label="Close Properties panel"
+                <IconButton
+                  icon="close"
+                  label="Close Properties panel"
                   onClick={() => setPrefs((v) => ({ ...v, properties: false }))}
-                >
-                  ×
-                </button>
+                />
               </div>
               {analysis && (
                 <div className="inspector-content">
                   <details className="arrange-controls">
-                    <summary>Arrange selection ({selection.length})</summary>
-                    <label className="check">
-                      <input
-                        type="checkbox"
-                        checked={artboard}
-                        onChange={(e) => setArtboard(e.target.checked)}
+                    <summary
+                      aria-label={`Arrange selection (${selection.length})`}
+                    >
+                      <Icon name="properties" /> Arrange{" "}
+                      <span className="selection-count">
+                        {selection.length}
+                      </span>
+                    </summary>
+                    <div
+                      className="button-row"
+                      role="group"
+                      aria-label="Alignment reference"
+                    >
+                      <IconButton
+                        icon="artboard"
+                        label="Align to artboard"
+                        description="Align to page edges. When off, use the selection bounds."
+                        aria-pressed={artboard}
+                        onClick={() => setArtboard((value) => !value)}
                       />
-                      Align to artboard
-                    </label>
-                    <div className="button-row">
-                      {[
-                        "left",
-                        "center",
-                        "right",
-                        "top",
-                        "middle",
-                        "bottom",
-                        "distribute-x",
-                        "distribute-y",
-                      ].map((action) => (
-                        <button
-                          type="button"
+                      <span className="alignment-reference">
+                        {artboard ? "Artboard" : "Selection"}
+                      </span>
+                    </div>
+                    <div
+                      className="button-row"
+                      role="group"
+                      aria-label="Align and distribute"
+                    >
+                      {(
+                        [
+                          ["left", "align-left", "Align left"],
+                          [
+                            "center",
+                            "align-center",
+                            "Align horizontal centers",
+                          ],
+                          ["right", "align-right", "Align right"],
+                          ["top", "align-top", "Align top"],
+                          ["middle", "align-middle", "Align vertical centers"],
+                          ["bottom", "align-bottom", "Align bottom"],
+                          [
+                            "distribute-x",
+                            "distribute-x",
+                            "Distribute horizontally",
+                          ],
+                          [
+                            "distribute-y",
+                            "distribute-y",
+                            "Distribute vertically",
+                          ],
+                        ] as const
+                      ).map(([action, icon, label]) => (
+                        <IconButton
+                          icon={icon}
+                          label={label}
                           key={action}
                           disabled={
                             !selection.length ||
                             (action.startsWith("distribute") &&
                               selection.length < 3)
                           }
+                          description={
+                            action.startsWith("distribute")
+                              ? "Select at least three objects to space them evenly."
+                              : undefined
+                          }
                           onClick={() => align(action)}
-                        >
-                          {action
-                            .replace("distribute-x", "Distribute horizontally")
-                            .replace("distribute-y", "Distribute vertically")}
-                        </button>
+                        />
                       ))}
                     </div>
-                    <div className="button-row">
-                      <button onClick={copy}>Copy</button>
-                      <button onClick={paste}>Paste</button>
-                      <button onClick={duplicate}>Duplicate</button>
-                      <button onClick={() => reorder(true)}>
-                        Bring to front
-                      </button>
-                      <button onClick={() => reorder(false)}>
-                        Send to back
-                      </button>
-                      <button onClick={remove}>Delete annotations</button>
+                    <div
+                      className="button-row"
+                      role="group"
+                      aria-label="Object actions"
+                    >
+                      <IconButton
+                        icon="copy"
+                        label="Copy"
+                        description="Copy selected annotations."
+                        shortcut="Ctrl/⌘ C"
+                        disabled={!hasSelectedAnnotations}
+                        onClick={copy}
+                      />
+                      <IconButton
+                        icon="paste"
+                        label="Paste"
+                        description="Paste copied annotations into this figure."
+                        shortcut="Ctrl/⌘ V"
+                        disabled={
+                          !clipboardReady || settings.annotations.length >= 100
+                        }
+                        onClick={paste}
+                      />
+                      <IconButton
+                        icon="duplicate"
+                        label="Duplicate"
+                        description="Duplicate selected annotations."
+                        shortcut="Ctrl/⌘ D"
+                        disabled={
+                          !hasSelectedAnnotations ||
+                          settings.annotations.length >= 100
+                        }
+                        onClick={duplicate}
+                      />
+                      <IconButton
+                        icon="front"
+                        label="Bring to front"
+                        description="Bring selected annotations above other annotations."
+                        disabled={!hasSelectedAnnotations}
+                        onClick={() => reorder(true)}
+                      />
+                      <IconButton
+                        icon="back"
+                        label="Send to back"
+                        description="Send selected annotations below other annotations."
+                        disabled={!hasSelectedAnnotations}
+                        onClick={() => reorder(false)}
+                      />
+                      <IconButton
+                        icon="delete"
+                        label="Delete annotations"
+                        shortcut="Delete"
+                        disabled={!hasSelectedAnnotations}
+                        onClick={remove}
+                      />
                     </div>
                   </details>
                   {tab === "properties" ? (
@@ -850,9 +917,23 @@ export function FigureWorkspace(p: Props) {
                             {elementName(id)}
                           </button>
                           {(["hidden", "locked"] as const).map((key) => (
-                            <button
+                            <IconButton
                               key={key}
-                              aria-label={`${key === "hidden" ? "Hide" : "Lock"} ${elementName(id)}`}
+                              icon={
+                                key === "hidden"
+                                  ? settings.elements[id]?.hidden
+                                    ? "eye-off"
+                                    : "eye"
+                                  : settings.elements[id]?.locked
+                                    ? "lock"
+                                    : "unlock"
+                              }
+                              label={`${key === "hidden" ? "Hide" : "Lock"} ${elementName(id)}`}
+                              description={
+                                settings.elements[id]?.[key]
+                                  ? `Click to ${key === "hidden" ? "show" : "unlock"} this object.`
+                                  : undefined
+                              }
                               aria-pressed={!!settings.elements[id]?.[key]}
                               onClick={() =>
                                 history.change({
@@ -866,30 +947,22 @@ export function FigureWorkspace(p: Props) {
                                   },
                                 })
                               }
-                            >
-                              {key === "hidden"
-                                ? settings.elements[id]?.hidden
-                                  ? "○"
-                                  : "●"
-                                : settings.elements[id]?.locked
-                                  ? "◆"
-                                  : "◇"}
-                            </button>
+                            />
                           ))}
                         </div>
                       ))}
                     </div>
                   )}
-                  <button
+                  <IconButton
+                    icon="reset"
+                    label="Reset figure"
+                    showLabel
                     className="reset-figure"
-                    type="button"
                     onClick={() => {
                       history.change(defaultFigure());
                       setSelection([]);
                     }}
-                  >
-                    Reset figure
-                  </button>
+                  />
                 </div>
               )}
               <div

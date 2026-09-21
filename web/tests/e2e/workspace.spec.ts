@@ -98,7 +98,7 @@ test("supports multiple selection, alignment, layers, locking and history", asyn
   await page.locator('[data-element="title"]').click();
   await page.locator('[data-element="source"]').click({ modifiers: ["Shift"] });
   await expect(
-    page.getByText("Arrange selection (2)", { exact: true }),
+    page.getByLabel("Arrange selection (2)", { exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Shift+ArrowRight");
   const file = await saved(page);
@@ -117,9 +117,11 @@ test("supports multiple selection, alignment, layers, locking and history", asyn
   await page.getByRole("button", { name: "Lock Title", exact: true }).click();
   await page.getByRole("tab", { name: "Properties", exact: true }).click();
   await page.getByLabel("Selected item", { exact: true }).selectOption("title");
-  await page.getByText("Arrange selection (1)", { exact: true }).click();
-  await page.getByLabel("Align to artboard").check();
-  await page.getByRole("button", { name: "left", exact: true }).click();
+  await page.getByLabel("Arrange selection (1)", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "Align to artboard", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Align left", exact: true }).click();
   expect((await saved(page)).settings.elements.title.dx).toBeLessThan(0);
 });
 
@@ -137,7 +139,7 @@ test("creates text and line annotations with tools, duplicates, reorders and del
   await input.fill("Note");
   await input.press("Escape");
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(1);
-  await page.getByText("Arrange selection (1)", { exact: true }).click();
+  await page.getByLabel("Arrange selection (1)", { exact: true }).click();
   await page.getByRole("button", { name: "Duplicate", exact: true }).click();
   await expect(page.locator('[data-element^="annotation."]')).toHaveCount(2);
   await page.getByRole("button", { name: "Send to back", exact: true }).click();
@@ -437,7 +439,7 @@ test("marquee selection moves annotations together in one undoable gesture and c
   );
   await page.mouse.up();
   await expect(
-    page.getByText("Arrange selection (3)", { exact: true }),
+    page.getByLabel("Arrange selection (3)", { exact: true }),
   ).toBeVisible();
   const box = (await first.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

@@ -17,7 +17,7 @@ import {
 import releases from "./citation-releases.json";
 import { analyzeGeneData } from "./statistics";
 import { splitLines } from "./RichSvgText";
-import type { GeneData, SurvivalAnalysis } from "./types";
+import type { GeneData } from "./types";
 // The clinical curves in this fixture remain aggregate, with no participant IDs.
 const data: GeneData = {
   gene: {

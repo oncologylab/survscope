@@ -1,7 +1,8 @@
 import { ENDPOINTS } from "./types";
 import type { Endpoint } from "./types";
+import type { FontFamily } from "./fontCatalog";
+export type { FontFamily } from "./fontCatalog";
 
-export type FontFamily = "Sans" | "Serif" | "Mono";
 export type Dash = "solid" | "dashed" | "dotted";
 export interface PanelBox {
   x: number;

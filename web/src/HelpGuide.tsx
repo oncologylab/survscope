@@ -114,6 +114,12 @@ export function HelpGuide({
       </p>
       <h3>Editing and navigation</h3>
       <p>
+        Hover over an icon or focus it with Tab to see its command and shortcut.
+        Arrange uses alignment and distribution icons; the artboard icon switches
+        between page and selection alignment. Eye and padlock icons control
+        visibility and locking in Layers.
+      </p>
+      <p>
         V selects objects, T edits text, H pans, and Z zooms. Hold Space to pan
         temporarily. Shift-click or drag a selection rectangle for multiple
         objects. Use Arrange selection to align or distribute objects, and
@@ -125,6 +131,13 @@ export function HelpGuide({
         Analysis and Properties can be collapsed to give the figure more space.
         Fit fills the available canvas; 100% shows the figure at its nominal
         screen size. These controls do not change export dimensions.
+      </p>
+      <p>
+        Choose a font for the whole figure or a selected text object. Seven
+        bundled families include Arial/Helvetica-style Liberation Sans, Carlito,
+        Lato, Source Sans 3, and Source Serif 4. The menu identifies the actual
+        font and shows a preview. Familiar-name alternatives are labeled;
+        exports embed the same fonts used on the figure.
       </p>
       <h3>Citing your data</h3>
       <p>

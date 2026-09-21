@@ -286,3 +286,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+Additional bundled figure fonts (unmodified TrueType files)
+
+Carlito — Copyright 2013 The Carlito Project Authors.
+Lato — Copyright 2010-2014 by tyPoland Lukasz Dziedzic. Reserved Font Name "Lato".
+Source Sans 3 — Copyright 2010-2024 Adobe. Reserved Font Name 'Source'.
+Source Serif 4 — Copyright 2014-2023 Adobe. Reserved Font Name 'Source'.
+
+All four families use the SIL Open Font License, Version 1.1. The complete
+upstream notices, copyright statements, and reserved names are preserved in:
+  fonts/Carlito-LICENSE.txt
+  fonts/Lato-LICENSE.txt
+  fonts/SourceSans3-LICENSE.txt
+  fonts/SourceSerif4-LICENSE.txt
+Exact source URLs, upstream revisions, and checksums: fonts/sources.json.
+The Arial/Helvetica-style choice uses Liberation Sans; proprietary Arial or
+Helvetica files are not distributed. Existing Liberation notices are above.
