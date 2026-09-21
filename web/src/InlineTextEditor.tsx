@@ -6,6 +6,7 @@ import { history, undo, redo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import type { ElementStyle, TextRun } from "./figure";
+import { IconButton } from "./IconButton";
 
 const schema = new Schema({
   nodes: {
@@ -202,6 +203,51 @@ export function InlineTextEditor({
       svgText.forEach((node) => node.style.removeProperty("visibility"));
     };
   }, [target]);
+  useLayoutEffect(() => {
+    let active = true;
+    function positionBaseline() {
+      const container = host.current;
+      const paragraph = container?.querySelector("p");
+      if (!active || !container || !paragraph) return;
+      // Measure the HTML baseline in an unrotated copy. Font metrics differ
+      // between families; a fixed fraction of the font size can visibly jump.
+      const probe = document.createElement("div");
+      probe.className = "inline-text-editor";
+      Object.assign(probe.style, {
+        position: "fixed",
+        visibility: "hidden",
+        pointerEvents: "none",
+        top: "0",
+        left: "0",
+        width: "max-content",
+        fontFamily: target.family,
+        fontSize: `${target.fontSize * scale}px`,
+      });
+      const line = document.createElement("div");
+      line.className = "ProseMirror";
+      const copy = paragraph.cloneNode(true) as HTMLElement;
+      const marker = document.createElement("span");
+      Object.assign(marker.style, {
+        display: "inline-block",
+        width: "0",
+        height: "0",
+        verticalAlign: "baseline",
+      });
+      copy.prepend(marker);
+      line.append(copy);
+      probe.append(line);
+      document.body.append(probe);
+      const baseline =
+        marker.getBoundingClientRect().top - line.getBoundingClientRect().top;
+      probe.remove();
+      container.style.top = `${target.y * scale - baseline}px`;
+    }
+    positionBaseline();
+    void document.fonts.ready.then(positionBaseline);
+    return () => {
+      active = false;
+    };
+  }, [target, scale]);
   const [a, b, c, d, e, f] = target.matrix;
   const factor =
     target.anchor === "middle" ? -0.5 : target.anchor === "end" ? -1 : 0;
@@ -221,12 +267,18 @@ export function InlineTextEditor({
             ["sub", "Subscript selection"],
           ] as const
         ).map(([mark, label]) => (
-          <button
-            type="button"
+          <IconButton
+            icon={mark}
+            label={label}
             key={mark}
             aria-pressed={!!active[mark]}
-            aria-label={label}
-            title={label}
+            shortcut={
+              mark === "bold"
+                ? "Ctrl/⌘ B"
+                : mark === "italic"
+                  ? "Ctrl/⌘ I"
+                  : undefined
+            }
             onClick={() => {
               const v = view.current;
               if (v) {
@@ -234,25 +286,9 @@ export function InlineTextEditor({
                 v.focus();
               }
             }}
-          >
-            {mark === "bold" ? (
-              <b>B</b>
-            ) : mark === "italic" ? (
-              <i>I</i>
-            ) : mark === "super" ? (
-              <>
-                x<sup>2</sup>
-              </>
-            ) : (
-              <>
-                x<sub>2</sub>
-              </>
-            )}
-          </button>
+          />
         ))}
-        <button type="button" onClick={finish}>
-          Done
-        </button>
+        <IconButton icon="done" label="Done" shortcut="Esc" onClick={finish} />
         <small>Enter: new line · Esc: finish</small>
       </div>
       <div
@@ -271,7 +307,7 @@ export function InlineTextEditor({
           style={{
             position: "absolute",
             left: target.x * scale,
-            top: (target.y - target.fontSize * 0.91) * scale,
+            top: target.y * scale,
             transform: `translateX(${factor * 100}%)`,
             minWidth: Math.max(24, target.width) * scale,
             width: "max-content",

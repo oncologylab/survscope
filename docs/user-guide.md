@@ -63,13 +63,15 @@ These three additions are off initially, preserving the original appearance. Res
 
 Your figure is ready to edit as soon as it appears. Double-click a title, axis label, group name, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
 
+The editing commands use familiar icons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Alignment, distribution, copying, annotation order, and text formatting use the same icon controls. Unavailable actions are dimmed. The information icon beside **Selected item** explains direct editing.
+
 The workspace fills wide displays. **Analysis** sits on the left and **Properties / Layers** on the right; use the rail buttons to open or close them. Drag the panel boundaries to adjust their widths. On smaller screens, the panels open as drawers so the figure keeps its space. **Reset workspace** restores the panel sizes and Fit view without changing your figure.
 
 ![The figure editor with a selected title](images/editor.png)
 
 Click a title, axis label, legend, statistics block, curve, or panel. You can also choose **Selected item**, which helps with overlapping or hidden items. Drag labels, legends, statistics, panels, and annotations to move them. A selected panel has a corner handle for resizing. An arrow or line has a handle for moving its endpoint. Curve selection changes line appearance while keeping the data attached to its axes.
 
-Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange selection** aligns objects to each other or to the artboard, and distributes three or more objects evenly. **Snap** shows alignment guides near object edges and centers. In **Layers**, hide or lock objects, or select overlapping items. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
+Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange** shows the selection count and icons for aligning objects and distributing three or more objects evenly. Toggle the artboard icon to align to the page instead of the selection; the reference is displayed beside it. **Snap** shows alignment guides near object edges and centers. In **Layers**, the eye and padlock icons hide or lock objects. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
 
 | Shortcut | Action outside a text field |
 | --- | --- |
@@ -78,6 +80,7 @@ Shift-click to select several objects, or drag a selection rectangle on the artb
 | Arrow / Shift+Arrow | Move selection by 1 / 10 points |
 | Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z | Undo / redo |
 | Ctrl/Cmd+C / Ctrl/Cmd+V | Copy / paste selected annotations within the workspace |
+| Ctrl/Cmd+D | Duplicate selected annotations |
 | Delete | Remove selected annotations |
 
 With Type, click an empty part of the artboard to create a note. Drag with Line or Arrow to draw a new annotation. A text object's corner handle scales its type; panel resizing keeps type and stroke sizes fixed. While typing, Ctrl/Cmd+B and Ctrl/Cmd+I format the selected text. Browser shortcuts such as Save and Bookmark remain available.
@@ -92,6 +95,22 @@ The editor offers:
 Use **Fit**, **100%**, the zoom buttons, and the **Hand tool** to inspect details without changing export dimensions. With focus on the figure, arrow keys move the selected item by one point; hold Shift for ten points. **Undo/Redo** also respond to Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. **Reset figure** returns to the original appearance and can itself be undone.
 
 A new gene, cohort, or comparison retains styling and layout, refreshes automatic labels, and clears custom label text and annotations tied to the previous result. Save a project first if you want to keep those edits. When making a smaller figure, check that labels and panels have enough room; the editor allows deliberate overlaps.
+
+### Choose a font
+
+Use **Size and appearance → Font** for the whole figure, or **Selected font** for one text object. The menu shows a live sample and the actual bundled font name. Seven families are available, each with regular, bold, italic, and bold italic faces:
+
+| Menu choice | Font used in the figure and exports |
+| --- | --- |
+| Arial / Helvetica style | Liberation Sans — the original figure font |
+| Times New Roman style | Liberation Serif |
+| Courier New style | Liberation Mono |
+| Calibri style | Carlito |
+| Lato | Lato |
+| Source Sans 3 | Source Sans 3 |
+| Source Serif 4 | Source Serif 4 |
+
+The familiar-name choices are clearly labeled alternatives, not the proprietary Arial, Helvetica, Times New Roman, Courier New, or Calibri font files. SVG and PDF embed the fonts; PNG captures the same lettering as pixels. The figure therefore does not depend on which fonts are installed on a reader's computer. Projects preserve your global and individual font choices. [Font sources and licenses](fonts.md).
 
 ## Download, save, and reopen
 

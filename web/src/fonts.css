@@ -82,3 +82,115 @@
   font-weight: 700;
   font-display: block;
 }
+@font-face {
+  font-family: "SurvScope Carlito";
+  src: url("/fonts/Carlito-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Carlito";
+  src: url("/fonts/Carlito-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Carlito";
+  src: url("/fonts/Carlito-Italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Carlito";
+  src: url("/fonts/Carlito-BoldItalic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Lato";
+  src: url("/fonts/Lato-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Lato";
+  src: url("/fonts/Lato-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Lato";
+  src: url("/fonts/Lato-Italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope Lato";
+  src: url("/fonts/Lato-BoldItalic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSans3";
+  src: url("/fonts/SourceSans3-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSans3";
+  src: url("/fonts/SourceSans3-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSans3";
+  src: url("/fonts/SourceSans3-It.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSans3";
+  src: url("/fonts/SourceSans3-BoldIt.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSerif4";
+  src: url("/fonts/SourceSerif4-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSerif4";
+  src: url("/fonts/SourceSerif4-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSerif4";
+  src: url("/fonts/SourceSerif4-It.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "SurvScope SourceSerif4";
+  src: url("/fonts/SourceSerif4-BoldIt.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+}

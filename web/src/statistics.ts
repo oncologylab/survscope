@@ -97,15 +97,6 @@ export const COX_MESSAGES: Record<Exclude<CoxStatus, "ok">, string> = {
     "The Cox model did not converge; the hazard ratio is unavailable.",
 };
 
-export function coxBinary(
-  time: number[],
-  event: number[],
-  high: boolean[],
-): [number, number] {
-  const { hr, p } = coxFit(time, event, high);
-  return [hr, p];
-}
-
 export function coxFit(time: number[], event: number[], high: boolean[]) {
   const unavailable = (status: CoxStatus) => ({
     hr: Number.NaN,

@@ -17,7 +17,7 @@
 4. **Double-click text on the figure to edit it.** Select and drag objects; use Properties for fonts, colors, dimensions, axes, and layout, or Layers to hide and lock objects. Optional confidence bands, censor marks, and number-at-risk tables add context.
 5. Download **SVG**, **PDF**, or **PNG**. **Save project** lets you reopen the results and keep editing; a style preset reuses the appearance for another analysis.
 
-The workspace fills your screen, with collapsible Analysis and Properties panels. Familiar Selection (V), Type (T), Hand (H), and Zoom (Z) tools help you arrange the figure. Text supports bold, italic, superscripts, and subscripts.
+The workspace fills your screen, with collapsible Analysis and Properties panels. Familiar Selection (V), Type (T), Hand (H), and Zoom (Z) tools help you arrange the figure. Icon commands explain themselves on hover or keyboard focus. Text supports bold, italic, superscripts, and subscripts, with seven bundled [font choices](docs/user-guide.md#choose-a-font), including clearly labeled Arial/Helvetica-style alternatives.
 
 The original blue/red, four-panel, 6.8-inch figure remains the default. Editing the figure's appearance does not change the calculated results.
 
@@ -43,11 +43,11 @@ TCGA analyses cite **TCGA-CDR** for survival outcomes, **UCSC Xena** for data di
 
 ## Use Python or the command line
 
-Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.0):
+Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.1):
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.4.0/survscope-0.4.0-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.4.1/survscope-0.4.1-py3-none-any.whl
 survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
 survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
   --grouping percentile_groups --lower-percent 25 --upper-percent 25 --json --outdir plots

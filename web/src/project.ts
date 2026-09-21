@@ -1,4 +1,5 @@
 import { defaultFigure, reusableStyle } from "./figure";
+import { FONT_FAMILIES } from "./fontCatalog";
 import type { Annotation, ElementStyle, FigureSettings } from "./figure";
 import { resolveProvenance, attachProvenance } from "./citations";
 import type { AnalysisProvenance } from "./citations";
@@ -95,7 +96,7 @@ export function validateSettings(value: unknown): FigureSettings {
     failure("these figure settings need a newer application.");
   result.widthIn = number(raw.widthIn, 2, 20);
   result.heightIn = number(raw.heightIn, 2, 20);
-  result.fontFamily = choice(raw.fontFamily, ["Sans", "Serif", "Mono"]);
+  result.fontFamily = choice(raw.fontFamily, FONT_FAMILIES);
   result.fontScale = number(raw.fontScale, 0.5, 3);
   result.lineWidth = number(raw.lineWidth, 0.2, 12);
   result.lowColor = color(raw.lowColor);
@@ -195,11 +196,7 @@ export function validateSettings(value: unknown): FigureSettings {
     if (Object.keys(s).some((key) => !keys.includes(key)))
       failure("an item style is unsupported.");
     if (s.fontFamily !== undefined)
-      style.fontFamily = choice(s.fontFamily, [
-        "Sans",
-        "Serif",
-        "Mono",
-      ] as const);
+      style.fontFamily = choice(s.fontFamily, FONT_FAMILIES);
     if (s.align !== undefined)
       style.align = choice(s.align, ["start", "middle", "end"] as const);
     if (s.rotation !== undefined)

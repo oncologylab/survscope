@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { locked } from "./editorModel";
+import { IconButton } from "./IconButton";
+import { FontSelect } from "./FontSelect";
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
 import {
@@ -226,16 +228,17 @@ export function FigureEditor({
 
   return (
     <aside className="editor-controls" aria-label="Figure properties">
-      <div className="editor-intro">
-        <h2>Edit your figure</h2>
-        <p>
-          Double-click text to type directly on the figure. Select an item to
-          adjust its appearance here.
-        </p>
-      </div>
-      <label>
-        <span>Selected item</span>
+      <div className="selected-item-field">
+        <div className="field-label-with-help">
+          <label htmlFor="selected-figure-item">Selected item</label>
+          <IconButton
+            icon="info"
+            label="Editing help"
+            description="Double-click text to type directly on the figure. Select an item to adjust its appearance here."
+          />
+        </div>
         <select
+          id="selected-figure-item"
           aria-label="Selected item"
           value={selected ?? ""}
           onChange={(e) => select(e.target.value || null)}
@@ -247,7 +250,7 @@ export function FigureEditor({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {selected && (
         <details open key={selected} className="selected-properties">
           <summary>{elementName(selected)}</summary>
@@ -268,18 +271,11 @@ export function FigureEditor({
             )}
             {(editableText || item?.kind === "text") && (
               <div className="property-grid">
-                <label>
-                  <span>Selected font</span>
-                  <select
-                    aria-label="Selected font"
-                    value={style.fontFamily ?? settings.fontFamily}
-                    onChange={(e) => styleField("fontFamily", e.target.value)}
-                  >
-                    <option value="Sans">Sans serif</option>
-                    <option value="Serif">Serif</option>
-                    <option value="Mono">Monospace</option>
-                  </select>
-                </label>
+                <FontSelect
+                  label="Selected font"
+                  value={style.fontFamily ?? settings.fontFamily}
+                  onChange={(value) => styleField("fontFamily", value)}
+                />
                 <label>
                   <span>Text alignment</span>
                   <select
@@ -409,8 +405,9 @@ export function FigureEditor({
                     })
                   }
                 />
-                <button
-                  type="button"
+                <IconButton
+                  icon="delete"
+                  label="Remove annotation"
                   onClick={() => {
                     edit((next) => {
                       next.annotations = next.annotations.filter(
@@ -420,9 +417,7 @@ export function FigureEditor({
                     });
                     select(null);
                   }}
-                >
-                  Remove annotation
-                </button>
+                />
               </>
             )}
             {!panel && !item && (
@@ -481,18 +476,24 @@ export function FigureEditor({
                   onChange={(value) => styleField("color", value)}
                 />
                 {!isCurve && (
-                  <>
-                    <Check
+                  <div
+                    className="button-row"
+                    role="group"
+                    aria-label="Text style"
+                  >
+                    <IconButton
+                      icon="bold"
                       label="Bold text"
-                      checked={style.bold !== false}
-                      onChange={(value) => styleField("bold", value)}
+                      aria-pressed={style.bold !== false}
+                      onClick={() => styleField("bold", style.bold === false)}
                     />
-                    <Check
+                    <IconButton
+                      icon="italic"
                       label="Italic text"
-                      checked={!!style.italic}
-                      onChange={(value) => styleField("italic", value)}
+                      aria-pressed={!!style.italic}
+                      onClick={() => styleField("italic", !style.italic)}
                     />
-                  </>
+                  </div>
                 )}
                 <Check
                   label="Show this item"
@@ -502,8 +503,9 @@ export function FigureEditor({
               </>
             )}
             {!item && (
-              <button
-                type="button"
+              <IconButton
+                icon="reset"
+                label="Reset selected item"
                 onClick={() =>
                   edit((next) => {
                     if (panel)
@@ -511,9 +513,7 @@ export function FigureEditor({
                     else delete next.elements[selected];
                   })
                 }
-              >
-                Reset selected item
-              </button>
+              />
             )}
             {selected.startsWith("statistics.") && (
               <p className="help-text">
@@ -560,23 +560,11 @@ export function FigureEditor({
             onChange={(n) => field("lineWidth", n!)}
           />
         </div>
-        <label>
-          <span>Font</span>
-          <select
-            aria-label="Font"
-            value={settings.fontFamily}
-            onChange={(e) =>
-              field(
-                "fontFamily",
-                e.target.value as FigureSettings["fontFamily"],
-              )
-            }
-          >
-            <option value="Sans">Sans serif — original style</option>
-            <option value="Serif">Serif</option>
-            <option value="Mono">Monospace</option>
-          </select>
-        </label>
+        <FontSelect
+          label="Font"
+          value={settings.fontFamily}
+          onChange={(value) => field("fontFamily", value)}
+        />
         <div className="property-grid">
           <Color
             label="Lower expression"
@@ -628,32 +616,29 @@ export function FigureEditor({
           />
         ))}
         <div className="button-row">
-          <button
-            type="button"
+          <IconButton
+            icon="grid"
+            label="Grid"
             onClick={() => change(layoutFigure(settings, "grid"))}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
+          />
+          <IconButton
+            icon="row"
+            label="Horizontal"
             onClick={() => change(layoutFigure(settings, "row"))}
-          >
-            Horizontal
-          </button>
-          <button
-            type="button"
+          />
+          <IconButton
+            icon="column"
+            label="Vertical"
             onClick={() => change(layoutFigure(settings, "column"))}
-          >
-            Vertical
-          </button>
+          />
         </div>
         {settings.endpoints.map((ep, i) => (
           <div key={ep} className="order-row">
             <span>{ep}</span>
-            <button
-              type="button"
+            <IconButton
+              icon="up"
               disabled={!i}
-              aria-label={`Move ${ep} earlier`}
+              label={`Move ${ep} earlier`}
               onClick={() =>
                 edit((next) => {
                   const previous = next.endpoints[i - 1];
@@ -664,9 +649,7 @@ export function FigureEditor({
                   ];
                 })
               }
-            >
-              ↑
-            </button>
+            />
           </div>
         ))}
       </details>
@@ -845,8 +828,9 @@ export function FigureEditor({
         </label>
         <div className="button-row">
           {(["text", "line", "arrow"] as const).map((kind) => (
-            <button
-              type="button"
+            <IconButton
+              icon={kind === "text" ? "type" : kind}
+              label={`Add ${kind}`}
               key={kind}
               disabled={settings.annotations.length >= 100}
               onClick={() => {
@@ -867,9 +851,7 @@ export function FigureEditor({
                 );
                 select(`annotation.${id}`);
               }}
-            >
-              Add {kind}
-            </button>
+            />
           ))}
         </div>
       </details>
@@ -890,12 +872,16 @@ export function FigureEditor({
           </select>
         </label>
         <div className="button-row">
-          <button type="button" onClick={savePreset}>
-            Save style preset
-          </button>
-          <button type="button" onClick={openFile}>
-            Open preset or project
-          </button>
+          <IconButton
+            icon="save"
+            label="Save style preset"
+            onClick={savePreset}
+          />
+          <IconButton
+            icon="open"
+            label="Open preset or project"
+            onClick={openFile}
+          />
         </div>
         <p className="help-text">
           Presets reuse appearance. Projects also keep your results, labels, and
