@@ -65,7 +65,7 @@ This reuses checksummed compact TCGA assets and builds CPTAC. Leave `tcga_data_v
 
 ## Deployment and software publishing
 
-Software (`v0.3.0`, …) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
+Software (`v0.4.0`, …) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
 
 Pages deployment starts after a successful main-branch CI run, a successful main-branch data-release workflow, or an explicit main-branch dispatch. It checks out that triggering commit, runs Python and browser checks, verifies the full data release, and validates statistics across its deployed cohort catalog. Deployment requires passing tests and a complete built site below **891,289,600 bytes (850 MiB)**. The release archive stays immutable; fonts/editor code count toward the final site budget.
 
@@ -75,8 +75,18 @@ Build Python distributions with `python -m build` and check them with `python -m
 
 ## Editor and project format
 
-The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Export fonts are bundled Liberation Sans/Serif/Mono with their OFL notice, and fetched from the site's own origin. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines.
+The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Export fonts are bundled Liberation Sans/Serif/Mono with their OFL notice, and fetched from the site's own origin. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release; statistical artwork is memoized separately from selection and viewport state.
 
-Project JSON uses `format: "survscope-project"`, `version: 1`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Custom text is rendered as text, never HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
+Project JSON uses `format: "survscope-project"`, `version: 2`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Version 1 imports retain their appearance and results. Version 2 adds validated text runs (bold/italic/super/sub), per-object fonts/alignment/rotation, lock/visibility flags, and an analysis-provenance/citation snapshot. Custom text is rendered as SVG text; the locally bundled ProseMirror overlay edits only the active object and never stores arbitrary HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
 
 The Python result JSON retains its existing snake_case fields; browser JSON retains camelCase. Both add normalized grouping parameters, lower/upper thresholds, eligible/excluded counts, Cox status, and statistical method version. The browser project format is separate from analysis-only JSON.
+
+### Browser and interaction validation
+
+The default Playwright suite uses Chromium. Run the same suite in Firefox and WebKit with `BROWSER=firefox npm run test:e2e` and `BROWSER=webkit npm run test:e2e` from `web/` after installing those browsers. Viewport coverage includes native 4K, 1080p, laptop/tablet/phone, short windows, and the CSS viewport used at 200% desktop zoom. The suite checks direct rich text editing, layers, object locks, keyboard isolation, citations, project migration, and embedded-font exports.
+
+`web/scripts/editor-benchmark.mjs` measures 120-step drags in a production build using TP53/BRCA, all survival overlays, and 100 annotations. Run it against a local complete-catalog preview, without concurrent tests. It records browser/CPU information and three measured runs at normal and 4× CPU slowdown after warm-up. Targets: median p95 frame time ≤20 ms / ≤33 ms respectively, with interaction long tasks ≤100 ms.
+
+The [September 21 benchmark report](editor-performance-2026.09.21.json) records median p95 frame times of **16.7 ms** at normal speed and **16.8 ms** at 4× slowdown. The longest measured interaction task was **64 ms**. These measurements describe the recorded browser and machine, not a speed guarantee for every device.
+
+Grouping outputs use `percentile_groups`; `extremes` remains an accepted legacy input alias in browser URLs/projects and the Python API/CLI. The numeric grouping algorithm is unchanged. Historical validation reports retain the identifiers used at the time.

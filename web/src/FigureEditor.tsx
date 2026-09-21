@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { locked } from "./editorModel";
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
 import {
@@ -149,6 +150,14 @@ export function FigureEditor({
   ) =>
     edit((next) => {
       next[key] = value;
+      if (key === "lowLabel" || key === "highLabel") {
+        const style =
+          next.elements[key === "lowLabel" ? "label.low" : "label.high"];
+        if (style) {
+          delete style.runs;
+          delete style.text;
+        }
+      }
     });
   const width = settings.widthIn * 72,
     height = settings.heightIn * 72;
@@ -161,9 +170,12 @@ export function FigureEditor({
     : null;
   const isCurve = selected?.startsWith("curve.");
   const editableText =
-    selected && /^(title|source|grouping|xlabel|ylabel)(\.|$)/.test(selected);
+    selected &&
+    /^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(selected);
   function textDefault(id: string) {
     const [kind, ep] = id.split(".");
+    if (kind === "label")
+      return ep === "low" ? settings.lowLabel : settings.highLabel;
     if (kind === "source")
       return `Expression: ${analysis.sourceExpression}; endpoints: ${analysis.sourceSurvival}`;
     if (kind === "grouping") return analysis.groupingLabel;
@@ -184,11 +196,20 @@ export function FigureEditor({
   }
   const styleField = (key: keyof typeof style, value: any) =>
     edit((next) => {
-      (next.elements[selected!] ??= {})[key] = value;
+      const target = (next.elements[selected!] ??= {});
+      (target as Record<string, unknown>)[key] = value;
+      if (key === "text" && selected?.startsWith("label.")) {
+        next[selected === "label.low" ? "lowLabel" : "highLabel"] = value;
+        delete target.text;
+      }
+      if (key === "text" || key === "bold" || key === "italic")
+        delete target.runs;
     });
   const elements = [
     "title",
     "source",
+    "label.low",
+    "label.high",
     ...(analysis.grouping.kind === "median" ? [] : ["grouping"]),
     ...settings.endpoints.flatMap((ep) => [
       `panel.${ep}`,
@@ -208,8 +229,8 @@ export function FigureEditor({
       <div className="editor-intro">
         <h2>Edit your figure</h2>
         <p>
-          Click an item on the figure, or choose it below. Drag to move; use the
-          corner handle to resize a panel.
+          Double-click text to type directly on the figure. Select an item to
+          adjust its appearance here.
         </p>
       </div>
       <label>
@@ -230,224 +251,277 @@ export function FigureEditor({
       {selected && (
         <details open key={selected} className="selected-properties">
           <summary>{elementName(selected)}</summary>
-          {editableText && (
-            <label>
-              <span>Text</span>
-              <textarea
-                aria-label="Text"
-                maxLength={500}
-                value={style.text ?? textDefault(selected)}
-                onChange={(e) => styleField("text", e.target.value)}
-              />
-            </label>
-          )}
-          {panel && (
-            <div className="property-grid">
-              {(["x", "y", "width", "height"] as const).map((key) => {
-                const scale = key === "x" || key === "width" ? width : height;
-                const box = settings.panels[panel];
-                return (
-                  <NumberField
-                    key={key}
-                    label={`Panel ${key} (pt)`}
-                    value={box[key] * scale}
-                    min={key === "width" || key === "height" ? 30 : 0}
-                    max={
-                      scale *
-                      (key === "x"
-                        ? 1 - box.width
-                        : key === "y"
-                          ? 1 - box.height
-                          : key === "width"
-                            ? 1 - box.x
-                            : 1 - box.y)
-                    }
-                    onChange={(value) =>
-                      edit((next) => {
-                        next.panels[panel][key] = value! / scale;
-                      })
-                    }
-                  />
-                );
-              })}
-            </div>
-          )}
-          {item && (
-            <>
-              {item.kind === "text" && (
-                <label>
-                  <span>Annotation text</span>
-                  <textarea
-                    aria-label="Annotation text"
-                    maxLength={500}
-                    value={item.text}
-                    onChange={(e) =>
-                      edit((next) => {
-                        next.annotations.find((a) => a.id === item.id)!.text =
-                          e.target.value;
-                      })
-                    }
-                  />
-                </label>
-              )}
+          <fieldset
+            className="object-properties"
+            disabled={locked(settings, selected)}
+          >
+            {editableText && (
+              <label>
+                <span>Text</span>
+                <textarea
+                  aria-label="Text"
+                  maxLength={500}
+                  value={style.text ?? textDefault(selected)}
+                  onChange={(e) => styleField("text", e.target.value)}
+                />
+              </label>
+            )}
+            {(editableText || item?.kind === "text") && (
               <div className="property-grid">
-                {(
-                  ["x", "y", ...(item.kind === "text" ? [] : ["x2", "y2"])] as (
-                    | "x"
-                    | "y"
-                    | "x2"
-                    | "y2"
-                  )[]
-                ).map((key) => (
+                <label>
+                  <span>Selected font</span>
+                  <select
+                    aria-label="Selected font"
+                    value={style.fontFamily ?? settings.fontFamily}
+                    onChange={(e) => styleField("fontFamily", e.target.value)}
+                  >
+                    <option value="Sans">Sans serif</option>
+                    <option value="Serif">Serif</option>
+                    <option value="Mono">Monospace</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Text alignment</span>
+                  <select
+                    aria-label="Text alignment"
+                    value={style.align ?? (item ? "start" : "middle")}
+                    onChange={(e) => styleField("align", e.target.value)}
+                  >
+                    <option value="start">Left</option>
+                    <option value="middle">Center</option>
+                    <option value="end">Right</option>
+                  </select>
+                </label>
+                <NumberField
+                  label="Text rotation (degrees)"
+                  value={style.rotation ?? 0}
+                  min={-360}
+                  max={360}
+                  onChange={(value) => styleField("rotation", value)}
+                />
+              </div>
+            )}
+            {panel && (
+              <div className="property-grid">
+                {(["x", "y", "width", "height"] as const).map((key) => {
+                  const scale = key === "x" || key === "width" ? width : height;
+                  const box = settings.panels[panel];
+                  return (
+                    <NumberField
+                      key={key}
+                      label={`Panel ${key} (pt)`}
+                      value={box[key] * scale}
+                      min={key === "width" || key === "height" ? 30 : 0}
+                      max={
+                        scale *
+                        (key === "x"
+                          ? 1 - box.width
+                          : key === "y"
+                            ? 1 - box.height
+                            : key === "width"
+                              ? 1 - box.x
+                              : 1 - box.y)
+                      }
+                      onChange={(value) =>
+                        edit((next) => {
+                          next.panels[panel][key] = value! / scale;
+                        })
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {item && (
+              <>
+                {item.kind === "text" && (
+                  <label>
+                    <span>Annotation text</span>
+                    <textarea
+                      aria-label="Annotation text"
+                      maxLength={500}
+                      value={item.text}
+                      onChange={(e) =>
+                        edit((next) => {
+                          next.annotations.find((a) => a.id === item.id)!.text =
+                            e.target.value;
+                          if (next.elements[selected!])
+                            delete next.elements[selected!].runs;
+                        })
+                      }
+                    />
+                  </label>
+                )}
+                <div className="property-grid">
+                  {(
+                    [
+                      "x",
+                      "y",
+                      ...(item.kind === "text" ? [] : ["x2", "y2"]),
+                    ] as ("x" | "y" | "x2" | "y2")[]
+                  ).map((key) => (
+                    <NumberField
+                      key={key}
+                      label={`${key.toUpperCase()} (pt)`}
+                      value={item[key] * (key.startsWith("x") ? width : height)}
+                      min={-10 * (key.startsWith("x") ? width : height)}
+                      max={10 * (key.startsWith("x") ? width : height)}
+                      onChange={(value) =>
+                        edit((next) => {
+                          next.annotations.find((a) => a.id === item.id)![key] =
+                            value! / (key.startsWith("x") ? width : height);
+                        })
+                      }
+                    />
+                  ))}
                   <NumberField
-                    key={key}
-                    label={`${key.toUpperCase()} (pt)`}
-                    value={item[key] * (key.startsWith("x") ? width : height)}
-                    min={-10 * (key.startsWith("x") ? width : height)}
-                    max={10 * (key.startsWith("x") ? width : height)}
+                    label={
+                      item.kind === "text"
+                        ? "Annotation font size (pt)"
+                        : "Annotation line width (pt)"
+                    }
+                    value={
+                      item.kind === "text"
+                        ? (style.fontSize ?? item.fontSize)
+                        : item.lineWidth
+                    }
+                    min={item.kind === "text" ? 4 : 0.2}
+                    max={item.kind === "text" ? 72 : 12}
+                    step={0.5}
                     onChange={(value) =>
                       edit((next) => {
-                        next.annotations.find((a) => a.id === item.id)![key] =
-                          value! / (key.startsWith("x") ? width : height);
+                        next.annotations.find((a) => a.id === item.id)![
+                          item.kind === "text" ? "fontSize" : "lineWidth"
+                        ] = value!;
+                        if (item.kind === "text" && next.elements[selected!])
+                          delete next.elements[selected!].fontSize;
                       })
                     }
                   />
-                ))}
-                <NumberField
-                  label={
-                    item.kind === "text"
-                      ? "Annotation font size (pt)"
-                      : "Annotation line width (pt)"
-                  }
-                  value={item.kind === "text" ? item.fontSize : item.lineWidth}
-                  min={item.kind === "text" ? 4 : 0.2}
-                  max={item.kind === "text" ? 72 : 12}
-                  step={0.5}
+                </div>
+                <Color
+                  label="Annotation color"
+                  value={item.color}
                   onChange={(value) =>
                     edit((next) => {
-                      next.annotations.find((a) => a.id === item.id)![
-                        item.kind === "text" ? "fontSize" : "lineWidth"
-                      ] = value!;
+                      next.annotations.find((a) => a.id === item.id)!.color =
+                        value;
                     })
                   }
                 />
-              </div>
-              <Color
-                label="Annotation color"
-                value={item.color}
-                onChange={(value) =>
-                  edit((next) => {
-                    next.annotations.find((a) => a.id === item.id)!.color =
-                      value;
-                  })
-                }
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  edit((next) => {
-                    next.annotations = next.annotations.filter(
-                      (a) => a.id !== item.id,
-                    );
-                  });
-                  select(null);
-                }}
-              >
-                Remove annotation
-              </button>
-            </>
-          )}
-          {!panel && !item && (
-            <>
-              <div className="property-grid">
+                <button
+                  type="button"
+                  onClick={() => {
+                    edit((next) => {
+                      next.annotations = next.annotations.filter(
+                        (a) => a.id !== item.id,
+                      );
+                      delete next.elements[`annotation.${item.id}`];
+                    });
+                    select(null);
+                  }}
+                >
+                  Remove annotation
+                </button>
+              </>
+            )}
+            {!panel && !item && (
+              <>
+                <div className="property-grid">
+                  {!isCurve && (
+                    <>
+                      {!selected.startsWith("label.") && (
+                        <NumberField
+                          label="Horizontal offset (pt)"
+                          value={style.dx ?? 0}
+                          onChange={(value) => styleField("dx", value)}
+                        />
+                      )}
+                      {!selected.startsWith("label.") && (
+                        <NumberField
+                          label="Vertical offset (pt)"
+                          value={style.dy ?? 0}
+                          onChange={(value) => styleField("dy", value)}
+                        />
+                      )}
+                      <NumberField
+                        label="Text size (pt)"
+                        value={style.fontSize ?? null}
+                        auto
+                        min={4}
+                        max={72}
+                        step={0.5}
+                        onChange={(value) =>
+                          styleField("fontSize", value ?? undefined)
+                        }
+                      />
+                    </>
+                  )}
+                  {isCurve && (
+                    <NumberField
+                      label="Selected line width (pt)"
+                      value={style.lineWidth ?? settings.lineWidth}
+                      min={0.2}
+                      max={12}
+                      step={0.1}
+                      onChange={(value) => styleField("lineWidth", value)}
+                    />
+                  )}
+                </div>
+                <Color
+                  label="Selected item color"
+                  value={
+                    style.color ??
+                    (isCurve
+                      ? selected.includes(".low.")
+                        ? settings.lowColor
+                        : settings.highColor
+                      : "#111111")
+                  }
+                  onChange={(value) => styleField("color", value)}
+                />
                 {!isCurve && (
                   <>
-                    <NumberField
-                      label="Horizontal offset (pt)"
-                      value={style.dx ?? 0}
-                      onChange={(value) => styleField("dx", value)}
+                    <Check
+                      label="Bold text"
+                      checked={style.bold !== false}
+                      onChange={(value) => styleField("bold", value)}
                     />
-                    <NumberField
-                      label="Vertical offset (pt)"
-                      value={style.dy ?? 0}
-                      onChange={(value) => styleField("dy", value)}
-                    />
-                    <NumberField
-                      label="Text size (pt)"
-                      value={style.fontSize ?? null}
-                      auto
-                      min={4}
-                      max={72}
-                      step={0.5}
-                      onChange={(value) =>
-                        styleField("fontSize", value ?? undefined)
-                      }
+                    <Check
+                      label="Italic text"
+                      checked={!!style.italic}
+                      onChange={(value) => styleField("italic", value)}
                     />
                   </>
                 )}
-                {isCurve && (
-                  <NumberField
-                    label="Selected line width (pt)"
-                    value={style.lineWidth ?? settings.lineWidth}
-                    min={0.2}
-                    max={12}
-                    step={0.1}
-                    onChange={(value) => styleField("lineWidth", value)}
-                  />
-                )}
-              </div>
-              <Color
-                label="Selected item color"
-                value={
-                  style.color ??
-                  (isCurve
-                    ? selected.includes(".low.")
-                      ? settings.lowColor
-                      : settings.highColor
-                    : "#111111")
+                <Check
+                  label="Show this item"
+                  checked={!style.hidden}
+                  onChange={(value) => styleField("hidden", !value)}
+                />
+              </>
+            )}
+            {!item && (
+              <button
+                type="button"
+                onClick={() =>
+                  edit((next) => {
+                    if (panel)
+                      next.panels[panel] = defaultFigure().panels[panel];
+                    else delete next.elements[selected];
+                  })
                 }
-                onChange={(value) => styleField("color", value)}
-              />
-              {!isCurve && (
-                <>
-                  <Check
-                    label="Bold text"
-                    checked={style.bold !== false}
-                    onChange={(value) => styleField("bold", value)}
-                  />
-                  <Check
-                    label="Italic text"
-                    checked={!!style.italic}
-                    onChange={(value) => styleField("italic", value)}
-                  />
-                </>
-              )}
-              <Check
-                label="Show this item"
-                checked={!style.hidden}
-                onChange={(value) => styleField("hidden", !value)}
-              />
-            </>
-          )}
-          {!item && (
-            <button
-              type="button"
-              onClick={() =>
-                edit((next) => {
-                  if (panel) next.panels[panel] = defaultFigure().panels[panel];
-                  else delete next.elements[selected];
-                })
-              }
-            >
-              Reset selected item
-            </button>
-          )}
-          {selected.startsWith("statistics.") && (
-            <p className="help-text">
-              Statistics update with your analysis. Their values cannot be typed
-              over.
-            </p>
-          )}
+              >
+                Reset selected item
+              </button>
+            )}
+            {selected.startsWith("statistics.") && (
+              <p className="help-text">
+                Statistics update with your analysis. Their values cannot be
+                typed over.
+              </p>
+            )}
+          </fieldset>
         </details>
       )}
       <details open>

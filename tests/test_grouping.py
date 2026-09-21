@@ -14,7 +14,7 @@ from survscope.statistics import confidence_bounds, cox_fit, km_timeline
     "spec",
     [
         {"kind": "percentile", "percentile": 50},
-        {"kind": "extremes", "lowerPercent": 50, "upperPercent": 50},
+        {"kind": "percentile_groups", "lowerPercent": 50, "upperPercent": 50},
     ],
 )
 def test_median_aliases_preserve_reference_groups(store, spec):
@@ -29,8 +29,8 @@ def test_median_aliases_preserve_reference_groups(store, spec):
         {"kind": "percentile", "percentile": 0},
         {"kind": "percentile", "percentile": 50, "threshold": 10},
         {"kind": "mean", "threshold": 10},
-        {"kind": "extremes", "lowerPercent": 60, "upperPercent": 60},
-        {"kind": "extremes", "lowerPercent": 50, "upperPercent": 50, "threshold": 10},
+        {"kind": "percentile_groups", "lowerPercent": 60, "upperPercent": 60},
+        {"kind": "percentile_groups", "lowerPercent": 50, "upperPercent": 50, "threshold": 10},
         {"kind": "tpm", "threshold": float("nan")},
         {"kind": "tpm", "threshold": True},
     ],
@@ -40,9 +40,9 @@ def test_invalid_grouping_is_rejected(spec):
         normalize_grouping(grouping=spec)
 
 
-def test_extremes_keep_ties_together_and_exclude_middle():
+def test_percentile_groups_keep_ties_together_and_exclude_middle():
     values = np.array([0, 0, 1, 2, 3, 3, 3, 4], dtype=float)
-    spec = GroupingSpec("extremes", lower_percent=25, upper_percent=25)
+    spec = GroupingSpec("percentile_groups", lower_percent=25, upper_percent=25)
     low, high, lower, upper = assign_groups(values, np.arange(8), {}, spec)
     assert (lower, upper) == (0.75, 3)
     assert np.flatnonzero(low).tolist() == [0, 1]
@@ -62,7 +62,7 @@ def test_extreme_counts_and_serialized_provenance(store):
         "SRD5A1",
         "PAAD",
         store=store,
-        grouping=GroupingSpec("extremes", lower_percent=25, upper_percent=25),
+        grouping=GroupingSpec("percentile_groups", lower_percent=25, upper_percent=25),
     )
     assert result.endpoints["OS"].eligible_n == 177
     for endpoint in result.endpoints.values():
@@ -107,7 +107,7 @@ def test_censors_at_event_time_remain_in_risk_set():
     [
         ["--grouping", "mean"],
         ["--grouping", "percentile", "--percentile", "75"],
-        ["--grouping", "extremes", "--lower-percent", "25", "--upper-percent", "25"],
+        ["--grouping", "percentile_groups", "--lower-percent", "25", "--upper-percent", "25"],
     ],
 )
 def test_cli_comparisons_reach_analysis(fixture_data_dir, tmp_path, options):
@@ -145,3 +145,12 @@ def test_cli_percentage_options_require_a_grouping():
 
     with pytest.raises(SystemExit, match="require --grouping"):
         main(["plot", "--gene", "SRD5A1", "--cohort", "PAAD", "--percentile", "75"])
+
+
+def test_legacy_grouping_alias_has_identical_results(store):
+    old = {"kind": "extremes", "lowerPercent": 20, "upperPercent": 30}
+    new = {**old, "kind": "percentile_groups"}
+    assert analyze("SRD5A1", "PAAD", grouping=old, store=store).to_dict() == analyze(
+        "SRD5A1", "PAAD", grouping=new, store=store
+    ).to_dict()
+    assert normalize_grouping(grouping=old).to_dict()["kind"] == "percentile_groups"

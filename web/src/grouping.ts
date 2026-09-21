@@ -1,8 +1,14 @@
 import type { GroupingSpec, MedianRecord } from "./types";
 
-export type GroupingInput = "median" | number | GroupingSpec;
+export type GroupingInput =
+  | "median"
+  | number
+  | GroupingSpec
+  | { kind: "extremes"; lowerPercent: number; upperPercent: number };
 
 export function normalizeGrouping(input: GroupingInput): GroupingSpec {
+  if (typeof input === "object" && input?.kind === "extremes")
+    input = { ...input, kind: "percentile_groups" };
   const spec: GroupingSpec =
     input === "median"
       ? { kind: "median" }
@@ -16,7 +22,7 @@ export function normalizeGrouping(input: GroupingInput): GroupingSpec {
     mean: ["kind"],
     tpm: ["kind", "threshold"],
     percentile: ["kind", "percentile"],
-    extremes: ["kind", "lowerPercent", "upperPercent"],
+    percentile_groups: ["kind", "lowerPercent", "upperPercent"],
   };
   if (
     !keys[spec.kind] ||
@@ -41,7 +47,7 @@ export function normalizeGrouping(input: GroupingInput): GroupingSpec {
     }
     if (spec.percentile === 50) return { kind: "median" };
   }
-  if (spec.kind === "extremes") {
+  if (spec.kind === "percentile_groups") {
     const { lowerPercent: lo, upperPercent: hi } = spec;
     if (
       !Number.isFinite(lo) ||
@@ -109,7 +115,7 @@ export function assignGroups(
     lower = upper = (total + correction) / tpm.length;
   } else if (spec.kind === "percentile") {
     lower = upper = quantile(tpm, spec.percentile / 100);
-  } else if (spec.kind === "extremes") {
+  } else if (spec.kind === "percentile_groups") {
     lower = quantile(tpm, spec.lowerPercent / 100);
     upper = quantile(tpm, 1 - spec.upperPercent / 100);
   }
@@ -122,7 +128,8 @@ export function assignGroups(
 }
 
 export function groupingFromQuery(params: URLSearchParams): GroupingSpec {
-  const kind = params.get("grouping");
+  const rawKind = params.get("grouping");
+  const kind = rawKind === "extremes" ? "percentile_groups" : rawKind;
   const number = (key: string) => {
     const value = params.get(key);
     if (
@@ -137,7 +144,7 @@ export function groupingFromQuery(params: URLSearchParams): GroupingSpec {
   if (kind === "mean") return { kind };
   if (kind === "percentile")
     return normalizeGrouping({ kind, percentile: number("percentile") });
-  if (kind === "extremes")
+  if (kind === "percentile_groups")
     return normalizeGrouping({
       kind,
       lowerPercent: number("lower"),

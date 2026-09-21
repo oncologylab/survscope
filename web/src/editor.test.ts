@@ -69,7 +69,7 @@ describe("comparison boundaries", () => {
     });
     expect(
       normalizeGrouping({
-        kind: "extremes",
+        kind: "percentile_groups",
         lowerPercent: 50,
         upperPercent: 50,
       }),
@@ -78,13 +78,13 @@ describe("comparison boundaries", () => {
       { kind: "mean", threshold: 2 },
       { kind: "percentile", percentile: "75" },
       { kind: "percentile", percentile: 50, threshold: 10 },
-      { kind: "extremes", lowerPercent: 60, upperPercent: 60 },
+      { kind: "percentile_groups", lowerPercent: 60, upperPercent: 60 },
     ]) {
       expect(() => normalizeGrouping(spec as GroupingSpec)).toThrow();
     }
     expect(() => groupingFromQuery(new URLSearchParams("cutoff="))).toThrow();
     const spec: GroupingSpec = {
-      kind: "extremes",
+      kind: "percentile_groups",
       lowerPercent: 20,
       upperPercent: 30,
     };
@@ -92,12 +92,12 @@ describe("comparison boundaries", () => {
       spec,
     );
   });
-  test("extreme comparisons keep ties together", () => {
+  test("percentile group comparisons keep ties together", () => {
     const groups = assignGroups(
       [0, 0, 1, 2, 3, 3, 3, 4],
       [0, 1, 2, 3, 4, 5, 6, 7],
       { cutoff_tpm: null, flips: [] },
-      { kind: "extremes", lowerPercent: 25, upperPercent: 25 },
+      { kind: "percentile_groups", lowerPercent: 25, upperPercent: 25 },
     );
     expect(groups.lower).toBe(0.75);
     expect(groups.upper).toBe(3);
@@ -159,7 +159,8 @@ describe("portable editor projects", () => {
     expect(restored.format).toBe("survscope-project");
     if (restored.format !== "survscope-project") throw Error("wrong format");
     expect(restored.settings).toEqual(settings);
-    expect(restored.analysis).toEqual(analysis);
+    expect(restored.analysis).toMatchObject(analysis);
+    expect(restored.analysis.provenance?.cohort).toBe("PAAD");
     expect(JSON.stringify(restored)).not.toContain('"expression"');
   });
   test("presets and a new analysis clear custom text and annotations while retaining appearance", () => {

@@ -6,7 +6,7 @@ export type GroupingSpec =
   | { kind: "mean" }
   | { kind: "tpm"; threshold: number }
   | { kind: "percentile"; percentile: number }
-  | { kind: "extremes"; lowerPercent: number; upperPercent: number };
+  | { kind: "percentile_groups"; lowerPercent: number; upperPercent: number };
 
 export interface RiskPoint {
   timeMonths: number;
@@ -33,6 +33,8 @@ export interface GeneRecord {
 }
 
 export interface CohortRecord {
+  reused_from?: { data_version: string };
+  source?: { gdc_release?: { data_release?: string } };
   program?: "TCGA" | "CPTAC";
   sources?: Manifest["sources"];
   label: string;
@@ -144,6 +146,7 @@ export interface EndpointResult {
 }
 
 export interface SurvivalAnalysis {
+  provenance?: import("./citations").AnalysisProvenance;
   sourceExpression: string;
   sourceSurvival: string;
   gene: string;

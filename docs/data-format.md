@@ -79,7 +79,7 @@ immutable; a schema or source refresh creates a new data tag and manifest.
 
 The editor and new comparisons reuse the existing immutable schema-1/schema-2
 assets; they do not require a new data release. Median analysis continues to
-use the stored cutoff and XOR flips. Mean, percentile, extreme-group, and
+use the stored cutoff and XOR flips. Mean, percentile, custom percentile-group, and
 numeric TPM comparisons use decoded expression after endpoint filtering.
 Quantiles follow R type 7 and ties stay together. See [statistical methods](methods.md).
 

@@ -951,3 +951,582 @@ button:disabled {
   color: #73561c;
   font-size: 12px;
 }
+
+/* The editing workspace follows the viewport; print dimensions belong to the artboard. */
+body {
+  min-width: 320px;
+  overflow: hidden;
+}
+.studio {
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.studio .masthead,
+.studio main,
+.studio footer {
+  width: calc(100% - 32px);
+  max-width: none;
+  margin: 0 16px;
+}
+.studio .masthead {
+  flex: none;
+  min-height: 54px;
+  gap: 16px;
+  padding: 8px 0;
+}
+.studio .header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.studio main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.studio .workspace {
+  width: 100%;
+  flex: 1;
+  margin: 8px 0 0;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: none;
+  position: relative;
+}
+.studio .tools-rail {
+  flex: 0 0 44px;
+  padding: 8px 4px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: auto;
+}
+.tools-rail button {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  font-size: 18px;
+  padding: 4px;
+}
+.tools-rail hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.studio button,
+.citation-dialog button:not(.dialog-close) {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.studio button:hover:not(:disabled) {
+  background: #eaf2ee;
+  border-color: #94b8ac;
+}
+.studio button[aria-pressed="true"],
+.studio button[aria-selected="true"] {
+  color: #fff;
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.studio button:disabled {
+  cursor: default;
+}
+.studio .analysis-dock {
+  flex: 0 0 var(--analysis-width);
+  width: var(--analysis-width);
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+.studio .properties-dock {
+  flex: 0 0 var(--properties-width);
+  width: var(--properties-width);
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+.dock-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  min-height: 46px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+  gap: 4px;
+  font-size: 13px;
+}
+.dock-heading [role="tablist"] {
+  display: flex;
+  gap: 4px;
+}
+.studio .controls {
+  padding: 16px;
+  border: 0;
+  min-height: 0;
+  overflow: auto;
+  font-size: 12px;
+}
+.studio .controls h2 {
+  font-size: 18px;
+}
+.studio .controls > label,
+.studio .controls fieldset {
+  margin-top: 20px;
+}
+.studio .controls select,
+.studio .controls input {
+  max-width: 100%;
+  font-size: 12px;
+}
+.studio .controls .primary-button {
+  background: var(--teal);
+  color: #fff;
+  padding: 12px;
+  margin-top: 18px;
+}
+.studio .result {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.studio .result-heading {
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.studio .result-heading > div:first-child {
+  display: block;
+  min-width: 0;
+}
+.studio .result-heading h2 {
+  font-size: 18px;
+}
+.studio .result-heading p {
+  font-size: 11px;
+}
+.studio .export-buttons {
+  flex: none;
+  gap: 4px;
+}
+.studio .export-buttons button {
+  color: var(--teal-dark);
+}
+.studio .zoom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: none;
+  margin: 10px 0 6px;
+}
+.studio .zoom-toolbar output {
+  min-width: 42px;
+  text-align: center;
+}
+.studio .zoom-toolbar .check {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 0;
+}
+.canvas-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.studio .plot-stage {
+  flex: 1;
+  display: block;
+  min-height: 60px;
+  max-height: none;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: auto;
+  position: relative;
+  overscroll-behavior: contain;
+}
+.canvas-surround {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.studio .figure-canvas {
+  flex: none;
+  margin: 0;
+  box-shadow: 0 8px 22px #1a222326;
+  background: white;
+}
+.studio .survival-plot {
+  width: 100%;
+  height: 100%;
+  filter: none;
+  max-height: none;
+  max-width: none;
+  user-select: none;
+}
+.tool-type .survival-plot,
+.tool-type [data-element] {
+  cursor: text !important;
+}
+.tool-zoom .survival-plot,
+.tool-zoom [data-element] {
+  cursor: zoom-in !important;
+}
+.tool-hand .survival-plot,
+.tool-hand [data-element] {
+  cursor: grab !important;
+}
+.tool-line .survival-plot,
+.tool-arrow .survival-plot {
+  cursor: crosshair;
+}
+.studio .workspace-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  flex: none;
+}
+.studio .workspace-status button {
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.studio .inspector-content {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+}
+.studio .editor-controls {
+  border: 0;
+  padding: 12px 16px;
+  overflow: visible;
+  max-height: none;
+}
+.studio .editor-intro h2 {
+  display: none;
+}
+.studio .editor-intro p {
+  margin-top: 0;
+}
+.studio .arrange-controls {
+  margin: 10px 12px 0;
+  font-size: 12px;
+}
+.studio .arrange-controls summary {
+  cursor: pointer;
+  padding: 5px 0;
+}
+.studio .arrange-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0;
+}
+.studio .button-row {
+  gap: 5px;
+  display: flex;
+  flex-wrap: wrap;
+}
+.studio .reset-figure {
+  margin: 12px 16px;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-bottom: 1px solid #eee;
+  font-size: 11px;
+}
+.layer-row.selected {
+  background: #dcefeb;
+}
+.studio .layer-select {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 5px 0;
+}
+.dock-resizer {
+  position: absolute;
+  width: 7px;
+  top: 46px;
+  bottom: 0;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+.dock-resizer.right {
+  right: -4px;
+}
+.dock-resizer.left {
+  left: -4px;
+}
+.dock-resizer:hover,
+.dock-resizer:focus {
+  background: #147d7755;
+}
+.studio footer {
+  flex: none;
+  min-height: 25px;
+  padding: 5px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+.studio footer p {
+  margin: 0;
+  font-size: 10px;
+}
+.studio .plot-placeholder {
+  height: 100%;
+  align-content: center;
+  gap: 8px;
+}
+.inline-text-editor {
+  position: absolute;
+  z-index: 10;
+}
+.inline-text-editor .ProseMirror {
+  padding: 0;
+  line-height: 1.2;
+  min-height: 1.2em;
+  outline: 1px solid #147d77;
+  background: #fff;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+  font-weight: 400;
+  font-style: normal;
+  caret-color: #147d77;
+}
+.inline-text-editor .ProseMirror p {
+  margin: 0;
+}
+.inline-text-editor .ProseMirror sup,
+.inline-text-editor .ProseMirror sub {
+  font-size: 70%;
+  line-height: 0;
+}
+.text-format-toolbar {
+  position: fixed;
+  z-index: 30;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 7px;
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  box-shadow: 0 5px 16px #0002;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.text-format-toolbar small {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.citation-list {
+  padding-left: 24px;
+}
+.citation-list li {
+  margin: 16px 0;
+}
+.citation-role {
+  display: block;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--teal-dark);
+}
+.citation-list a {
+  overflow-wrap: anywhere;
+}
+.citation-methods {
+  width: 100%;
+  height: 150px;
+  font: 12px/1.5 sans-serif;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.citation-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.citation-dialog button:not(.dialog-close):hover {
+  border-color: var(--teal);
+  color: var(--teal-dark);
+}
+@media (max-width: 1439px) {
+  .studio .analysis-dock {
+    position: absolute;
+    left: 44px;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    box-shadow: 8px 0 24px #0002;
+  }
+  .studio .analysis-dock .dock-resizer {
+    display: none;
+  }
+  .canvas-hint {
+    display: none;
+  }
+}
+@media (max-width: 1023px) {
+  .studio .properties-dock {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    max-width: calc(100% - 44px);
+    box-shadow: -8px 0 24px #0002;
+  }
+  .studio .properties-dock .dock-resizer {
+    display: none;
+  }
+  .studio .masthead {
+    align-items: flex-start;
+  }
+  .studio .result-heading p {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .studio .masthead,
+  .studio main,
+  .studio footer {
+    width: calc(100% - 12px);
+    margin: 0 6px;
+  }
+  .studio .masthead {
+    gap: 6px;
+  }
+  .studio .brand {
+    font-size: 16px;
+  }
+  .studio .header-actions {
+    gap: 3px;
+  }
+  .studio .header-actions button {
+    font-size: 10px;
+    padding: 5px;
+  }
+  .studio .result {
+    padding: 7px;
+  }
+  .studio .result-heading {
+    flex-wrap: wrap;
+  }
+  .studio .result-heading h2 {
+    font-size: 14px;
+  }
+  .studio .result-heading .export-buttons {
+    justify-content: flex-start;
+  }
+  .studio .export-buttons button {
+    padding: 5px;
+    font-size: 10px;
+  }
+  .studio .tools-rail {
+    flex-basis: 38px;
+    padding: 6px 2px;
+  }
+  .studio .tools-rail button {
+    width: 32px;
+    height: 34px;
+    padding: 3px;
+  }
+  .studio .analysis-dock {
+    left: 38px;
+    max-width: calc(100% - 38px);
+  }
+  .studio .zoom-toolbar {
+    gap: 3px;
+  }
+  .studio .zoom-toolbar button {
+    font-size: 10px;
+    padding: 5px;
+  }
+  .studio .workspace-status {
+    font-size: 9px;
+  }
+  .studio footer {
+    font-size: 9px;
+  }
+  .text-format-toolbar {
+    top: 96px;
+    max-width: 95vw;
+  }
+  .text-format-toolbar small {
+    display: none;
+  }
+}
+@media (max-height: 650px) {
+  .studio .result-heading p {
+    display: none;
+  }
+  .studio .result {
+    padding: 6px;
+  }
+  .studio .zoom-toolbar {
+    margin: 5px 0;
+  }
+}
+.studio .analysis-quality {
+  margin-top: 20px;
+}
+.studio .analysis-quality summary {
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.studio .quality-strip {
+  grid-template-columns: 1fr;
+}
+.studio .quality-strip p {
+  font-size: 11px;
+}
+.studio .workspace-status .data-version {
+  font-size: 11px;
+}
+.object-properties {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.studio .zoom-toolbar [aria-label="Magnification"] {
+  min-width: 42px;
+  text-align: center;
+}

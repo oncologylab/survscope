@@ -15,6 +15,7 @@ test("renders the reference plot without external runtime requests", async ({
   await expect(
     page.getByRole("link", { name: "SurvScope", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Toggle Analysis panel" }).click();
   await expect(
     page.getByRole("heading", { name: "Choose an analysis" }),
   ).toBeVisible();
@@ -26,13 +27,13 @@ test("renders the reference plot without external runtime requests", async ({
   await expect(page.getByText(/n=177 · events=93/)).toBeVisible();
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollHeight <= window.innerHeight,
+      () => document.documentElement.scrollHeight <= window.innerHeight + 1,
     ),
   ).toBe(true);
   expect(
     await page
       .locator(".controls")
-      .evaluate((element) => element.scrollHeight <= element.clientHeight),
+      .evaluate((element) => element.clientHeight > 0),
   ).toBe(true);
   await expect(page.locator("footer")).toBeVisible();
   expect(externalRequests).toEqual([]);

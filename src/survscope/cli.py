@@ -53,7 +53,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="median",
         help="Use 'median' or a numeric TPM cutoff.",
     )
-    comparison.add_argument("--grouping", choices=("median", "mean", "percentile", "extremes"))
+    comparison.add_argument(
+        "--grouping", choices=("median", "mean", "percentile", "percentile_groups", "extremes")
+    )
     plot_parser.add_argument("--percentile", type=float)
     plot_parser.add_argument("--lower-percent", type=float)
     plot_parser.add_argument("--upper-percent", type=float)
@@ -111,7 +113,9 @@ def main(argv: list[str] | None = None) -> int:
         elif any(
             value is not None for value in (args.percentile, args.lower_percent, args.upper_percent)
         ):
-            raise SystemExit("Percentage options require --grouping percentile or extremes.")
+            raise SystemExit(
+                "Percentage options require --grouping percentile or percentile_groups."
+            )
         result = analyze(
             args.gene,
             args.cohort,

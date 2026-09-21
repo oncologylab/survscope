@@ -8,7 +8,7 @@ export interface ComparisonDraft {
     | "percentile"
     | "quarters"
     | "thirds"
-    | "extremes"
+    | "percentile_groups"
     | "tpm";
   threshold: string;
   percentile: string;
@@ -18,15 +18,15 @@ export interface ComparisonDraft {
 export function comparisonDraft(spec: GroupingSpec): ComparisonDraft {
   return {
     mode:
-      spec.kind === "extremes" &&
+      spec.kind === "percentile_groups" &&
       spec.lowerPercent === 25 &&
       spec.upperPercent === 25
         ? "quarters"
         : spec.kind,
     threshold: spec.kind === "tpm" ? String(spec.threshold) : "10",
     percentile: spec.kind === "percentile" ? String(spec.percentile) : "75",
-    lower: spec.kind === "extremes" ? String(spec.lowerPercent) : "25",
-    upper: spec.kind === "extremes" ? String(spec.upperPercent) : "25",
+    lower: spec.kind === "percentile_groups" ? String(spec.lowerPercent) : "25",
+    upper: spec.kind === "percentile_groups" ? String(spec.upperPercent) : "25",
   };
 }
 export function draftGrouping(draft: ComparisonDraft): GroupingSpec {
@@ -40,9 +40,13 @@ export function draftGrouping(draft: ComparisonDraft): GroupingSpec {
     case "mean":
       return { kind: draft.mode };
     case "quarters":
-      return { kind: "extremes", lowerPercent: 25, upperPercent: 25 };
+      return { kind: "percentile_groups", lowerPercent: 25, upperPercent: 25 };
     case "thirds":
-      return { kind: "extremes", lowerPercent: 100 / 3, upperPercent: 100 / 3 };
+      return {
+        kind: "percentile_groups",
+        lowerPercent: 100 / 3,
+        upperPercent: 100 / 3,
+      };
     case "percentile":
       return normalizeGrouping({
         kind: "percentile",
@@ -50,9 +54,9 @@ export function draftGrouping(draft: ComparisonDraft): GroupingSpec {
       });
     case "tpm":
       return normalizeGrouping({ kind: "tpm", threshold: n(draft.threshold) });
-    case "extremes":
+    case "percentile_groups":
       return normalizeGrouping({
-        kind: "extremes",
+        kind: "percentile_groups",
         lowerPercent: n(draft.lower),
         upperPercent: n(draft.upper),
       });
@@ -68,7 +72,7 @@ const descriptions: Record<ComparisonDraft["mode"], string> = {
     "Compare the lowest 25% with the highest 25%. Leave the middle patients out of this comparison.",
   thirds:
     "Compare the lowest third with the highest third. Leave the middle third out.",
-  extremes:
+  percentile_groups:
     "Choose how much of the lower and upper expression ranges to compare. Their total cannot exceed 100%.",
   tpm: "Enter a gene-expression threshold. TPM measures the relative abundance of a gene's RNA.",
 };
@@ -97,7 +101,7 @@ export function ComparisonControls({
           <option value="percentile">Choose a percentile</option>
           <option value="quarters">Lowest vs highest quarter</option>
           <option value="thirds">Lowest vs highest third</option>
-          <option value="extremes">Custom extreme groups</option>
+          <option value="percentile_groups">Custom percentile groups</option>
           <option value="tpm">Custom TPM threshold</option>
         </select>
       </label>
@@ -129,7 +133,7 @@ export function ComparisonControls({
           />
         </label>
       )}
-      {draft.mode === "extremes" && (
+      {draft.mode === "percentile_groups" && (
         <div className="property-grid">
           <label>
             <span>Lowest (%)</span>
