@@ -68,14 +68,12 @@ select {
   z-index: 3;
 }
 
-.control-heading,
 .result-heading > div:first-child {
   display: flex;
   gap: 14px;
   align-items: flex-start;
 }
 
-.control-heading > span,
 .result-heading > div:first-child > span {
   color: var(--coral);
   font-size: 14px;
@@ -88,7 +86,6 @@ h2 {
   font-weight: 500;
 }
 
-.control-heading p,
 .result-heading p {
   margin: 5px 0 0;
   color: var(--muted);
@@ -788,12 +785,12 @@ button:disabled {
   overflow: auto;
   font-size: 12px;
 }
-.studio .controls h2 {
-  font-size: 18px;
-}
 .studio .controls > label,
 .studio .controls fieldset {
   margin-top: 20px;
+}
+.studio .controls > label:first-child {
+  margin-top: 0;
 }
 .studio .controls select,
 .studio .controls input {

@@ -332,13 +332,6 @@ export default function App() {
         onExport={(kind) => void exportPlot(kind)}
         analysisControls={
           <form className="controls" onSubmit={runAnalysis}>
-            <div className="control-heading">
-              <span>01</span>
-              <div>
-                <h2>Choose an analysis</h2>
-                <p>Explore a gene in a cancer cohort.</p>
-              </div>
-            </div>
             <label>
               <span>Cancer cohort</span>
               <select

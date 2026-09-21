@@ -16,9 +16,7 @@ test("renders the reference plot without external runtime requests", async ({
     page.getByRole("link", { name: "SurvScope", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Toggle Analysis panel" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Choose an analysis" }),
-  ).toBeVisible();
+  await expect(page.getByLabel("Cancer cohort")).toBeVisible();
   await expect(page.getByText("Transparent by design")).toHaveCount(0);
   await expect(
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
