@@ -105,6 +105,7 @@ def test_censors_at_event_time_remain_in_risk_set():
 @pytest.mark.parametrize(
     "options",
     [
+        ["--grouping", "median", "--show-q"],
         ["--grouping", "mean"],
         ["--grouping", "percentile", "--percentile", "75"],
         ["--grouping", "percentile_groups", "--lower-percent", "25", "--upper-percent", "25"],
@@ -138,6 +139,8 @@ def test_cli_comparisons_reach_analysis(fixture_data_dir, tmp_path, options):
     output = json.loads((tmp_path / "SRD5A1_TCGA_PAAD_KM_survival.json").read_text())
     assert output["grouping"]["kind"] == options[1]
     assert output["endpoints"]["OS"]["eligible_n"] == 177
+    svg = (tmp_path / "SRD5A1_TCGA_PAAD_KM_survival.svg").read_text()
+    assert ("q=" in svg) == ("--show-q" in options)
 
 
 def test_cli_percentage_options_require_a_grouping():

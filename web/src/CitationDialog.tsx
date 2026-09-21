@@ -11,10 +11,12 @@ export function CitationDialog({
   open,
   close,
   analysis,
+  showQ,
 }: {
   open: boolean;
   close: () => void;
   analysis: SurvivalAnalysis | null;
+  showQ: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     [status, setStatus] = useState("");
@@ -112,11 +114,11 @@ export function CitationDialog({
             className="citation-methods"
             aria-label="Methods and acknowledgement"
             readOnly
-            value={methodsText(analysis)}
+            value={methodsText(analysis, showQ)}
           />
           <button
             type="button"
-            onClick={() => void copy(methodsText(analysis))}
+            onClick={() => void copy(methodsText(analysis, showQ))}
           >
             Copy methods and acknowledgement
           </button>

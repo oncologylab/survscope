@@ -46,5 +46,5 @@ export function qValueExplanation(analysis: SurvivalAnalysis): string {
   if (!count) return "No outcome has an estimable log-rank p-value.";
   if (count === 1)
     return "One tested outcome: q equals p, so the figure shows p only.";
-  return `q adjusts the ${count} tested outcomes in this analysis using Benjamini–Hochberg. It does not adjust for other genes or comparisons you try.`;
+  return `Optional; off by default. q adjusts the ${count} tested outcomes in this analysis using Benjamini–Hochberg. It does not adjust for other genes or comparisons you try.`;
 }

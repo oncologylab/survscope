@@ -92,7 +92,9 @@ export function HelpGuide({
         event are censored, so e cannot exceed n. The counts are equal when
         every included patient has an observed event. For OS, the event is
         death. The log-rank <strong>p-value</strong> tests a difference between
-        the curves. The <strong>q-value</strong> adjusts for the available
+        the curves. The optional <strong>q-value</strong> is off by default;
+        enable <strong>Show adjusted q-value</strong> in Properties → Survival
+        details to include it. It adjusts for the available
         outcomes in this one gene/grouping analysis; it does not adjust for
         trying other genes or grouping choices. With one tested outcome, as in
         current CPTAC analyses, q equals p and the figure shows p only. With

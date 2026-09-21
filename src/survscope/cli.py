@@ -67,6 +67,11 @@ def build_parser() -> argparse.ArgumentParser:
         dest="formats",
     )
     plot_parser.add_argument("--dpi", type=int, choices=(150, 300, 600), default=300)
+    plot_parser.add_argument(
+        "--show-q",
+        action="store_true",
+        help="Show optional BH-adjusted q-values across outcomes (off by default).",
+    )
     plot_parser.add_argument("--outdir", default=".")
     plot_parser.add_argument(
         "--json",
@@ -123,7 +128,9 @@ def main(argv: list[str] | None = None) -> int:
             store=store,
             grouping=grouping,
         )
-        outputs = plot(result, formats=args.formats, output_dir=args.outdir, dpi=args.dpi)
+        outputs = plot(
+            result, formats=args.formats, output_dir=args.outdir, dpi=args.dpi, show_q=args.show_q
+        )
         for path in outputs.paths:
             print(path)
         if args.json:

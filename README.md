@@ -19,7 +19,7 @@
 
 The workspace fills your screen, with collapsible Analysis and Properties panels. Familiar Selection (V), Type (T), Hand (H), and Zoom (Z) tools help you arrange the figure. Icon commands explain themselves on hover or keyboard focus. Text supports bold, italic, superscripts, and subscripts, with seven bundled [font choices](docs/user-guide.md#choose-a-font), including clearly labeled Arial/Helvetica-style alternatives.
 
-The original blue/red, four-panel, 6.8-inch figure remains the default. Editing the figure's appearance does not change the calculated results.
+The blue/red, four-panel, 6.8-inch figure shows p-values and hazard ratios by default. Q-values are optional: enable **Properties → Survival details → Show adjusted q-value** to include them. Editing the figure's appearance does not change the calculated results.
 
 ## Which cancers and data are available?
 
@@ -31,7 +31,7 @@ TCGA provides overall survival (OS), disease-specific survival (DSS), progressio
 
 A curve estimates the fraction of patients who remain event-free over time. The legend gives patients (`n`) and observed events (`e`) in each group. Patients without an observed event are censored, so `e ≤ n`. Double-click a whole legend entry to edit its displayed text; the calculated counts remain in the analysis results. The p-value compares the curves; the hazard ratio compares higher with lower expression. These are unadjusted associations, not proof that a gene causes a difference or predicts an individual's outcome.
 
-Comparing selected lower and upper percentile groups leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the displayed q-value adjusts only for the available outcomes **within one analysis**. With one tested outcome, as in current CPTAC analyses, `q = p`; the figure shows p alone. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
+Comparing selected lower and upper percentile groups leaves out the middle patients and can increase uncertainty. Trying several genes or group definitions adds multiple comparisons; the optional q-value adjusts only for the available outcomes **within one analysis**. With one tested outcome, as in current CPTAC analyses, `q = p`; the figure shows p alone. Choose comparisons for a scientific reason and report what you explored. [Learn to read the plot](docs/user-guide.md#understand-the-figure).
 
 JavaScript calculations are checked against Python and independently executed R `survival`. Group membership, event counts, and risk counts agree exactly in the validation suite. Numerical tolerances and the preserved PAAD reference estimates are documented in [methods and validation](docs/methods.md#validation).
 
@@ -43,11 +43,11 @@ TCGA analyses cite **TCGA-CDR** for survival outcomes, **UCSC Xena** for data di
 
 ## Use Python or the command line
 
-Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.2):
+Install the tested [GitHub release](https://github.com/oncologylab/survscope/releases/tag/v0.4.3):
 
 ```bash
 python -m pip install \
-  https://github.com/oncologylab/survscope/releases/download/v0.4.2/survscope-0.4.2-py3-none-any.whl
+  https://github.com/oncologylab/survscope/releases/download/v0.4.3/survscope-0.4.3-py3-none-any.whl
 survscope plot --gene SRD5A1 --cohort PAAD --format pdf svg png --outdir plots
 survscope plot --gene TP53 --cohort CPTAC-3-LUAD \
   --grouping percentile_groups --lower-percent 25 --upper-percent 25 --json --outdir plots
@@ -64,7 +64,7 @@ result = survscope.analyze(
 survscope.plot(result, formats=("pdf", "svg"), output_dir="plots")
 ```
 
-The Python package shares the comparison methods and the default figure. The interactive editor and its project files are browser features. PyPI publication awaits its one-time [Trusted Publisher setup](docs/publishing.md); use the GitHub wheel meanwhile.
+The Python package shares the comparison methods and the default figure. Q-values are off by default here too; add `--show-q` on the command line or `show_q=True` to `survscope.plot(...)` to include them. Analysis JSON retains the calculated p- and q-values regardless of figure settings. The interactive editor and its project files are browser features. PyPI publication awaits its one-time [Trusted Publisher setup](docs/publishing.md); use the GitHub wheel meanwhile.
 
 ## Reproducibility and further reading
 

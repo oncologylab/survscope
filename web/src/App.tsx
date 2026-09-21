@@ -497,6 +497,7 @@ export default function App() {
         open={cite}
         close={() => setCite(false)}
         analysis={analysis}
+        showQ={settings.showQ}
       />
     </>
   );

@@ -23,6 +23,7 @@ test("renders the reference plot without external runtime requests", async ({
   await expect(
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
   ).toBeVisible();
+  await expect(page.locator("svg.survival-plot")).not.toContainText("q=");
   await expect(page.getByText("recommended", { exact: true })).toHaveCount(4);
   await expect(page.getByText(/n=177 · events=93/)).toBeVisible();
   expect(
@@ -150,12 +151,28 @@ test("loads CPTAC alongside TCGA and exports source-aware figures using same-ori
   await expect(
     page.getByRole("img", { name: "SRD5A1 TCGA-PAAD survival" }),
   ).toBeVisible();
-  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
-    "q=",
+  await expect(page.locator("svg.survival-plot")).not.toContainText("q=");
+  const qToggle = page.getByLabel("Show adjusted q-value", { exact: true });
+  await expect(qToggle).not.toBeChecked();
+  await expect(qToggle).toBeEnabled();
+  await page
+    .getByRole("button", { name: "Cite this analysis", exact: true })
+    .click();
+  await expect(page.getByLabel("Methods and acknowledgement")).toHaveValue(
+    /without multiple-testing adjustment/,
   );
-  await expect(
-    page.getByLabel("Show adjusted q-value", { exact: true }),
-  ).toBeEnabled();
+  await page.getByRole("button", { name: "Close citations" }).click();
+  await qToggle.check();
+  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
+    "p=0.0018 q=0.0069",
+  );
+  await page
+    .getByRole("button", { name: "Cite this analysis", exact: true })
+    .click();
+  await expect(page.getByLabel("Methods and acknowledgement")).toHaveValue(
+    /q-values.*across the 4 outcomes/,
+  );
+  await page.getByRole("button", { name: "Close citations" }).click();
   await page.getByText("Outcomes and layout", { exact: true }).click();
   for (const endpoint of ["DSS", "PFI", "DFI"])
     await page.getByLabel(endpoint, { exact: true }).uncheck();
@@ -166,5 +183,25 @@ test("loads CPTAC alongside TCGA and exports source-aware figures using same-ori
     .getByRole("button", { name: "About p and q", exact: true })
     .hover();
   await expect(page.getByRole("tooltip")).toContainText("4 tested outcomes");
+  await page.mouse.move(0, 0);
+  const save = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save project", exact: true }).click();
+  const saved = (await (await save).path())!;
+  expect(JSON.parse(readFileSync(saved, "utf8")).settings.showQ).toBe(true);
+  await page.getByRole("button", { name: "Reset figure", exact: true }).click();
+  await expect(qToggle).not.toBeChecked();
+  await expect(page.locator("svg.survival-plot")).not.toContainText("q=");
+  const svgExport = page.waitForEvent("download");
+  await page.getByRole("button", { name: "SVG", exact: true }).click();
+  const svg = readFileSync((await (await svgExport).path())!, "utf8");
+  expect(svg).toContain("p=0.0018");
+  expect(svg).not.toContain("q=");
+  await page.getByLabel("Open figure file").setInputFiles(saved);
+  await expect(qToggle).toBeChecked();
+  await expect(page.locator('[data-element="statistics.OS"]')).toContainText(
+    "q=0.0069",
+  );
+  await qToggle.uncheck();
+  await expect(page.locator("svg.survival-plot")).not.toContainText("q=");
   expect(externalRequests).toEqual([]);
 });

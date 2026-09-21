@@ -134,7 +134,7 @@ export function defaultFigure(): FigureSettings {
     riskTable: false,
     showLegend: true,
     showP: true,
-    showQ: true,
+    showQ: false,
     showHr: true,
     dpi: 300,
   };

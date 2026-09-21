@@ -1,6 +1,7 @@
 import type { Manifest, SurvivalAnalysis } from "./types";
 import { ENDPOINTS } from "./types";
 import { groupingLabel } from "./grouping";
+import { testedOutcomeCount } from "./plotLabels";
 import cohortPapers from "./cohort-citations.json";
 import releases from "./citation-releases.json";
 import { SOFTWARE_VERSION } from "./version";
@@ -165,8 +166,13 @@ export function citationText(c: CitationRecord): string {
     .replace(/\.$/, "");
   return `${authors}. ${c.title}.${c.journal ? ` ${c.journal}.` : ""}${c.year ? ` ${c.year}` : ""}${c.volume ? `;${c.volume}` : ""}${c.issue ? `(${c.issue})` : ""}${c.pages ? `:${c.pages}` : ""}${c.year || c.volume ? "." : ""} ${c.doi ? `https://doi.org/${c.doi}` : c.url}`;
 }
-export function methodsText(a: SurvivalAnalysis): string {
+export function methodsText(a: SurvivalAnalysis, showQ = false): string {
   const p = a.provenance ?? resolveProvenance(a);
+  const count = testedOutcomeCount(a);
+  const adjustment =
+    showQ && count > 1
+      ? `Benjamini–Hochberg-adjusted p-values (q-values) are also reported across the ${count} outcomes with estimable log-rank tests in this analysis.`
+      : "Log-rank p-values are reported without multiple-testing adjustment.";
   const outcomes = ENDPOINTS.filter(
     (ep) => a.endpoints[ep].quality !== "unavailable",
   )
@@ -175,7 +181,7 @@ export function methodsText(a: SurvivalAnalysis): string {
       return `${ep}: ${e.nLow} lower-expression and ${e.nHigh} higher-expression patients (${e.eventsLow} and ${e.eventsHigh} events); ${e.excludedMiddle} middle patients excluded from ${e.eligibleN} patients with eligible data`;
     })
     .join(". ");
-  return `${a.gene} (${a.ensembl}) RNA expression was analyzed in ${p.project}, ${a.cohortLabel} (${a.cohort}), using SurvScope ${p.softwareVersion} and data release ${a.dataVersion}. Expression: ${p.expressionSource}; outcomes: ${p.survivalSource}. Upstream GDC release: ${p.upstreamRelease ?? "not recorded"}.${p.assetDataVersion ? ` Cohort assets originated in SurvScope data ${p.assetDataVersion}.` : ""} Grouping: ${groupingLabel(a.grouping)}. Grouping uses patients with available expression and endpoint follow-up; ties are retained together, with exact reference grouping for the median. ${outcomes}. Kaplan–Meier estimates, a two-sided log-rank test, and an unadjusted Cox model with Breslow ties were used. Hazard ratios compare higher with lower expression. Benjamini–Hochberg q-values cover the available outcomes for this analysis. ${p.acknowledgement}`;
+  return `${a.gene} (${a.ensembl}) RNA expression was analyzed in ${p.project}, ${a.cohortLabel} (${a.cohort}), using SurvScope ${p.softwareVersion} and data release ${a.dataVersion}. Expression: ${p.expressionSource}; outcomes: ${p.survivalSource}. Upstream GDC release: ${p.upstreamRelease ?? "not recorded"}.${p.assetDataVersion ? ` Cohort assets originated in SurvScope data ${p.assetDataVersion}.` : ""} Grouping: ${groupingLabel(a.grouping)}. Grouping uses patients with available expression and endpoint follow-up; ties are retained together, with exact reference grouping for the median. ${outcomes}. Kaplan–Meier estimates, a two-sided log-rank test, and an unadjusted Cox model with Breslow ties were used. Hazard ratios compare higher with lower expression. ${adjustment} ${p.acknowledgement}`;
 }
 const bibEscape = (s: string) =>
   s

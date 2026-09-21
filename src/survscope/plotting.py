@@ -44,11 +44,13 @@ def _bold_axis_text(axis) -> None:
     axis.yaxis.label.set_fontweight("bold")
 
 
-def create_figure(analysis: SurvivalAnalysis):
-    """Create but do not save the canonical 6.8-inch figure."""
+def create_figure(analysis: SurvivalAnalysis, *, show_q: bool = False):
+    """Create the 6.8-inch figure, optionally showing BH-adjusted q-values."""
     apply_plot_style()
     figure, axes = plt.subplots(2, 2, figsize=(6.8, 6.8))
-    show_q = sum(np.isfinite(result.logrank_p) for result in analysis.endpoints.values()) > 1
+    show_q = show_q and sum(
+        np.isfinite(result.logrank_p) for result in analysis.endpoints.values()
+    ) > 1
     for axis, endpoint in zip(axes.flat, ENDPOINTS, strict=True):
         result = analysis.endpoints[endpoint]
         if result.quality == "unavailable":
@@ -136,8 +138,10 @@ def plot(
     formats: tuple[str, ...] | list[str] = ("pdf",),
     output_dir: str | Path = ".",
     dpi: int = 300,
+    *,
+    show_q: bool = False,
 ) -> PlotOutputs:
-    """Save the canonical figure in PDF, SVG, and/or PNG formats."""
+    """Save the figure in PDF, SVG, and/or PNG; q-values are opt-in."""
     requested = tuple(dict.fromkeys(item.lower() for item in formats))
     unsupported = sorted(set(requested) - {"pdf", "svg", "png"})
     if unsupported:
@@ -146,7 +150,7 @@ def plot(
         raise ValueError("PNG dpi must be one of 150, 300, or 600")
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    figure = create_figure(analysis)
+    figure = create_figure(analysis, show_q=show_q)
     paths = []
     try:
         for output_format in requested:
