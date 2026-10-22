@@ -1,10 +1,9 @@
-import { defaultFigure, reusableStyle } from "./figure";
+import { defaultFigure, editableIds, isTextId, reusableStyle } from "./figure";
 import { FONT_FAMILIES } from "./fontCatalog";
 import type { Annotation, ElementStyle, FigureSettings } from "./figure";
 import { resolveProvenance, attachProvenance } from "./citations";
 import type { AnalysisProvenance } from "./citations";
 import { SOFTWARE_VERSION } from "./version";
-export { SOFTWARE_VERSION } from "./version";
 import { normalizeGrouping } from "./grouping";
 import { ENDPOINTS } from "./types";
 import type {
@@ -152,28 +151,12 @@ export function validateSettings(value: unknown): FigureSettings {
       failure("axis maximum must exceed its minimum.");
   }
   const elements = object(raw.elements);
-  const allowedIds = new Set([
-    "title",
-    "source",
-    "grouping",
-    "label.low",
-    "label.high",
-    ...array(raw.annotations, 100).map(
-      (a) => `annotation.${text(object(a).id, 100)}`,
+  const allowedIds = new Set(
+    editableIds(
+      ENDPOINTS,
+      array(raw.annotations, 100).map((a) => text(object(a).id, 100)),
     ),
-    ...ENDPOINTS.flatMap((ep) => [
-      `panel.${ep}`,
-      `title.${ep}`,
-      `xlabel.${ep}`,
-      `ylabel.${ep}`,
-      `legend.${ep}`,
-      `label.low.${ep}`,
-      `label.high.${ep}`,
-      `statistics.${ep}`,
-      `curve.low.${ep}`,
-      `curve.high.${ep}`,
-    ]),
-  ]);
+  );
   for (const [id, value] of Object.entries(elements)) {
     if (!allowedIds.has(id)) failure("an editable item is unknown.");
     const s = object(value),
@@ -204,11 +187,7 @@ export function validateSettings(value: unknown): FigureSettings {
     if (s.rotation !== undefined)
       style.rotation = number(s.rotation, -360, 360);
     if (s.runs !== undefined) {
-      if (
-        !/^(title|source|grouping|xlabel|ylabel|label|annotation)(\.|$)/.test(
-          id,
-        )
-      )
+      if (!isTextId(id) && !id.startsWith("annotation."))
         failure("computed values cannot be replaced with text.");
       style.runs = array(s.runs, 1000).map((value) => {
         const run = object(value);
@@ -235,7 +214,7 @@ export function validateSettings(value: unknown): FigureSettings {
     if (s.dx !== undefined) style.dx = number(s.dx, -10000, 10000);
     if (s.dy !== undefined) style.dy = number(s.dy, -10000, 10000);
     if (s.text !== undefined) {
-      if (!/^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(id))
+      if (!isTextId(id))
         failure("computed values cannot be replaced with text.");
       style.text = text(s.text, 500);
     }

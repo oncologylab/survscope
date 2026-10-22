@@ -17,7 +17,10 @@ if (!/^\d{4}\.\d{2}\.\d{2}$/.test(DATA_VERSION)) {
 const dataRoot = `${import.meta.env.BASE_URL}data/${DATA_VERSION}`;
 let manifestPromise: Promise<Manifest> | null = null;
 const clinicalCache = new Map<string, Promise<ClinicalData>>();
-const bucketCache = new Map<string, Promise<{ meta: BucketMeta; matrix: Uint8Array }>>();
+const bucketCache = new Map<
+  string,
+  Promise<{ meta: BucketMeta; matrix: Uint8Array }>
+>();
 
 async function checkedFetch(url: string): Promise<Response> {
   if (new URL(url, window.location.href).origin !== window.location.origin) {
@@ -31,19 +34,29 @@ async function checkedFetch(url: string): Promise<Response> {
 }
 
 export function loadManifest(): Promise<Manifest> {
-  manifestPromise ??= checkedFetch(
-    `${dataRoot}/manifest-${DATA_VERSION}.json`,
-  ).then((response) => response.json() as Promise<Manifest>)
+  manifestPromise ??= checkedFetch(`${dataRoot}/manifest-${DATA_VERSION}.json`)
+    .then((response) => response.json() as Promise<Manifest>)
     .then((manifest) => {
-      if (![1, 2].includes(manifest.schema_version) || manifest.data_version !== DATA_VERSION) {
+      if (
+        ![1, 2].includes(manifest.schema_version) ||
+        manifest.data_version !== DATA_VERSION
+      ) {
         throw new Error("Unsupported data schema or mismatched data release.");
       }
       return manifest;
+    })
+    .catch((error) => {
+      manifestPromise = null;
+      throw error;
     });
   return manifestPromise;
 }
 
-function findGene(manifest: Manifest, query: string, cohort: string): GeneRecord {
+function findGene(
+  manifest: Manifest,
+  query: string,
+  cohort: string,
+): GeneRecord {
   const normalized = query.trim().toUpperCase();
   const gene = manifest.genes.find(
     (item) =>
@@ -52,17 +65,27 @@ function findGene(manifest: Manifest, query: string, cohort: string): GeneRecord
       item.cohorts.includes(cohort),
   );
   if (!gene) {
-    throw new Error(`${query} is not available for ${cohortDisplayName(cohort)}.`);
+    throw new Error(
+      `${query} is not available for ${cohortDisplayName(cohort)}.`,
+    );
   }
   return gene;
 }
 
-function loadClinical(manifest: Manifest, cohort: string): Promise<ClinicalData> {
+function loadClinical(
+  manifest: Manifest,
+  cohort: string,
+): Promise<ClinicalData> {
   const cached = clinicalCache.get(cohort);
   if (cached) return cached;
   const promise = checkedFetch(
     `${dataRoot}/${manifest.cohorts[cohort].clinical_asset}`,
-  ).then((response) => response.json() as Promise<ClinicalData>);
+  )
+    .then((response) => response.json() as Promise<ClinicalData>)
+    .catch((error) => {
+      clinicalCache.delete(cohort);
+      throw error;
+    });
   clinicalCache.set(cohort, promise);
   return promise;
 }
@@ -77,7 +100,9 @@ function loadBucket(
   if (cached) return cached;
   const asset = manifest.cohorts[cohort].bucket_assets[bucket];
   if (!asset) {
-    throw new Error(`${cohortDisplayName(cohort)} has no data bucket ${bucket}.`);
+    throw new Error(
+      `${cohortDisplayName(cohort)} has no data bucket ${bucket}.`,
+    );
   }
   const promise = checkedFetch(`${dataRoot}/${asset}`)
     .then((response) => response.arrayBuffer())
@@ -87,6 +112,10 @@ function loadBucket(
         new TextDecoder().decode(files["meta.json"]),
       ) as BucketMeta;
       return { meta, matrix: files["expression.u16le"] };
+    })
+    .catch((error) => {
+      bucketCache.delete(key);
+      throw error;
     });
   bucketCache.set(key, promise);
   return promise;
@@ -98,7 +127,11 @@ function readExpression(
   sampleCount: number,
 ): Uint16Array {
   const values = new Uint16Array(sampleCount);
-  const view = new DataView(matrix.buffer, matrix.byteOffset, matrix.byteLength);
+  const view = new DataView(
+    matrix.buffer,
+    matrix.byteOffset,
+    matrix.byteLength,
+  );
   const offset = row * sampleCount * 2;
   for (let index = 0; index < sampleCount; index += 1) {
     values[index] = view.getUint16(offset + index * 2, true);
@@ -111,7 +144,8 @@ export async function loadGeneData(
   cohort: string,
 ): Promise<GeneData> {
   const manifest = await loadManifest();
-  if (!manifest.cohorts[cohort]) throw new Error(`Unsupported cohort: ${cohort}`);
+  if (!manifest.cohorts[cohort])
+    throw new Error(`Unsupported cohort: ${cohort}`);
   const geneIndex = findGene(manifest, geneQuery, cohort);
   const [clinical, bucket] = await Promise.all([
     loadClinical(manifest, cohort),
@@ -124,8 +158,10 @@ export async function loadGeneData(
     throw new Error(`${geneIndex.symbol} is missing from its data bucket.`);
   }
   return {
-    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources).expression.label,
-    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources).survival.label,
+    sourceExpression: (manifest.cohorts[cohort].sources ?? manifest.sources)
+      .expression.label,
+    sourceSurvival: (manifest.cohorts[cohort].sources ?? manifest.sources)
+      .survival.label,
     gene,
     cohort,
     cohortLabel: manifest.cohorts[cohort].label,

@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { FigureSettings, EditorTool } from "./figure";
-import type { Endpoint } from "./types";
 import {
   clampMovement,
   isText,
@@ -9,6 +8,7 @@ import {
   moveObjects,
   objectBounds,
   nodeBounds,
+  panelBox,
   roots,
   unionBounds,
   newAnnotation,
@@ -27,10 +27,39 @@ export interface PlotEditor {
   ) => void;
   zoomAt: (factor: number, x: number, y: number) => void;
 }
+interface Drag {
+  p: DOMPoint;
+  screenX: number;
+  screenY: number;
+  latestX: number;
+  latestY: number;
+  shiftKey: boolean;
+  dx: number;
+  dy: number;
+  moved: boolean;
+  ids: string[];
+  original: FigureSettings;
+  resize: string | null;
+  lineEndpoint: {
+    node: SVGLineElement;
+    x: number;
+    y: number;
+    handle: Element | null;
+  } | null;
+  nodes: SVGGraphicsElement[];
+  transforms: (string | null)[];
+  bounds: Bounds | null;
+  inverse: DOMMatrix;
+  tolerance: number;
+  guides: { x: number[]; y: number[] };
+  marquee: boolean;
+  draw: "line" | "arrow" | null;
+  additive: boolean;
+}
 export function usePlotInteraction(
   svg: RefObject<SVGSVGElement>,
   settings: FigureSettings,
-  editor?: PlotEditor,
+  editor: PlotEditor,
 ) {
   const current = useRef({ settings, editor });
   current.current = { settings, editor };
@@ -39,20 +68,20 @@ export function usePlotInteraction(
     marquee = useRef<SVGRectElement>(null),
     guideX = useRef<SVGLineElement>(null),
     guideY = useRef<SVGLineElement>(null);
-  const drag = useRef<any>(null),
+  const drag = useRef<Drag | null>(null),
     raf = useRef(0);
   useLayoutEffect(() => {
     if (!svg.current) return;
     setBoxes(
-      (editor?.selection ?? []).flatMap((id) => {
+      editor.selection.flatMap((id) => {
         const box = objectBounds(svg.current!, id);
         return box ? [{ id, box }] : [];
       }),
     );
-  }, [editor?.selection.join("|"), settings]);
+  }, [editor.selection.join("|"), settings]);
   useLayoutEffect(() => () => cancelAnimationFrame(raf.current), []);
   function start(event: ReactPointerEvent<SVGSVGElement>) {
-    if (!editor || event.button !== 0 || editor.tool === "hand") return;
+    if (event.button !== 0 || editor.tool === "hand") return;
     const target = event.target as Element;
     const text = target.closest<SVGTextElement>("[data-text-id]");
     const node = target.closest<SVGGElement>("[data-element]");
@@ -72,6 +101,7 @@ export function usePlotInteraction(
       inverse = matrix.inverse(),
       p = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
     if (editor.tool === "type") {
+      if (settings.annotations.length >= 100) return;
       const item = newAnnotation(
         "text",
         p.x / (settings.widthIn * 72),
@@ -79,22 +109,24 @@ export function usePlotInteraction(
       );
       editor.change({
         ...settings,
-        annotations: [...settings.annotations, item].slice(0, 100),
+        annotations: [...settings.annotations, item],
       });
       editor.select([`annotation.${item.id}`]);
       requestAnimationFrame(() => {
         const n = svg.current?.querySelector<SVGTextElement>(
           `[data-text-id="annotation.${item.id}"]`,
         );
-        if (n) current.current.editor?.editText(n);
+        if (n) current.current.editor.editText(n);
       });
       return;
     }
     event.preventDefault();
     svg.current?.focus({ preventScroll: true });
-    const resize = target.closest("[data-resize]")?.getAttribute("data-resize");
+    const resize =
+      target.closest("[data-resize]")?.getAttribute("data-resize") ?? null;
     let ids = editor.selection;
-    const draw = editor.tool === "line" || editor.tool === "arrow";
+    const draw =
+      editor.tool === "line" || editor.tool === "arrow" ? editor.tool : null;
     if (id && !draw && !resize) {
       if (event.shiftKey) {
         ids = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
@@ -133,6 +165,9 @@ export function usePlotInteraction(
       p,
       screenX: event.clientX,
       screenY: event.clientY,
+      latestX: event.clientX,
+      latestY: event.clientY,
+      shiftKey: event.shiftKey,
       dx: 0,
       dy: 0,
       moved: false,
@@ -165,7 +200,7 @@ export function usePlotInteraction(
         ].sort((a, b) => a - b),
       },
       marquee: !id && !resize && !draw,
-      draw: draw ? editor.tool : null,
+      draw,
       additive: event.shiftKey,
     };
   }
@@ -184,7 +219,7 @@ export function usePlotInteraction(
       const guide = horizontal ? guideX.current! : guideY.current!;
       let at: number | null = null;
       if (
-        current.current.editor?.snap &&
+        current.current.editor.snap &&
         !d.resize &&
         !d.marquee &&
         !d.draw &&
@@ -193,7 +228,7 @@ export function usePlotInteraction(
         const axis = horizontal ? "x" : "y",
           dim = horizontal ? "width" : "height",
           delta = horizontal ? "dx" : "dy",
-          positions = d.guides[axis] as number[];
+          positions = d.guides[axis];
         let nearest = d.tolerance,
           adjustment = 0;
         for (const fraction of [0, 0.5, 1]) {
@@ -230,7 +265,7 @@ export function usePlotInteraction(
         d,
         clampMovement(
           d.original,
-          d.nodes.map((n: SVGGraphicsElement) => n.dataset.element!),
+          d.nodes.map((n) => n.dataset.element!),
           d.dx,
           d.dy,
         ),
@@ -252,7 +287,7 @@ export function usePlotInteraction(
       handle?.setAttribute("y", String(y + d.dy - 3));
       return;
     }
-    for (const [i, node] of (d.nodes as SVGGraphicsElement[]).entries()) {
+    for (const [i, node] of d.nodes.entries()) {
       let transform = `translate(${d.dx} ${d.dy})`;
       if (d.resize && d.bounds) {
         const b = d.bounds;
@@ -296,9 +331,10 @@ export function usePlotInteraction(
       handle?.setAttribute("x", String(x - 3));
       handle?.setAttribute("y", String(y - 3));
     }
-    for (const [i, node] of (d.nodes as SVGGraphicsElement[]).entries()) {
-      if (d.transforms[i] === null) node.removeAttribute("transform");
-      else node.setAttribute("transform", d.transforms[i]);
+    for (const [i, node] of d.nodes.entries()) {
+      const transform = d.transforms[i];
+      if (transform === null) node.removeAttribute("transform");
+      else node.setAttribute("transform", transform);
     }
     overlay.current?.removeAttribute("transform");
     marquee.current?.setAttribute("visibility", "hidden");
@@ -331,10 +367,11 @@ export function usePlotInteraction(
           );
         })
         .map((n) => n.dataset.element!);
-      editor?.select([...new Set([...(d.additive ? d.ids : []), ...selected])]);
+      editor.select([...new Set([...(d.additive ? d.ids : []), ...selected])]);
       return;
     }
     if (d.draw) {
+      if (settings.annotations.length >= 100) return;
       const item = newAnnotation(
         d.draw,
         d.p.x / (settings.widthIn * 72),
@@ -342,21 +379,21 @@ export function usePlotInteraction(
         (d.p.x + d.dx) / (settings.widthIn * 72),
         (d.p.y + d.dy) / (settings.heightIn * 72),
       );
-      editor?.change({
+      editor.change({
         ...settings,
-        annotations: [...settings.annotations, item].slice(0, 100),
+        annotations: [...settings.annotations, item],
       });
-      editor?.select([`annotation.${item.id}`]);
+      editor.select([`annotation.${item.id}`]);
       return;
     }
     let next: FigureSettings;
     if (d.resize) {
       next = structuredClone(d.original);
-      const id = d.resize as string,
+      const id = d.resize,
         w = settings.widthIn * 72,
         h = settings.heightIn * 72;
       if (id.startsWith("panel.")) {
-        const b = next.panels[id.split(".")[1] as Endpoint];
+        const b = panelBox(next, id);
         b.width = Math.max(
           Math.min(30 / w, 1 - b.x),
           Math.min(1 - b.x, b.width + d.dx / w),
@@ -382,20 +419,21 @@ export function usePlotInteraction(
           4,
           Math.min(
             72,
-            (size * (d.bounds.width + d.dx)) / Math.max(1, d.bounds.width),
+            (size * (d.bounds!.width + d.dx)) / Math.max(1, d.bounds!.width),
           ),
         );
       }
     } else next = moveObjects(d.original, d.ids, d.dx, d.dy);
-    editor?.change(next);
+    editor.change(next);
   }
-  const selection = editor && (
+  const selection = (
     <g data-editor-only="true">
       <g ref={overlay}>
         {boxes.map(({ id, box: b }) => {
           const line = settings.annotations.find(
             (a) => `annotation.${a.id}` === id && a.kind !== "text",
           );
+          const panel = id.startsWith("panel.") ? panelBox(settings, id) : null;
           return (
             <g key={id}>
               <rect
@@ -411,38 +449,28 @@ export function usePlotInteraction(
               />
               {boxes.length === 1 &&
                 !locked(settings, id) &&
-                (id.startsWith("panel.") ||
+                (panel ||
                   id.startsWith("annotation.") ||
                   isText(id, settings)) && (
                   <rect
                     data-resize={id}
                     aria-label={
-                      id.startsWith("panel.")
+                      panel
                         ? "Resize panel"
                         : isText(id, settings)
                           ? "Resize text"
                           : "Move line endpoint"
                     }
                     x={
-                      id.startsWith("panel.")
-                        ? (settings.panels[id.split(".")[1] as Endpoint].x +
-                            settings.panels[id.split(".")[1] as Endpoint]
-                              .width) *
-                            settings.widthIn *
-                            72 -
-                          3
+                      panel
+                        ? (panel.x + panel.width) * settings.widthIn * 72 - 3
                         : line
                           ? line.x2 * settings.widthIn * 72 - 3
                           : b.x + b.width
                     }
                     y={
-                      id.startsWith("panel.")
-                        ? (settings.panels[id.split(".")[1] as Endpoint].y +
-                            settings.panels[id.split(".")[1] as Endpoint]
-                              .height) *
-                            settings.heightIn *
-                            72 -
-                          3
+                      panel
+                        ? (panel.y + panel.height) * settings.heightIn * 72 - 3
                         : line
                           ? line.y2 * settings.heightIn * 72 - 3
                           : b.y + b.height
@@ -499,7 +527,7 @@ export function usePlotInteraction(
           "[data-element]",
         )?.dataset.element;
         if (text && (!id || !locked(settings, id)))
-          editor?.editText(text, { left: event.clientX, top: event.clientY });
+          editor.editText(text, { left: event.clientX, top: event.clientY });
       },
     },
   };

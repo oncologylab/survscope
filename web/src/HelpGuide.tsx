@@ -92,14 +92,10 @@ export function HelpGuide({
         event are censored, so e cannot exceed n. The counts are equal when
         every included patient has an observed event. For OS, the event is
         death. The log-rank <strong>p-value</strong> tests a difference between
-        the curves. The optional <strong>q-value</strong> is off by default;
-        enable <strong>Show adjusted q-value</strong> in Properties → Survival
-        details to include it. It adjusts for the available
-        outcomes in this one gene/grouping analysis; it does not adjust for
-        trying other genes or grouping choices. With one tested outcome, as in
-        current CPTAC analyses, q equals p and the figure shows p only. With
-        several outcomes, some adjusted values can still equal p; rounding can
-        also make close values look the same.
+        the curves. The optional Benjamini–Hochberg <strong>q-value</strong>,
+        shown with <strong>Show adjusted q-value</strong> in Properties →
+        Survival details, adjusts only across the outcomes of this analysis, not
+        across other genes or groupings you try.
       </p>
       <p>
         The <strong>hazard ratio (HR)</strong> compares higher with lower
@@ -149,11 +145,9 @@ export function HelpGuide({
         screen size. These controls do not change export dimensions.
       </p>
       <p>
-        Choose a font for the whole figure or a selected text object. Seven
-        bundled families include Arial/Helvetica-style Liberation Sans, Carlito,
-        Lato, Source Sans 3, and Source Serif 4. The menu identifies the actual
-        font and shows a preview. Familiar-name alternatives are labeled;
-        exports embed the same fonts used on the figure.
+        Choose a font for the whole figure or for one text object. The menu
+        previews each choice and names the bundled font it uses; exports embed
+        the same fonts.
       </p>
       <h3>Citing your data</h3>
       <p>

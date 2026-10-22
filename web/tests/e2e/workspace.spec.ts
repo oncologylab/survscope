@@ -577,3 +577,29 @@ test("dock widths persist and keyboard resizing leaves the selected artwork unch
   await expect(left).toHaveAttribute("aria-valuenow", "280");
   await expect(right).toHaveAttribute("aria-valuenow", "320");
 });
+
+test("typing in a property field is one undo step and Ctrl+D duplicates annotations", async ({
+  page,
+}) => {
+  await start(page);
+  await inspector(page);
+  const title = page.locator('[data-element="title"]');
+  await title.click();
+  const text = page.getByLabel("Text", { exact: true });
+  await text.focus();
+  await text.press("ControlOrMeta+End");
+  await text.pressSequentially(" draft");
+  await expect(title).toHaveText("SRD5A1 TCGA-PAAD survival draft");
+  await text.blur();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(title).toHaveText("SRD5A1 TCGA-PAAD survival");
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(title).toHaveText("SRD5A1 TCGA-PAAD survival draft");
+
+  await page.getByText("Legend and annotations", { exact: true }).click();
+  await page.getByRole("button", { name: "Add text", exact: true }).click();
+  const notes = page.locator('[data-element^="annotation."]');
+  await expect(notes).toHaveCount(1);
+  await page.keyboard.press("ControlOrMeta+d");
+  await expect(notes).toHaveCount(2);
+});

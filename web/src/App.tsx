@@ -56,19 +56,19 @@ const outcomeNames = {
 export default function App() {
   const [defaults] = useState(queryDefaults);
   const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [gene, setGene] = useState(defaults.gene),
-    [cohort, setCohort] = useState(defaults.cohort);
+  const [gene, setGene] = useState(defaults.gene);
+  const [cohort, setCohort] = useState(defaults.cohort);
   const [draft, setDraft] = useState(() => comparisonDraft(defaults.grouping));
   const [loaded, setLoaded] = useState<GeneData | null>(null);
   const [analysis, setAnalysis] = useState<SurvivalAnalysis | null>(null);
   const [status, setStatus] = useState(
     defaults.error || "Loading the data catalog…",
   );
-  const [busy, setBusy] = useState(false),
-    [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [help, setHelp] = useState(false),
-    [cite, setCite] = useState(false),
-    [snapshot, setSnapshot] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [cite, setCite] = useState(false);
+  const [snapshot, setSnapshot] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const history = useHistory(defaultFigure()),
     settings = history.value;
@@ -238,7 +238,7 @@ export default function App() {
   ) {
     window.dispatchEvent(new Event("survscope:commit-text"));
     if (!analysis || !plotRef.current) return;
-    const svg = plotRef.current.cloneNode(true) as SVGSVGElement,
+    const svg = plotRef.current,
       captured = structuredClone(settingsRef.current);
     setBusy(true);
     setStatus(
@@ -247,7 +247,7 @@ export default function App() {
     try {
       if (kind === "svg") await saveSvg(svg, analysis, captured);
       if (kind === "pdf") await savePdf(svg, analysis, captured);
-      if (kind === "png") await savePng(svg, analysis, captured.dpi, captured);
+      if (kind === "png") await savePng(svg, analysis, captured);
       if (kind === "json") saveJson(analysis);
       if (kind === "project" || kind === "preset") {
         validateSettings(captured);
@@ -407,6 +407,7 @@ export default function App() {
             {previews.length > 0 && (
               <div
                 className="group-preview"
+                role="group"
                 aria-label="Group sizes before analysis"
               >
                 <div>

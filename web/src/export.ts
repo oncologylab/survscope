@@ -1,5 +1,4 @@
 import { figureFilename } from "./cohorts";
-import { defaultFigure } from "./figure";
 import { attachProvenance } from "./citations";
 import { embeddedFonts } from "./fonts";
 import type { FigureSettings } from "./figure";
@@ -48,7 +47,7 @@ export async function exportSvg(
 export async function saveSvg(
   svg: SVGSVGElement,
   analysis: SurvivalAnalysis,
-  settings = defaultFigure(),
+  settings: FigureSettings,
 ): Promise<void> {
   const clone = await exportSvg(svg, settings);
   download(
@@ -91,9 +90,9 @@ export async function pngResolution(blob: Blob, dpi: number): Promise<Blob> {
 export async function savePng(
   svg: SVGSVGElement,
   analysis: SurvivalAnalysis,
-  dpi: 150 | 300 | 600,
-  settings = defaultFigure(),
+  settings: FigureSettings,
 ): Promise<void> {
+  const { dpi } = settings;
   const width = Math.round(settings.widthIn * dpi),
     height = Math.round(settings.heightIn * dpi);
   if (width * height > 40_000_000)
@@ -140,8 +139,11 @@ export async function savePng(
 export async function savePdf(
   svg: SVGSVGElement,
   analysis: SurvivalAnalysis,
-  settings = defaultFigure(),
+  settings: FigureSettings,
 ): Promise<void> {
+  const clone = await exportSvg(svg, settings);
+  // svg2pdf uses the registered TTFs; embedded CSS is for standalone SVG/PNG.
+  clone.querySelectorAll("style").forEach((style) => style.remove());
   const [{ jsPDF }, { svg2pdf }] = await Promise.all([
     import("jspdf"),
     import("svg2pdf.js"),
@@ -159,9 +161,6 @@ export async function savePdf(
     pdf.addFileToVFS(font.name, font.data);
     pdf.addFont(font.name, font.family, font.pdf);
   }
-  const clone = await exportSvg(svg, settings);
-  // svg2pdf uses the registered TTFs; embedded CSS is for standalone SVG/PNG.
-  clone.querySelectorAll("style").forEach((style) => style.remove());
   await svg2pdf(clone, pdf, { x: 0, y: 0, width, height });
   pdf.save(figureFilename(analysis.gene, analysis.cohort, "pdf"));
 }

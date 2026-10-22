@@ -2,12 +2,12 @@ import { forwardRef, memo, useImperativeHandle, useRef } from "react";
 import type { ReactNode } from "react";
 import { RichSvgText } from "./RichSvgText";
 import { objectStyle } from "./editorModel";
-import { legendEntry, testedOutcomeCount } from "./plotLabels";
+import { defaultText, legendEntry, testedOutcomeCount } from "./plotLabels";
 import { usePlotInteraction } from "./PlotInteraction";
 import type { PlotEditor } from "./PlotInteraction";
 import { cohortDisplayName } from "./cohorts";
 import { atRisk, confidenceBounds, formatP } from "./statistics";
-import { dashArray, defaultFigure, displayTime, timeInMonths } from "./figure";
+import { dashArray, displayTime, timeInMonths } from "./figure";
 import type { FigureSettings } from "./figure";
 import type { Curve, EndpointResult, SurvivalAnalysis } from "./types";
 
@@ -19,11 +19,11 @@ interface Geometry {
 }
 interface Props {
   analysis: SurvivalAnalysis;
-  settings?: FigureSettings;
-  editor?: PlotEditor;
+  settings: FigureSettings;
+  editor: PlotEditor;
 }
 
-export function niceMaximum(value: number): number {
+function niceMaximum(value: number): number {
   if (!(value > 0)) return 1;
   const magnitude = 10 ** Math.floor(Math.log10(value)),
     normalized = value / magnitude;
@@ -80,7 +80,6 @@ const PlotArtwork = memo(function PlotArtwork({
   }
   function text(
     id: string,
-    value: string,
     x: number,
     y: number,
     size: number,
@@ -91,7 +90,7 @@ const PlotArtwork = memo(function PlotArtwork({
       id,
       <RichSvgText
         id={id}
-        value={value}
+        value={defaultText(settings, analysis, id)}
         x={x}
         y={y}
         size={size * settings.fontScale}
@@ -116,7 +115,6 @@ const PlotArtwork = memo(function PlotArtwork({
         <g key={ep} data-element={`panel.${ep}`}>
           {text(
             `title.${ep}`,
-            `${analysis.gene} ${ep}`,
             geometry.left + geometry.width / 2,
             geometry.top - 11,
             9,
@@ -207,23 +205,15 @@ const PlotArtwork = memo(function PlotArtwork({
       .join(" ");
     return (
       <g key={ep} data-element={`panel.${ep}`}>
-        {
-          <rect
-            x={g.left}
-            y={g.top}
-            width={g.width}
-            height={geometry.height}
-            fill="transparent"
-            data-editor-only="true"
-          />
-        }
-        {text(
-          `title.${ep}`,
-          `${analysis.gene} ${ep}`,
-          g.left + g.width / 2,
-          g.top - 11,
-          9,
-        )}
+        <rect
+          x={g.left}
+          y={g.top}
+          width={g.width}
+          height={geometry.height}
+          fill="transparent"
+          data-editor-only="true"
+        />
+        {text(`title.${ep}`, g.left + g.width / 2, g.top - 11, 9)}
         <defs>
           <clipPath id={`clip-${ep}`}>
             <rect
@@ -294,16 +284,9 @@ const PlotArtwork = memo(function PlotArtwork({
             </g>
           );
         })}
-        {text(
-          `xlabel.${ep}`,
-          settings.unit[0].toUpperCase() + settings.unit.slice(1),
-          g.left + g.width / 2,
-          bottom + 29,
-          9,
-        )}
+        {text(`xlabel.${ep}`, g.left + g.width / 2, bottom + 29, 9)}
         {text(
           `ylabel.${ep}`,
-          "Survival",
           g.left - 28,
           g.top + g.height / 2,
           9,
@@ -460,22 +443,10 @@ const PlotArtwork = memo(function PlotArtwork({
         })}
       </metadata>
       <rect width={width} height={height} fill="#fff" />
-      {text(
-        "title",
-        `${analysis.gene} ${cohortDisplayName(analysis.cohort)} survival`,
-        width / 2,
-        14,
-        12,
-      )}
-      {text(
-        "source",
-        `Expression: ${analysis.sourceExpression}; endpoints: ${analysis.sourceSurvival}`,
-        width / 2,
-        33,
-        9,
-      )}
+      {text("title", width / 2, 14, 12)}
+      {text("source", width / 2, 33, 9)}
       {analysis.grouping.kind !== "median" &&
-        text("grouping", analysis.groupingLabel, width / 2, 48, 8)}
+        text("grouping", width / 2, 48, 8)}
       {settings.endpoints.map((ep) => panel(analysis.endpoints[ep]))}
       {settings.annotations.map((item) => {
         const id = `annotation.${item.id}`,
@@ -528,8 +499,7 @@ const PlotArtwork = memo(function PlotArtwork({
   );
 });
 export const SurvivalPlot = forwardRef<SVGSVGElement, Props>(
-  function SurvivalPlot({ analysis, settings: supplied, editor }, ref) {
-    const settings = supplied ?? defaultFigure();
+  function SurvivalPlot({ analysis, settings, editor }, ref) {
     const svgRef = useRef<SVGSVGElement>(null);
     useImperativeHandle(ref, () => svgRef.current!, []);
     const interaction = usePlotInteraction(svgRef, settings, editor);
@@ -550,7 +520,7 @@ export const SurvivalPlot = forwardRef<SVGSVGElement, Props>(
           color: "#111",
           fontFamily: `SurvScope ${settings.fontFamily}`,
           fontWeight: 700,
-          touchAction: editor ? "none" : undefined,
+          touchAction: "none",
         }}
       >
         <PlotArtwork analysis={analysis} settings={settings} />

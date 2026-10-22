@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { locked } from "./editorModel";
+import { locked, objectIds } from "./editorModel";
 import { IconButton } from "./IconButton";
 import { FontSelect } from "./FontSelect";
 import {
+  defaultText,
   isSharedGroupLabel,
   legendEntry,
   qValueExplanation,
@@ -10,16 +11,18 @@ import {
 } from "./plotLabels";
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
+import type { History } from "./useHistory";
 import {
   defaultFigure,
   displayTime,
   elementName,
+  isTextId,
   layoutFigure,
   timeInMonths,
 } from "./figure";
-import type { Axes, FigureSettings } from "./figure";
+import type { Axes, ElementStyle, FigureSettings } from "./figure";
 
-export function NumberField({
+function NumberField({
   label,
   value,
   onChange,
@@ -100,7 +103,6 @@ function Check({
   return (
     <label className="check">
       <input
-        aria-label={label}
         type="checkbox"
         checked={checked}
         disabled={disabled}
@@ -132,103 +134,57 @@ function Color({
   );
 }
 
-export function FigureEditor({
+function edited(settings: FigureSettings, fn: (next: FigureSettings) => void) {
+  const next = structuredClone(settings);
+  fn(next);
+  return next;
+}
+
+function SelectionProperties({
   settings,
   analysis,
   selected,
   select,
-  change,
-  savePreset,
-  openFile,
+  history,
 }: {
   settings: FigureSettings;
   analysis: SurvivalAnalysis;
-  selected: string | null;
+  selected: string;
   select: (id: string | null) => void;
-  change: (settings: FigureSettings) => void;
-  savePreset: () => void;
-  openFile: () => void;
+  history: History<FigureSettings>;
 }) {
-  const [axisScope, setAxisScope] = useState<Endpoint | "all">("all");
-  const edit = (fn: (next: FigureSettings) => void) => {
-    const next = structuredClone(settings);
-    fn(next);
-    change(next);
-  };
-  const field = <K extends keyof FigureSettings>(
-    key: K,
-    value: FigureSettings[K],
-  ) =>
-    edit((next) => {
-      next[key] = value;
-      if (key === "lowLabel" || key === "highLabel") {
-        const prefix = key === "lowLabel" ? "label.low" : "label.high";
-        for (const [id, style] of Object.entries(next.elements)) {
-          if (id === prefix || id.startsWith(`${prefix}.`)) {
-            delete style.runs;
-            delete style.text;
-          }
-        }
-      }
-    });
+  const edit = (
+    fn: (next: FigureSettings) => void,
+    apply: (settings: FigureSettings) => void = history.change,
+  ) => apply(edited(settings, fn));
   const width = settings.widthIn * 72,
     height = settings.heightIn * 72;
-  const labelParts = selected?.split(".");
-  const isLegendEntry =
-    selected?.startsWith("label.") && labelParts?.length === 3;
-  const style = isLegendEntry
+  const [kind, part, endpoint] = selected.split(".");
+  const isLegendEntry = kind === "label" && !!endpoint;
+  const style: ElementStyle = isLegendEntry
     ? legendEntry(
         settings,
-        analysis.endpoints[labelParts[2] as Endpoint],
-        labelParts[1] as "low" | "high",
+        analysis.endpoints[endpoint as Endpoint],
+        part as "low" | "high",
       ).style
-    : selected
-      ? (settings.elements[selected] ?? {})
-      : {};
+    : (settings.elements[selected] ?? {});
   const item = settings.annotations.find(
     (a) => `annotation.${a.id}` === selected,
   );
-  const panel = selected?.startsWith("panel.")
-    ? (selected.split(".")[1] as Endpoint)
-    : null;
-  const isCurve = selected?.startsWith("curve.");
-  const editableText =
-    selected &&
-    /^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(selected);
-  function textDefault(id: string) {
-    const [kind, ep] = id.split(".");
-    if (kind === "label" && id.split(".").length === 3)
-      return legendEntry(
-        settings,
-        analysis.endpoints[id.split(".")[2] as Endpoint],
-        ep as "low" | "high",
-      ).value;
-    if (kind === "label")
-      return ep === "low" ? settings.lowLabel : settings.highLabel;
-    if (kind === "source")
-      return `Expression: ${analysis.sourceExpression}; endpoints: ${analysis.sourceSurvival}`;
-    if (kind === "grouping") return analysis.groupingLabel;
-    if (kind === "xlabel")
-      return settings.unit[0].toUpperCase() + settings.unit.slice(1);
-    if (kind === "ylabel") return "Survival";
-    return ep
-      ? `${analysis.gene} ${ep}`
-      : `${analysis.gene} ${analysis.cohort.startsWith("CPTAC") ? "" : "TCGA-"}${analysis.cohort} survival`;
-  }
-  const axes =
-    settings.axes[axisScope === "all" ? settings.endpoints[0] : axisScope];
-  function axisField<K extends keyof Axes>(key: K, value: Axes[K]) {
+  const panel = kind === "panel" ? (part as Endpoint) : null;
+  const isCurve = kind === "curve";
+  const editableText = isTextId(selected);
+  const styleField = <K extends keyof ElementStyle>(
+    key: K,
+    value: ElementStyle[K],
+    apply?: (settings: FigureSettings) => void,
+  ) =>
     edit((next) => {
-      for (const ep of axisScope === "all" ? ENDPOINTS : [axisScope])
-        next.axes[ep] = { ...axes, [key]: value };
-    });
-  }
-  const styleField = (key: keyof typeof style, value: any) =>
-    edit((next) => {
-      const target = (next.elements[selected!] ??= {});
-      (target as Record<string, unknown>)[key] = value;
-      if (key === "text" && selected && isSharedGroupLabel(selected)) {
-        next[selected === "label.low" ? "lowLabel" : "highLabel"] = value;
+      const target = (next.elements[selected] ??= {});
+      target[key] = value;
+      if (key === "text" && isSharedGroupLabel(selected)) {
+        next[selected === "label.low" ? "lowLabel" : "highLabel"] =
+          value as string;
         delete target.text;
         for (const [id, entry] of Object.entries(next.elements)) {
           if (id.startsWith(`${selected}.`)) {
@@ -241,27 +197,340 @@ export function FigureEditor({
         target.text = style.runs.map((run) => run.text).join("");
       if (key === "text" || key === "bold" || key === "italic")
         delete target.runs;
+    }, apply);
+  return (
+    <details open className="selected-properties">
+      <summary>{elementName(selected)}</summary>
+      <fieldset
+        className="object-properties"
+        disabled={locked(settings, selected)}
+      >
+        {editableText && (
+          <label>
+            <span>Text</span>
+            <textarea
+              aria-label="Text"
+              maxLength={isSharedGroupLabel(selected) ? 40 : 500}
+              value={
+                style.runs?.map((run) => run.text).join("") ??
+                style.text ??
+                defaultText(settings, analysis, selected)
+              }
+              onFocus={history.begin}
+              onBlur={history.commit}
+              onChange={(e) =>
+                styleField("text", e.target.value, history.preview)
+              }
+            />
+          </label>
+        )}
+        {(editableText || item?.kind === "text") && (
+          <div className="property-grid">
+            <FontSelect
+              label="Selected font"
+              value={style.fontFamily ?? settings.fontFamily}
+              onChange={(value) => styleField("fontFamily", value)}
+            />
+            <label>
+              <span>Text alignment</span>
+              <select
+                aria-label="Text alignment"
+                value={
+                  style.align ??
+                  (item || selected.startsWith("label.") ? "start" : "middle")
+                }
+                onChange={(e) =>
+                  styleField("align", e.target.value as ElementStyle["align"])
+                }
+              >
+                <option value="start">Left</option>
+                <option value="middle">Center</option>
+                <option value="end">Right</option>
+              </select>
+            </label>
+            <NumberField
+              label="Text rotation (degrees)"
+              value={style.rotation ?? 0}
+              min={-360}
+              max={360}
+              onChange={(value) => styleField("rotation", value!)}
+            />
+          </div>
+        )}
+        {panel && (
+          <div className="property-grid">
+            {(["x", "y", "width", "height"] as const).map((key) => {
+              const scale = key === "x" || key === "width" ? width : height;
+              const box = settings.panels[panel];
+              return (
+                <NumberField
+                  key={key}
+                  label={`Panel ${key} (pt)`}
+                  value={box[key] * scale}
+                  min={key === "width" || key === "height" ? 30 : 0}
+                  max={
+                    scale *
+                    (key === "x"
+                      ? 1 - box.width
+                      : key === "y"
+                        ? 1 - box.height
+                        : key === "width"
+                          ? 1 - box.x
+                          : 1 - box.y)
+                  }
+                  onChange={(value) =>
+                    edit((next) => {
+                      next.panels[panel][key] = value! / scale;
+                    })
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
+        {item && (
+          <>
+            {item.kind === "text" && (
+              <label>
+                <span>Annotation text</span>
+                <textarea
+                  aria-label="Annotation text"
+                  maxLength={500}
+                  value={item.text}
+                  onFocus={history.begin}
+                  onBlur={history.commit}
+                  onChange={(e) =>
+                    edit((next) => {
+                      next.annotations.find((a) => a.id === item.id)!.text =
+                        e.target.value;
+                      if (next.elements[selected])
+                        delete next.elements[selected].runs;
+                    }, history.preview)
+                  }
+                />
+              </label>
+            )}
+            <div className="property-grid">
+              {(
+                ["x", "y", ...(item.kind === "text" ? [] : ["x2", "y2"])] as (
+                  | "x"
+                  | "y"
+                  | "x2"
+                  | "y2"
+                )[]
+              ).map((key) => (
+                <NumberField
+                  key={key}
+                  label={`${key.toUpperCase()} (pt)`}
+                  value={item[key] * (key.startsWith("x") ? width : height)}
+                  min={-10 * (key.startsWith("x") ? width : height)}
+                  max={10 * (key.startsWith("x") ? width : height)}
+                  onChange={(value) =>
+                    edit((next) => {
+                      next.annotations.find((a) => a.id === item.id)![key] =
+                        value! / (key.startsWith("x") ? width : height);
+                    })
+                  }
+                />
+              ))}
+              <NumberField
+                label={
+                  item.kind === "text"
+                    ? "Annotation font size (pt)"
+                    : "Annotation line width (pt)"
+                }
+                value={
+                  item.kind === "text"
+                    ? (style.fontSize ?? item.fontSize)
+                    : item.lineWidth
+                }
+                min={item.kind === "text" ? 4 : 0.2}
+                max={item.kind === "text" ? 72 : 12}
+                step={0.5}
+                onChange={(value) =>
+                  edit((next) => {
+                    next.annotations.find((a) => a.id === item.id)![
+                      item.kind === "text" ? "fontSize" : "lineWidth"
+                    ] = value!;
+                    if (item.kind === "text" && next.elements[selected])
+                      delete next.elements[selected].fontSize;
+                  })
+                }
+              />
+            </div>
+            <Color
+              label="Annotation color"
+              value={item.color}
+              onChange={(value) =>
+                edit((next) => {
+                  next.annotations.find((a) => a.id === item.id)!.color = value;
+                })
+              }
+            />
+            <IconButton
+              icon="delete"
+              label="Remove annotation"
+              onClick={() => {
+                edit((next) => {
+                  next.annotations = next.annotations.filter(
+                    (a) => a.id !== item.id,
+                  );
+                  delete next.elements[`annotation.${item.id}`];
+                });
+                select(null);
+              }}
+            />
+          </>
+        )}
+        {!panel && !item && (
+          <>
+            <div className="property-grid">
+              {!isCurve && (
+                <>
+                  {!isSharedGroupLabel(selected) && (
+                    <NumberField
+                      label="Horizontal offset (pt)"
+                      value={style.dx ?? 0}
+                      onChange={(value) => styleField("dx", value!)}
+                    />
+                  )}
+                  {!isSharedGroupLabel(selected) && (
+                    <NumberField
+                      label="Vertical offset (pt)"
+                      value={style.dy ?? 0}
+                      onChange={(value) => styleField("dy", value!)}
+                    />
+                  )}
+                  <NumberField
+                    label="Text size (pt)"
+                    value={style.fontSize ?? null}
+                    auto
+                    min={4}
+                    max={72}
+                    step={0.5}
+                    onChange={(value) =>
+                      styleField("fontSize", value ?? undefined)
+                    }
+                  />
+                </>
+              )}
+              {isCurve && (
+                <NumberField
+                  label="Selected line width (pt)"
+                  value={style.lineWidth ?? settings.lineWidth}
+                  min={0.2}
+                  max={12}
+                  step={0.1}
+                  onChange={(value) => styleField("lineWidth", value!)}
+                />
+              )}
+            </div>
+            <Color
+              label="Selected item color"
+              value={
+                style.color ??
+                (isCurve
+                  ? selected.includes(".low.")
+                    ? settings.lowColor
+                    : settings.highColor
+                  : "#111111")
+              }
+              onChange={(value) => styleField("color", value)}
+            />
+            {!isCurve && (
+              <div className="button-row" role="group" aria-label="Text style">
+                <IconButton
+                  icon="bold"
+                  label="Bold text"
+                  aria-pressed={style.bold !== false}
+                  onClick={() => styleField("bold", style.bold === false)}
+                />
+                <IconButton
+                  icon="italic"
+                  label="Italic text"
+                  aria-pressed={!!style.italic}
+                  onClick={() => styleField("italic", !style.italic)}
+                />
+              </div>
+            )}
+            <Check
+              label="Show this item"
+              checked={!style.hidden}
+              onChange={(value) => styleField("hidden", !value)}
+            />
+          </>
+        )}
+        {!item && (
+          <IconButton
+            icon="reset"
+            label="Reset selected item"
+            onClick={() =>
+              edit((next) => {
+                if (panel) next.panels[panel] = defaultFigure().panels[panel];
+                else delete next.elements[selected];
+              })
+            }
+          />
+        )}
+        {selected.startsWith("statistics.") && (
+          <p className="help-text">
+            Statistics update with your analysis. Their values cannot be typed
+            over.
+          </p>
+        )}
+      </fieldset>
+    </details>
+  );
+}
+
+export function FigureEditor({
+  settings,
+  analysis,
+  selected,
+  select,
+  history,
+  savePreset,
+  openFile,
+}: {
+  settings: FigureSettings;
+  analysis: SurvivalAnalysis;
+  selected: string | null;
+  select: (id: string | null) => void;
+  history: History<FigureSettings>;
+  savePreset: () => void;
+  openFile: () => void;
+}) {
+  const { change } = history;
+  const [axisScope, setAxisScope] = useState<Endpoint | "all">("all");
+  const edit = (
+    fn: (next: FigureSettings) => void,
+    apply: (settings: FigureSettings) => void = change,
+  ) => apply(edited(settings, fn));
+  const field = <K extends keyof FigureSettings>(
+    key: K,
+    value: FigureSettings[K],
+    apply?: (settings: FigureSettings) => void,
+  ) =>
+    edit((next) => {
+      next[key] = value;
+      if (key === "lowLabel" || key === "highLabel") {
+        const prefix = key === "lowLabel" ? "label.low" : "label.high";
+        for (const [id, style] of Object.entries(next.elements)) {
+          if (id === prefix || id.startsWith(`${prefix}.`)) {
+            delete style.runs;
+            delete style.text;
+          }
+        }
+      }
+    }, apply);
+  const axes =
+    settings.axes[axisScope === "all" ? settings.endpoints[0] : axisScope];
+  function axisField<K extends keyof Axes>(key: K, value: Axes[K]) {
+    edit((next) => {
+      for (const ep of axisScope === "all" ? ENDPOINTS : [axisScope])
+        next.axes[ep] = { ...axes, [key]: value };
     });
-  const elements = [
-    "title",
-    "source",
-    "label.low",
-    "label.high",
-    ...(analysis.grouping.kind === "median" ? [] : ["grouping"]),
-    ...settings.endpoints.flatMap((ep) => [
-      `panel.${ep}`,
-      `title.${ep}`,
-      `xlabel.${ep}`,
-      `ylabel.${ep}`,
-      `legend.${ep}`,
-      `label.low.${ep}`,
-      `label.high.${ep}`,
-      `statistics.${ep}`,
-      `curve.low.${ep}`,
-      `curve.high.${ep}`,
-    ]),
-    ...settings.annotations.map((a) => `annotation.${a.id}`),
-  ];
+  }
 
   return (
     <aside className="editor-controls" aria-label="Figure properties">
@@ -269,12 +538,11 @@ export function FigureEditor({
         <label htmlFor="selected-figure-item">Selected item</label>
         <select
           id="selected-figure-item"
-          aria-label="Selected item"
           value={selected ?? ""}
           onChange={(e) => select(e.target.value || null)}
         >
           <option value="">Whole figure</option>
-          {elements.map((id) => (
+          {objectIds(settings, analysis).map((id) => (
             <option key={id} value={id}>
               {elementName(id)}
             </option>
@@ -282,286 +550,14 @@ export function FigureEditor({
         </select>
       </div>
       {selected && (
-        <details open key={selected} className="selected-properties">
-          <summary>{elementName(selected)}</summary>
-          <fieldset
-            className="object-properties"
-            disabled={locked(settings, selected)}
-          >
-            {editableText && (
-              <label>
-                <span>Text</span>
-                <textarea
-                  aria-label="Text"
-                  maxLength={isSharedGroupLabel(selected) ? 40 : 500}
-                  value={
-                    style.runs?.map((run) => run.text).join("") ??
-                    style.text ??
-                    textDefault(selected)
-                  }
-                  onChange={(e) => styleField("text", e.target.value)}
-                />
-              </label>
-            )}
-            {(editableText || item?.kind === "text") && (
-              <div className="property-grid">
-                <FontSelect
-                  label="Selected font"
-                  value={style.fontFamily ?? settings.fontFamily}
-                  onChange={(value) => styleField("fontFamily", value)}
-                />
-                <label>
-                  <span>Text alignment</span>
-                  <select
-                    aria-label="Text alignment"
-                    value={
-                      style.align ??
-                      (item || selected.startsWith("label.")
-                        ? "start"
-                        : "middle")
-                    }
-                    onChange={(e) => styleField("align", e.target.value)}
-                  >
-                    <option value="start">Left</option>
-                    <option value="middle">Center</option>
-                    <option value="end">Right</option>
-                  </select>
-                </label>
-                <NumberField
-                  label="Text rotation (degrees)"
-                  value={style.rotation ?? 0}
-                  min={-360}
-                  max={360}
-                  onChange={(value) => styleField("rotation", value)}
-                />
-              </div>
-            )}
-            {panel && (
-              <div className="property-grid">
-                {(["x", "y", "width", "height"] as const).map((key) => {
-                  const scale = key === "x" || key === "width" ? width : height;
-                  const box = settings.panels[panel];
-                  return (
-                    <NumberField
-                      key={key}
-                      label={`Panel ${key} (pt)`}
-                      value={box[key] * scale}
-                      min={key === "width" || key === "height" ? 30 : 0}
-                      max={
-                        scale *
-                        (key === "x"
-                          ? 1 - box.width
-                          : key === "y"
-                            ? 1 - box.height
-                            : key === "width"
-                              ? 1 - box.x
-                              : 1 - box.y)
-                      }
-                      onChange={(value) =>
-                        edit((next) => {
-                          next.panels[panel][key] = value! / scale;
-                        })
-                      }
-                    />
-                  );
-                })}
-              </div>
-            )}
-            {item && (
-              <>
-                {item.kind === "text" && (
-                  <label>
-                    <span>Annotation text</span>
-                    <textarea
-                      aria-label="Annotation text"
-                      maxLength={500}
-                      value={item.text}
-                      onChange={(e) =>
-                        edit((next) => {
-                          next.annotations.find((a) => a.id === item.id)!.text =
-                            e.target.value;
-                          if (next.elements[selected!])
-                            delete next.elements[selected!].runs;
-                        })
-                      }
-                    />
-                  </label>
-                )}
-                <div className="property-grid">
-                  {(
-                    [
-                      "x",
-                      "y",
-                      ...(item.kind === "text" ? [] : ["x2", "y2"]),
-                    ] as ("x" | "y" | "x2" | "y2")[]
-                  ).map((key) => (
-                    <NumberField
-                      key={key}
-                      label={`${key.toUpperCase()} (pt)`}
-                      value={item[key] * (key.startsWith("x") ? width : height)}
-                      min={-10 * (key.startsWith("x") ? width : height)}
-                      max={10 * (key.startsWith("x") ? width : height)}
-                      onChange={(value) =>
-                        edit((next) => {
-                          next.annotations.find((a) => a.id === item.id)![key] =
-                            value! / (key.startsWith("x") ? width : height);
-                        })
-                      }
-                    />
-                  ))}
-                  <NumberField
-                    label={
-                      item.kind === "text"
-                        ? "Annotation font size (pt)"
-                        : "Annotation line width (pt)"
-                    }
-                    value={
-                      item.kind === "text"
-                        ? (style.fontSize ?? item.fontSize)
-                        : item.lineWidth
-                    }
-                    min={item.kind === "text" ? 4 : 0.2}
-                    max={item.kind === "text" ? 72 : 12}
-                    step={0.5}
-                    onChange={(value) =>
-                      edit((next) => {
-                        next.annotations.find((a) => a.id === item.id)![
-                          item.kind === "text" ? "fontSize" : "lineWidth"
-                        ] = value!;
-                        if (item.kind === "text" && next.elements[selected!])
-                          delete next.elements[selected!].fontSize;
-                      })
-                    }
-                  />
-                </div>
-                <Color
-                  label="Annotation color"
-                  value={item.color}
-                  onChange={(value) =>
-                    edit((next) => {
-                      next.annotations.find((a) => a.id === item.id)!.color =
-                        value;
-                    })
-                  }
-                />
-                <IconButton
-                  icon="delete"
-                  label="Remove annotation"
-                  onClick={() => {
-                    edit((next) => {
-                      next.annotations = next.annotations.filter(
-                        (a) => a.id !== item.id,
-                      );
-                      delete next.elements[`annotation.${item.id}`];
-                    });
-                    select(null);
-                  }}
-                />
-              </>
-            )}
-            {!panel && !item && (
-              <>
-                <div className="property-grid">
-                  {!isCurve && (
-                    <>
-                      {!isSharedGroupLabel(selected) && (
-                        <NumberField
-                          label="Horizontal offset (pt)"
-                          value={style.dx ?? 0}
-                          onChange={(value) => styleField("dx", value)}
-                        />
-                      )}
-                      {!isSharedGroupLabel(selected) && (
-                        <NumberField
-                          label="Vertical offset (pt)"
-                          value={style.dy ?? 0}
-                          onChange={(value) => styleField("dy", value)}
-                        />
-                      )}
-                      <NumberField
-                        label="Text size (pt)"
-                        value={style.fontSize ?? null}
-                        auto
-                        min={4}
-                        max={72}
-                        step={0.5}
-                        onChange={(value) =>
-                          styleField("fontSize", value ?? undefined)
-                        }
-                      />
-                    </>
-                  )}
-                  {isCurve && (
-                    <NumberField
-                      label="Selected line width (pt)"
-                      value={style.lineWidth ?? settings.lineWidth}
-                      min={0.2}
-                      max={12}
-                      step={0.1}
-                      onChange={(value) => styleField("lineWidth", value)}
-                    />
-                  )}
-                </div>
-                <Color
-                  label="Selected item color"
-                  value={
-                    style.color ??
-                    (isCurve
-                      ? selected.includes(".low.")
-                        ? settings.lowColor
-                        : settings.highColor
-                      : "#111111")
-                  }
-                  onChange={(value) => styleField("color", value)}
-                />
-                {!isCurve && (
-                  <div
-                    className="button-row"
-                    role="group"
-                    aria-label="Text style"
-                  >
-                    <IconButton
-                      icon="bold"
-                      label="Bold text"
-                      aria-pressed={style.bold !== false}
-                      onClick={() => styleField("bold", style.bold === false)}
-                    />
-                    <IconButton
-                      icon="italic"
-                      label="Italic text"
-                      aria-pressed={!!style.italic}
-                      onClick={() => styleField("italic", !style.italic)}
-                    />
-                  </div>
-                )}
-                <Check
-                  label="Show this item"
-                  checked={!style.hidden}
-                  onChange={(value) => styleField("hidden", !value)}
-                />
-              </>
-            )}
-            {!item && (
-              <IconButton
-                icon="reset"
-                label="Reset selected item"
-                onClick={() =>
-                  edit((next) => {
-                    if (panel)
-                      next.panels[panel] = defaultFigure().panels[panel];
-                    else delete next.elements[selected];
-                  })
-                }
-              />
-            )}
-            {selected.startsWith("statistics.") && (
-              <p className="help-text">
-                Statistics update with your analysis. Their values cannot be
-                typed over.
-              </p>
-            )}
-          </fieldset>
-        </details>
+        <SelectionProperties
+          key={selected}
+          settings={settings}
+          analysis={analysis}
+          selected={selected}
+          select={select}
+          history={history}
+        />
       )}
       <details open>
         <summary>Size and appearance</summary>
@@ -861,7 +857,9 @@ export function FigureEditor({
             aria-label="Lower group label"
             maxLength={40}
             value={settings.lowLabel}
-            onChange={(e) => field("lowLabel", e.target.value)}
+            onFocus={history.begin}
+            onBlur={history.commit}
+            onChange={(e) => field("lowLabel", e.target.value, history.preview)}
           />
         </label>
         <label>
@@ -870,7 +868,11 @@ export function FigureEditor({
             aria-label="Higher group label"
             maxLength={40}
             value={settings.highLabel}
-            onChange={(e) => field("highLabel", e.target.value)}
+            onFocus={history.begin}
+            onBlur={history.commit}
+            onChange={(e) =>
+              field("highLabel", e.target.value, history.preview)
+            }
           />
         </label>
         <div className="button-row">

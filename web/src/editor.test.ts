@@ -8,6 +8,13 @@ import {
 } from "./grouping";
 import { defaultFigure, layoutFigure, reusableStyle } from "./figure";
 import {
+  copyAnnotations,
+  newAnnotation,
+  pasteAnnotations,
+  removeAnnotations,
+  reorderAnnotations,
+} from "./editorModel";
+import {
   presetFile,
   projectFile,
   readFigureFile,
@@ -201,5 +208,55 @@ describe("portable editor projects", () => {
           validateSettings(layoutFigure(settings, layout)),
         ).not.toThrow();
       }
+  });
+});
+
+describe("annotation commands", () => {
+  function annotated() {
+    const settings = defaultFigure();
+    const [a, b] = [
+      newAnnotation("text", 0.1, 0.1),
+      newAnnotation("line", 0.5, 0.5),
+    ];
+    settings.annotations = [a, b];
+    settings.elements[`annotation.${a.id}`] = { bold: false };
+    settings.elements[`annotation.${b.id}`] = { locked: true };
+    return { settings, a, b };
+  }
+  test("copies unlocked annotations and pastes offset copies with their formatting", () => {
+    const { settings, a, b } = annotated();
+    const clipboard = copyAnnotations(settings, [
+      `annotation.${a.id}`,
+      `annotation.${b.id}`,
+      "title",
+    ]);
+    expect(clipboard.annotations.map((x) => x.id)).toEqual([a.id]);
+    const pasted = pasteAnnotations(settings, clipboard);
+    expect(pasted.ids).toHaveLength(1);
+    const copy = pasted.settings.annotations[2];
+    expect(pasted.ids[0]).toBe(`annotation.${copy.id}`);
+    expect(copy.id).not.toBe(a.id);
+    expect(copy.x).toBeCloseTo(a.x + 10 / (settings.widthIn * 72), 12);
+    expect(pasted.settings.elements[pasted.ids[0]]).toEqual({ bold: false });
+    expect(settings.annotations).toHaveLength(2);
+    settings.annotations = Array.from({ length: 100 }, () =>
+      newAnnotation("text", 0, 0),
+    );
+    expect(pasteAnnotations(settings, clipboard).ids).toEqual([]);
+  });
+  test("removes and reorders only unlocked annotations", () => {
+    const { settings, a, b } = annotated();
+    const ids = [`annotation.${a.id}`, `annotation.${b.id}`];
+    const removed = removeAnnotations(settings, ids);
+    expect(removed.annotations.map((x) => x.id)).toEqual([b.id]);
+    expect(removed.elements[ids[0]]).toBeUndefined();
+    expect(
+      reorderAnnotations(settings, ids, true).annotations.map((x) => x.id),
+    ).toEqual([b.id, a.id]);
+    expect(
+      reorderAnnotations(settings, [ids[1]], false).annotations.map(
+        (x) => x.id,
+      ),
+    ).toEqual([a.id, b.id]);
   });
 });

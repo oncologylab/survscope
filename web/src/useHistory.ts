@@ -71,3 +71,4 @@ export function useHistory<T>(initial: T) {
       ),
   };
 }
+export type History<T> = ReturnType<typeof useHistory<T>>;

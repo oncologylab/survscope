@@ -17,6 +17,7 @@ import {
 } from "./citations";
 import releases from "./citation-releases.json";
 import { analyzeGeneData } from "./statistics";
+import { comparisonDraft, draftGrouping } from "./ComparisonControls";
 import { splitLines } from "./RichSvgText";
 import type { GeneData } from "./types";
 // The clinical curves in this fixture remain aggregate, with no participant IDs.
@@ -299,4 +300,15 @@ describe("data citations", () => {
     bad.analysis.provenance!.citations[0].url = "javascript:alert(1)";
     expect(() => readFigureFile(JSON.stringify(bad))).toThrow(/URL/);
   });
+});
+
+test("comparison presets survive a round trip through their saved spec", () => {
+  for (const mode of ["quarters", "thirds"] as const) {
+    const spec = draftGrouping({ ...comparisonDraft({ kind: "median" }), mode });
+    expect(comparisonDraft(spec).mode).toBe(mode);
+  }
+  expect(
+    comparisonDraft({ kind: "percentile_groups", lowerPercent: 30, upperPercent: 30 })
+      .mode,
+  ).toBe("percentile_groups");
 });

@@ -5,27 +5,30 @@ import { SurvivalPlot } from "./SurvivalPlot";
 import { FigureEditor } from "./FigureEditor";
 import { InlineTextEditor } from "./InlineTextEditor";
 import { IconButton } from "./IconButton";
-import { legendEntry } from "./plotLabels";
+import { LayersPanel } from "./LayersPanel";
+import { defaultText, legendEntry } from "./plotLabels";
 import type { TextTarget } from "./InlineTextEditor";
-import { defaultFigure, elementName } from "./figure";
+import { defaultFigure } from "./figure";
 import type { EditorTool, FigureSettings } from "./figure";
 import type { Endpoint, SurvivalAnalysis } from "./types";
-import type { useHistory } from "./useHistory";
+import type { History } from "./useHistory";
 import {
   alignObjects,
+  copyAnnotations,
   locked,
   moveObjects,
   objectBounds,
-  objectIds,
   objectStyle,
-  parentId,
+  pasteAnnotations,
+  removeAnnotations,
+  reorderAnnotations,
   updateText,
 } from "./editorModel";
+import type { AnnotationClipboard } from "./editorModel";
 
-type History = ReturnType<typeof useHistory<FigureSettings>>;
 interface Props {
   analysis: SurvivalAnalysis | null;
-  history: History;
+  history: History<FigureSettings>;
   plotRef: RefObject<SVGSVGElement>;
   analysisControls: ReactNode;
   status: string;
@@ -48,6 +51,7 @@ interface WorkspacePreferences {
   right: number;
   snap: boolean;
 }
+const clampDock = (width: number) => Math.max(240, Math.min(440, width));
 function defaults(): WorkspacePreferences {
   return {
     analysis: window.innerWidth >= 1440,
@@ -70,25 +74,74 @@ function loadPreferences() {
       ...(window.innerWidth >= 1024 && typeof p.properties === "boolean"
         ? { properties: p.properties }
         : {}),
-      left: Math.max(240, Math.min(440, Number(p.left) || d.left)),
-      right: Math.max(240, Math.min(440, Number(p.right) || d.right)),
+      left: clampDock(Number(p.left) || d.left),
+      right: clampDock(Number(p.right) || d.right),
     };
   } catch {
     return d;
   }
 }
+function DockResizer({
+  label,
+  edge,
+  width,
+  onResize,
+}: {
+  label: string;
+  edge: "left" | "right";
+  width: number;
+  onResize: (width: number) => void;
+}) {
+  const direction = edge === "right" ? 1 : -1;
+  return (
+    <div
+      role="separator"
+      aria-label={label}
+      aria-orientation="vertical"
+      aria-valuemin={240}
+      aria-valuemax={440}
+      aria-valuenow={width}
+      tabIndex={0}
+      className={`dock-resizer ${edge}`}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        const target = e.currentTarget,
+          x = e.clientX;
+        target.setPointerCapture(e.pointerId);
+        const move = (event: PointerEvent) =>
+          onResize(clampDock(width + (event.clientX - x) * direction));
+        const end = () => {
+          target.removeEventListener("pointermove", move);
+          target.removeEventListener("pointerup", end);
+          target.removeEventListener("pointercancel", end);
+        };
+        target.addEventListener("pointermove", move);
+        target.addEventListener("pointerup", end);
+        target.addEventListener("pointercancel", end);
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        e.stopPropagation();
+        onResize(
+          clampDock(width + (e.key === "ArrowRight" ? 10 : -10) * direction),
+        );
+      }}
+    />
+  );
+}
 export function FigureWorkspace(p: Props) {
-  const { analysis, history, plotRef } = p,
-    settings = history.value;
-  const [prefs, setPrefs] = useState(loadPreferences),
-    [tab, setTab] = useState<"properties" | "layers">("properties");
-  const [selection, setSelection] = useState<string[]>([]),
-    [tool, setTool] = useState<EditorTool>("select"),
-    [space, setSpace] = useState(false);
-  const [zoom, setZoom] = useState<number | null>(null),
-    [stageSize, setStageSize] = useState({ width: 800, height: 600 });
-  const [textTarget, setTextTarget] = useState<TextTarget | null>(null),
-    [artboard, setArtboard] = useState(false);
+  const { analysis, history, plotRef } = p;
+  const settings = history.value;
+  const [prefs, setPrefs] = useState(loadPreferences);
+  const [tab, setTab] = useState<"properties" | "layers">("properties");
+  const [selection, setSelection] = useState<string[]>([]);
+  const [tool, setTool] = useState<EditorTool>("select");
+  const [space, setSpace] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
+  const [textTarget, setTextTarget] = useState<TextTarget | null>(null);
+  const [artboard, setArtboard] = useState(false);
   const [clipboardReady, setClipboardReady] = useState(false);
   const hasSelectedAnnotations = selection.some(
     (id) => id.startsWith("annotation.") && !locked(settings, id),
@@ -99,10 +152,7 @@ export function FigureWorkspace(p: Props) {
     );
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const clipboard = useRef<{
-    annotations: FigureSettings["annotations"];
-    styles: FigureSettings["elements"];
-  } | null>(null);
+  const clipboard = useRef<AnnotationClipboard | null>(null);
   const selected = selection.at(-1) ?? null,
     activeTool = space ? "hand" : tool;
   const fit = Math.max(
@@ -189,11 +239,16 @@ export function FigureWorkspace(p: Props) {
     const id = node.dataset.textId!;
     const parent =
       node.closest<SVGGraphicsElement>("[data-element]")?.dataset.element;
-    if (locked(settings, id) || (parent && locked(settings, parent))) return;
+    if (
+      !analysis ||
+      locked(settings, id) ||
+      (parent && locked(settings, parent))
+    )
+      return;
     if (id.startsWith("label.")) setSelection([id]);
     const parts = id.split(".");
     const style =
-        id.startsWith("label.") && parts.length === 3 && analysis
+        id.startsWith("label.") && parts.length === 3
           ? legendEntry(
               settings,
               analysis.endpoints[parts[2] as Endpoint],
@@ -207,13 +262,7 @@ export function FigureWorkspace(p: Props) {
     const computed = getComputedStyle(node);
     setTextTarget({
       id,
-      value:
-        style.text ??
-        (id === "label.low"
-          ? settings.lowLabel
-          : id === "label.high"
-            ? settings.highLabel
-            : (node.dataset.textValue ?? "")),
+      value: style.text ?? defaultText(settings, analysis, id),
       runs: style.runs,
       style,
       matrix: [matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f],
@@ -227,55 +276,17 @@ export function FigureWorkspace(p: Props) {
     });
   }
   function copy() {
-    const ids = selection.filter((id) => !locked(settings, id));
-    const annotations = settings.annotations.filter((a) =>
-      ids.includes(`annotation.${a.id}`),
-    );
-    clipboard.current = {
-      annotations: structuredClone(annotations),
-      styles: Object.fromEntries(
-        annotations.map((a) => [
-          a.id,
-          structuredClone(settings.elements[`annotation.${a.id}`] ?? {}),
-        ]),
-      ),
-    };
-    setClipboardReady(annotations.length > 0);
+    clipboard.current = copyAnnotations(settings, selection);
+    setClipboardReady(clipboard.current.annotations.length > 0);
   }
   function paste() {
-    if (!clipboard.current || !clipboard.current.annotations.length) return;
-    const next = structuredClone(settings),
-      ids: string[] = [];
-    for (const a of clipboard.current.annotations.slice(
-      0,
-      100 - next.annotations.length,
-    )) {
-      const id = crypto.randomUUID();
-      next.annotations.push({
-        ...a,
-        id,
-        x: a.x + 10 / (settings.widthIn * 72),
-        y: a.y + 10 / (settings.heightIn * 72),
-        x2: a.x2 + 10 / (settings.widthIn * 72),
-        y2: a.y2 + 10 / (settings.heightIn * 72),
-      });
-      next.elements[`annotation.${id}`] = structuredClone(
-        clipboard.current.styles[a.id],
-      );
-      ids.push(`annotation.${id}`);
-    }
-    history.change(next);
-    setSelection(ids);
+    if (!clipboard.current?.annotations.length) return;
+    const pasted = pasteAnnotations(settings, clipboard.current);
+    history.change(pasted.settings);
+    setSelection(pasted.ids);
   }
   function remove() {
-    const ids = selection.filter((id) => !locked(settings, id));
-    const next = structuredClone(settings);
-    next.annotations = next.annotations.filter(
-      (a) => !ids.includes(`annotation.${a.id}`),
-    );
-    for (const id of ids.filter((id) => id.startsWith("annotation.")))
-      delete next.elements[id];
-    history.change(next);
+    history.change(removeAnnotations(settings, selection));
     setSelection(selection.filter((id) => !id.startsWith("annotation.")));
   }
   function duplicate() {
@@ -298,12 +309,13 @@ export function FigureWorkspace(p: Props) {
       }
       if (e.ctrlKey || e.metaKey) {
         const k = e.key.toLowerCase();
-        if (["z", "y", "c", "v", "x"].includes(k)) {
+        if (["z", "y", "c", "v", "x", "d"].includes(k)) {
           e.preventDefault();
           if (k === "z") e.shiftKey ? history.redo() : history.undo();
           if (k === "y") history.redo();
           if (k === "c") copy();
           if (k === "v") paste();
+          if (k === "d") duplicate();
           if (k === "x") {
             copy();
             remove();
@@ -373,41 +385,7 @@ export function FigureWorkspace(p: Props) {
     history.change(alignObjects(settings, selection, boxes, action, artboard));
   }
   function reorder(front: boolean) {
-    const next = structuredClone(settings),
-      selected = next.annotations.filter(
-        (a) =>
-          selection.includes(`annotation.${a.id}`) &&
-          !locked(settings, `annotation.${a.id}`),
-      ),
-      rest = next.annotations.filter((a) => !selected.includes(a));
-    next.annotations = front ? [...rest, ...selected] : [...selected, ...rest];
-    history.change(next);
-  }
-  function resizeDock(e: React.PointerEvent, side: "left" | "right") {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const initial = prefs[side],
-      x = e.clientX;
-    const target = e.currentTarget;
-    const move = (event: PointerEvent) =>
-      setPrefs((v) => ({
-        ...v,
-        [side]: Math.max(
-          240,
-          Math.min(
-            440,
-            initial + (event.clientX - x) * (side === "left" ? 1 : -1),
-          ),
-        ),
-      }));
-    const end = () => {
-      target.removeEventListener("pointermove", move as EventListener);
-      target.removeEventListener("pointerup", end);
-      target.removeEventListener("pointercancel", end);
-    };
-    target.addEventListener("pointermove", move as EventListener);
-    target.addEventListener("pointerup", end);
-    target.addEventListener("pointercancel", end);
+    history.change(reorderAnnotations(settings, selection, front));
   }
   return (
     <div
@@ -504,32 +482,11 @@ export function FigureWorkspace(p: Props) {
                 />
               </div>
               {p.analysisControls}
-              <div
-                role="separator"
-                aria-label="Resize Analysis panel"
-                aria-orientation="vertical"
-                aria-valuemin={240}
-                aria-valuemax={440}
-                aria-valuenow={prefs.left}
-                tabIndex={0}
-                className="dock-resizer right"
-                onPointerDown={(e) => resizeDock(e, "left")}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setPrefs((v) => ({
-                      ...v,
-                      left: Math.max(
-                        240,
-                        Math.min(
-                          440,
-                          v.left + (e.key === "ArrowRight" ? 10 : -10),
-                        ),
-                      ),
-                    }));
-                  }
-                }}
+              <DockResizer
+                label="Resize Analysis panel"
+                edge="right"
+                width={prefs.left}
+                onResize={(left) => setPrefs((v) => ({ ...v, left }))}
               />
             </div>
           )}
@@ -560,7 +517,6 @@ export function FigureWorkspace(p: Props) {
               <IconButton
                 icon="fit"
                 label="Fit"
-                description="Fit the complete artboard in the available canvas."
                 onClick={() => setZoom(null)}
                 aria-pressed={zoom === null}
               />
@@ -576,7 +532,7 @@ export function FigureWorkspace(p: Props) {
                 label="Zoom out"
                 onClick={() => zoomAt(0.8)}
               />
-              <span aria-label="Magnification">{Math.round(scale * 100)}%</span>
+              <span className="zoom-level">{Math.round(scale * 100)}%</span>
               <IconButton
                 icon="plus"
                 label="Zoom in"
@@ -869,7 +825,6 @@ export function FigureWorkspace(p: Props) {
                       />
                       <span
                         className="selection-count"
-                        aria-label={`${selection.length} selected`}
                         title={`${selection.length} selected`}
                       >
                         {selection.length}
@@ -882,75 +837,18 @@ export function FigureWorkspace(p: Props) {
                       analysis={analysis}
                       selected={selected}
                       select={(id) => setSelection(id ? [id] : [])}
-                      change={history.change}
+                      history={history}
                       savePreset={p.onPreset}
                       openFile={p.onOpen}
                     />
                   ) : (
-                    <div
-                      className="layers-list"
-                      role="tree"
-                      aria-label="Figure objects"
-                    >
-                      {objectIds(settings, analysis).map((id) => (
-                        <div
-                          key={id}
-                          className={`layer-row ${selection.includes(id) ? "selected" : ""}`}
-                          style={{ paddingLeft: parentId(id) ? 18 : 4 }}
-                          role="treeitem"
-                          aria-level={parentId(id) ? 2 : 1}
-                          aria-selected={selection.includes(id)}
-                        >
-                          <button
-                            className="layer-select"
-                            onClick={(e) =>
-                              setSelection(
-                                e.shiftKey
-                                  ? selection.includes(id)
-                                    ? selection.filter((x) => x !== id)
-                                    : [...selection, id]
-                                  : [id],
-                              )
-                            }
-                          >
-                            {elementName(id)}
-                          </button>
-                          {(["hidden", "locked"] as const).map((key) => (
-                            <IconButton
-                              key={key}
-                              icon={
-                                key === "hidden"
-                                  ? settings.elements[id]?.hidden
-                                    ? "eye-off"
-                                    : "eye"
-                                  : settings.elements[id]?.locked
-                                    ? "lock"
-                                    : "unlock"
-                              }
-                              label={`${key === "hidden" ? "Hide" : "Lock"} ${elementName(id)}`}
-                              description={
-                                settings.elements[id]?.[key]
-                                  ? `Click to ${key === "hidden" ? "show" : "unlock"} this object.`
-                                  : undefined
-                              }
-                              aria-pressed={!!settings.elements[id]?.[key]}
-                              onClick={() =>
-                                history.change({
-                                  ...settings,
-                                  elements: {
-                                    ...settings.elements,
-                                    [id]: {
-                                      ...settings.elements[id],
-                                      [key]: !settings.elements[id]?.[key],
-                                    },
-                                  },
-                                })
-                              }
-                            />
-                          ))}
-                        </div>
-                      ))}
-                    </div>
+                    <LayersPanel
+                      settings={settings}
+                      analysis={analysis}
+                      selection={selection}
+                      select={setSelection}
+                      change={history.change}
+                    />
                   )}
                   <IconButton
                     icon="reset"
@@ -964,32 +862,11 @@ export function FigureWorkspace(p: Props) {
                   />
                 </div>
               )}
-              <div
-                role="separator"
-                aria-label="Resize Properties panel"
-                aria-orientation="vertical"
-                aria-valuemin={240}
-                aria-valuemax={440}
-                aria-valuenow={prefs.right}
-                tabIndex={0}
-                className="dock-resizer left"
-                onPointerDown={(e) => resizeDock(e, "right")}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setPrefs((v) => ({
-                      ...v,
-                      right: Math.max(
-                        240,
-                        Math.min(
-                          440,
-                          v.right + (e.key === "ArrowLeft" ? 10 : -10),
-                        ),
-                      ),
-                    }));
-                  }
-                }}
+              <DockResizer
+                label="Resize Properties panel"
+                edge="left"
+                width={prefs.right}
+                onResize={(right) => setPrefs((v) => ({ ...v, right }))}
               />
             </div>
           )}

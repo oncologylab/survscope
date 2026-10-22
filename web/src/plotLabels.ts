@@ -1,5 +1,6 @@
+import { cohortDisplayName } from "./cohorts";
 import type { ElementStyle, FigureSettings } from "./figure";
-import type { EndpointResult, SurvivalAnalysis } from "./types";
+import type { Endpoint, EndpointResult, SurvivalAnalysis } from "./types";
 
 export const isSharedGroupLabel = (id: string) =>
   id === "label.low" || id === "label.high";
@@ -33,6 +34,38 @@ export function legendEntry(
   if (own.text === undefined && own.runs === undefined && sharedRuns)
     style.runs = [...sharedRuns, { text: counts }];
   return { value: name + counts, style };
+}
+
+export function defaultText(
+  settings: FigureSettings,
+  analysis: SurvivalAnalysis,
+  id: string,
+): string {
+  const [kind, part, ep] = id.split(".");
+  switch (kind) {
+    case "label":
+      if (ep)
+        return legendEntry(
+          settings,
+          analysis.endpoints[ep as Endpoint],
+          part as "low" | "high",
+        ).value;
+      return part === "low" ? settings.lowLabel : settings.highLabel;
+    case "source":
+      return `Expression: ${analysis.sourceExpression}; endpoints: ${analysis.sourceSurvival}`;
+    case "grouping":
+      return analysis.groupingLabel;
+    case "xlabel":
+      return settings.unit[0].toUpperCase() + settings.unit.slice(1);
+    case "ylabel":
+      return "Survival";
+    case "annotation":
+      return settings.annotations.find((a) => a.id === part)?.text ?? "";
+    default:
+      return part
+        ? `${analysis.gene} ${part}`
+        : `${analysis.gene} ${cohortDisplayName(analysis.cohort)} survival`;
+  }
 }
 
 export function testedOutcomeCount(analysis: SurvivalAnalysis): number {

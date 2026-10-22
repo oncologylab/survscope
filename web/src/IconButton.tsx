@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ButtonHTMLAttributes } from "react";
 import { createPortal } from "react-dom";
 
-// Small, local SVG symbols keep controls consistent without another runtime dependency.
 const paths = {
   select: "M5 3 19 13 12 14 9 21Z",
   type: "M4 6V3H20V6M12 3V21M8 21H16",

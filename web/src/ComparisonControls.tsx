@@ -15,14 +15,17 @@ export interface ComparisonDraft {
   lower: string;
   upper: string;
 }
+function presetMode(spec: GroupingSpec): ComparisonDraft["mode"] {
+  if (spec.kind !== "percentile_groups") return spec.kind;
+  const { lowerPercent: lower, upperPercent: upper } = spec;
+  if (lower === 25 && upper === 25) return "quarters";
+  if (Math.abs(lower - 100 / 3) < 1e-9 && Math.abs(upper - 100 / 3) < 1e-9)
+    return "thirds";
+  return spec.kind;
+}
 export function comparisonDraft(spec: GroupingSpec): ComparisonDraft {
   return {
-    mode:
-      spec.kind === "percentile_groups" &&
-      spec.lowerPercent === 25 &&
-      spec.upperPercent === 25
-        ? "quarters"
-        : spec.kind,
+    mode: presetMode(spec),
     threshold: spec.kind === "tpm" ? String(spec.threshold) : "10",
     percentile: spec.kind === "percentile" ? String(spec.percentile) : "75",
     lower: spec.kind === "percentile_groups" ? String(spec.lowerPercent) : "25",
@@ -69,9 +72,9 @@ const descriptions: Record<ComparisonDraft["mode"], string> = {
   percentile:
     "Choose where to divide patients into lower and higher expression groups.",
   quarters:
-    "Compare the lowest 25% with the highest 25%. Leave the middle patients out of this comparison.",
+    "Compare the lowest 25% with the highest 25%. The middle half is left out.",
   thirds:
-    "Compare the lowest third with the highest third. Leave the middle third out.",
+    "Compare the lowest third with the highest third. The middle third is left out.",
   percentile_groups:
     "Choose how much of the lower and upper expression ranges to compare. Their total cannot exceed 100%.",
   tpm: "Enter a gene-expression threshold. TPM measures the relative abundance of a gene's RNA.",

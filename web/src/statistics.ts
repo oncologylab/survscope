@@ -53,7 +53,7 @@ export function kaplanMeier(time: number[], event: number[]): Curve {
   };
 }
 
-export function logrank(
+function logrank(
   time: number[],
   event: number[],
   high: boolean[],
@@ -86,7 +86,7 @@ export function logrank(
   return [chi2, erfc(Math.sqrt(chi2 / 2))];
 }
 
-export const COX_MESSAGES: Record<Exclude<CoxStatus, "ok">, string> = {
+const COX_MESSAGES: Record<Exclude<CoxStatus, "ok">, string> = {
   empty_group: "The comparison leaves one expression group empty.",
   no_events: "No events were observed; a hazard ratio cannot be estimated.",
   no_information:
@@ -97,7 +97,7 @@ export const COX_MESSAGES: Record<Exclude<CoxStatus, "ok">, string> = {
     "The Cox model did not converge; the hazard ratio is unavailable.",
 };
 
-export function coxFit(time: number[], event: number[], high: boolean[]) {
+function coxFit(time: number[], event: number[], high: boolean[]) {
   const unavailable = (status: CoxStatus) => ({
     hr: Number.NaN,
     p: Number.NaN,

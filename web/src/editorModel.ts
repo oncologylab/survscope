@@ -1,6 +1,7 @@
 import { ENDPOINTS } from "./types";
 import type { Endpoint, SurvivalAnalysis } from "./types";
 import { isSharedGroupLabel } from "./plotLabels";
+import { editableIds, isTextId } from "./figure";
 import type {
   Annotation,
   ElementStyle,
@@ -14,6 +15,8 @@ export interface Bounds {
   width: number;
   height: number;
 }
+export const panelBox = (settings: FigureSettings, id: string) =>
+  settings.panels[id.split(".")[1] as Endpoint];
 export function objectStyle(
   settings: FigureSettings,
   id: string,
@@ -26,7 +29,7 @@ export function objectStyle(
 }
 export function isText(id: string, settings: FigureSettings) {
   return (
-    /^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(id) ||
+    isTextId(id) ||
     settings.annotations.some(
       (a) => `annotation.${a.id}` === id && a.kind === "text",
     )
@@ -68,7 +71,7 @@ export function clampMovement(
   dy: number,
 ) {
   for (const id of ids.filter((id) => id.startsWith("panel."))) {
-    const b = settings.panels[id.split(".")[1] as Endpoint];
+    const b = panelBox(settings, id);
     dx = Math.max(
       -b.x * settings.widthIn * 72,
       Math.min((1 - b.x - b.width) * settings.widthIn * 72, dx),
@@ -93,7 +96,7 @@ export function moveObjects(
   ({ dx, dy } = clampMovement(settings, selected, dx, dy));
   for (const id of selected) {
     if (id.startsWith("panel.")) {
-      const box = next.panels[id.split(".")[1] as Endpoint];
+      const box = panelBox(next, id);
       box.x = Math.max(0, Math.min(1 - box.width, box.x + dx / w));
       box.y = Math.max(0, Math.min(1 - box.height, box.y + dy / h));
     } else if (id.startsWith("annotation.")) {
@@ -116,26 +119,11 @@ export function objectIds(
   settings: FigureSettings,
   analysis: SurvivalAnalysis,
 ) {
-  return [
-    "title",
-    "source",
-    "label.low",
-    "label.high",
-    ...(analysis.grouping.kind === "median" ? [] : ["grouping"]),
-    ...settings.endpoints.flatMap((ep) => [
-      `panel.${ep}`,
-      `title.${ep}`,
-      `xlabel.${ep}`,
-      `ylabel.${ep}`,
-      `legend.${ep}`,
-      `label.low.${ep}`,
-      `label.high.${ep}`,
-      `statistics.${ep}`,
-      `curve.low.${ep}`,
-      `curve.high.${ep}`,
-    ]),
-    ...settings.annotations.map((a) => `annotation.${a.id}`),
-  ];
+  return editableIds(
+    settings.endpoints,
+    settings.annotations.map((a) => a.id),
+    analysis.grouping.kind !== "median",
+  );
 }
 export function objectBounds(svg: SVGSVGElement, id: string): Bounds | null {
   const node = [
@@ -261,4 +249,80 @@ export function alignObjects(
       next = moveObjects(next, [id], dx, dy);
     }
   return next;
+}
+export interface AnnotationClipboard {
+  annotations: Annotation[];
+  styles: Record<string, ElementStyle>;
+}
+function selectedAnnotations(settings: FigureSettings, ids: string[]) {
+  return settings.annotations.filter(
+    (a) =>
+      ids.includes(`annotation.${a.id}`) &&
+      !locked(settings, `annotation.${a.id}`),
+  );
+}
+export function copyAnnotations(
+  settings: FigureSettings,
+  ids: string[],
+): AnnotationClipboard {
+  const annotations = selectedAnnotations(settings, ids);
+  return {
+    annotations: structuredClone(annotations),
+    styles: Object.fromEntries(
+      annotations.map((a) => [
+        a.id,
+        structuredClone(settings.elements[`annotation.${a.id}`] ?? {}),
+      ]),
+    ),
+  };
+}
+export function pasteAnnotations(
+  settings: FigureSettings,
+  clipboard: AnnotationClipboard,
+): { settings: FigureSettings; ids: string[] } {
+  const next = structuredClone(settings),
+    dx = 10 / (settings.widthIn * 72),
+    dy = 10 / (settings.heightIn * 72),
+    ids: string[] = [];
+  for (const a of clipboard.annotations.slice(
+    0,
+    100 - next.annotations.length,
+  )) {
+    const id = crypto.randomUUID();
+    next.annotations.push({
+      ...a,
+      id,
+      x: a.x + dx,
+      y: a.y + dy,
+      x2: a.x2 + dx,
+      y2: a.y2 + dy,
+    });
+    next.elements[`annotation.${id}`] = structuredClone(clipboard.styles[a.id]);
+    ids.push(`annotation.${id}`);
+  }
+  return { settings: next, ids };
+}
+export function removeAnnotations(
+  settings: FigureSettings,
+  ids: string[],
+): FigureSettings {
+  const removed = selectedAnnotations(settings, ids);
+  const next = structuredClone(settings);
+  next.annotations = next.annotations.filter(
+    (a) => !removed.some((r) => r.id === a.id),
+  );
+  for (const a of removed) delete next.elements[`annotation.${a.id}`];
+  return next;
+}
+export function reorderAnnotations(
+  settings: FigureSettings,
+  ids: string[],
+  front: boolean,
+): FigureSettings {
+  const selected = selectedAnnotations(settings, ids),
+    rest = settings.annotations.filter((a) => !selected.includes(a));
+  return {
+    ...settings,
+    annotations: front ? [...rest, ...selected] : [...selected, ...rest],
+  };
 }

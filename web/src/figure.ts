@@ -83,7 +83,7 @@ export interface FigureSettings {
   dpi: 150 | 300 | 600;
 }
 
-export const DEFAULT_AXES: Axes = {
+const DEFAULT_AXES: Axes = {
   xMin: 0,
   xMax: null,
   xStep: null,
@@ -234,4 +234,32 @@ export function elementName(id: string | null): string {
         })[part] ?? part,
     )
     .join(" · ");
+}
+export const isTextId = (id: string) =>
+  /^(title|source|grouping|xlabel|ylabel|label)(\.|$)/.test(id);
+export function editableIds(
+  endpoints: readonly Endpoint[],
+  annotationIds: readonly string[],
+  grouping = true,
+): string[] {
+  return [
+    "title",
+    "source",
+    "label.low",
+    "label.high",
+    ...(grouping ? ["grouping"] : []),
+    ...endpoints.flatMap((ep) => [
+      `panel.${ep}`,
+      `title.${ep}`,
+      `xlabel.${ep}`,
+      `ylabel.${ep}`,
+      `legend.${ep}`,
+      `label.low.${ep}`,
+      `label.high.${ep}`,
+      `statistics.${ep}`,
+      `curve.low.${ep}`,
+      `curve.high.${ep}`,
+    ]),
+    ...annotationIds.map((id) => `annotation.${id}`),
+  ];
 }
