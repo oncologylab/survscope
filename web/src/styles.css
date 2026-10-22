@@ -22,9 +22,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 82% 5%, rgb(20 125 119 / 11%), transparent 26rem),
-    linear-gradient(180deg, #f7f6f1 0, #f1efe7 65rem);
+  background: #f3f1ea;
   overflow: hidden;
 }
 
@@ -100,12 +98,10 @@ h2 {
 
 .controls label > span:first-child {
   display: block;
-  margin-bottom: 8px;
-  color: #46504e;
+  margin-bottom: 5px;
+  color: #42534b;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .controls select,
@@ -180,8 +176,7 @@ h2 {
   background: var(--teal);
   border: 0;
   border-radius: 4px;
-  font-weight: 800;
-  box-shadow: 0 8px 20px rgb(20 125 119 / 20%);
+  font-weight: 700;
 }
 
 .primary-button:hover:not(:disabled) {
@@ -189,8 +184,8 @@ h2 {
 }
 
 button:disabled {
-  cursor: wait;
-  opacity: 0.52;
+  cursor: default;
+  opacity: 0.6;
 }
 
 .result-heading {
@@ -211,7 +206,7 @@ button:disabled {
   border: 1px solid #a8c9c5;
   border-radius: 3px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .export-buttons button:hover:not(:disabled) {
@@ -253,9 +248,10 @@ button:disabled {
 
 .quality-strip article {
   min-width: 0;
-  padding: 8px 9px;
+  padding: 8px 10px;
   background: #f7f6f1;
   border: 1px solid var(--line);
+  border-radius: 4px;
 }
 
 .quality-strip article > div {
@@ -266,33 +262,25 @@ button:disabled {
 }
 
 .quality-strip article > div span {
-  padding: 3px 5px;
   color: var(--teal-dark);
-  background: #dcefeb;
-  border-radius: 99px;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 11px;
 }
 
 .quality-strip article[data-quality="caution"] > div span {
   color: #855b13;
-  background: #f4e6bd;
 }
 
 .quality-strip article[data-quality="not_recommended"] > div span,
 .quality-strip article[data-quality="unavailable"] > div span {
   color: #8e4333;
-  background: #f3d9d2;
 }
 
 .quality-strip p,
 .quality-strip small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .quality-strip p {
@@ -344,7 +332,6 @@ footer a {
   }
 }
 
-/* Analysis and editing share the same paper-and-ink workspace. */
 .header-actions,
 .zoom-toolbar,
 .button-row,
@@ -372,9 +359,6 @@ a:focus-visible,
 summary:focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 3px;
-}
-button:disabled {
-  cursor: default;
 }
 .header-actions button:hover,
 .zoom-toolbar button:hover:not(:disabled),
@@ -413,7 +397,8 @@ button:disabled {
   line-height: 1.5;
   margin: 8px 0;
 }
-.text-button {
+.text-button,
+.studio .text-button {
   border: 0;
   background: transparent;
   color: var(--teal-dark);
@@ -658,7 +643,6 @@ button:disabled {
   font-size: 12px;
 }
 
-/* The editing workspace follows the viewport; print dimensions belong to the artboard. */
 .studio {
   height: 100dvh;
   min-height: 0;
@@ -740,9 +724,6 @@ button:disabled {
   background: var(--teal);
   border-color: var(--teal);
 }
-.studio button:disabled {
-  cursor: default;
-}
 .studio .analysis-dock {
   flex: 0 0 var(--analysis-width);
   width: var(--analysis-width);
@@ -798,9 +779,10 @@ button:disabled {
   font-size: 12px;
 }
 .studio .controls .primary-button {
-  background: var(--teal);
+  padding: 11px;
+  border: 0;
   color: #fff;
-  padding: 12px;
+  background: var(--teal);
   margin-top: 18px;
 }
 .studio .result {
@@ -842,7 +824,7 @@ button:disabled {
   flex: none;
   margin: 10px 0 6px;
 }
-.studio .zoom-toolbar output {
+.studio .zoom-level {
   min-width: 42px;
   text-align: center;
 }
@@ -882,6 +864,7 @@ button:disabled {
   max-height: none;
   max-width: none;
   user-select: none;
+  text-rendering: geometricPrecision;
 }
 .tool-type .survival-plot,
 .tool-type [data-element] {
@@ -910,8 +893,8 @@ button:disabled {
   flex: none;
 }
 .studio .workspace-status button {
-  padding: 3px 6px;
-  font-size: 10px;
+  padding: 3px 7px;
+  font-size: 11px;
 }
 .studio .inspector-content {
   overflow: auto;
@@ -986,11 +969,10 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
 }
 .studio footer p {
   margin: 0;
-  font-size: 10px;
 }
 .studio .plot-placeholder {
   height: 100%;
@@ -1162,12 +1144,6 @@ button:disabled {
     font-size: 10px;
     padding: 5px;
   }
-  .studio .workspace-status {
-    font-size: 9px;
-  }
-  .studio footer {
-    font-size: 9px;
-  }
   .text-format-toolbar {
     top: 96px;
     max-width: 95vw;
@@ -1198,9 +1174,6 @@ button:disabled {
 .studio .quality-strip {
   grid-template-columns: 1fr;
 }
-.studio .quality-strip p {
-  font-size: 11px;
-}
 .studio .workspace-status .data-version {
   font-size: 11px;
 }
@@ -1209,12 +1182,7 @@ button:disabled {
   border: 0;
   min-width: 0;
 }
-.studio .zoom-toolbar [aria-label="Magnification"] {
-  min-width: 42px;
-  text-align: center;
-}
 
-/* Editor commands retain accessible names while the artwork remains independent. */
 .command-wrap {
   display: inline-flex;
   flex: none;
