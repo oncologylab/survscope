@@ -16,7 +16,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import zipfile
 from collections import Counter, deque
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -26,7 +25,8 @@ from typing import Any, BinaryIO
 
 import numpy as np
 
-from .constants import ENDPOINTS, EXPRESSION_SCALE, GDC_PIPELINE_URL, MISSING_EXPRESSION
+from .constants import ENDPOINTS, GDC_PIPELINE_URL, SCHEMA_VERSION, USER_AGENT
+from .encoding import bucket_for, encode_log2, json_bytes, median_metadata, write_bucket
 
 GDC_API = "https://api.gdc.cancer.gov"
 CPTAC_URL = (
@@ -189,7 +189,7 @@ class GdcClient:
             }
         )
         url = f"{GDC_API}/{path}" + (f"?{query}" if query else "")
-        request = urllib.request.Request(url, headers={"User-Agent": "survscope/0.1"})
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         for attempt in range(4):
             try:
                 return urllib.request.urlopen(request, timeout=180)
@@ -207,8 +207,8 @@ class GdcClient:
             payload = response.read()
             url = response.url
         result = json.loads(payload)
-        if result.get("warnings") or result.get("errors") or result.get("error"):
-            reason = result.get("warnings") or result.get("errors") or result.get("error")
+        reason = result.get("warnings") or result.get("errors") or result.get("error")
+        if reason:
             raise RuntimeError(f"GDC rejected part of the {path} query: {reason}")
         self.provenance.append(
             {
@@ -423,8 +423,6 @@ def build_cptac_cohort(
     client: GdcClient | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Stream one CPTAC cohort and emit the existing compact TPM schema."""
-    from .builder import _bucket_for, _json_bytes, _median_metadata
-
     spec = CPTAC_COHORTS[cohort]
     client = client or GdcClient()
     status = client.get("status")
@@ -468,7 +466,7 @@ def build_cptac_cohort(
     )
     unavailable = "Not supplied by the GDC CPTAC overall-survival source."
     clinical = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "cohort": cohort,
         "program": "CPTAC",
         "sample_count": sample_count,
@@ -496,7 +494,7 @@ def build_cptac_cohort(
     print(f"{cohort}: streaming {sample_count} matched primary samples", flush=True)
     source_hash = hashlib.sha256()
     records: list[tuple[str, str]] = []
-    matrix: np.ndarray | None = None
+    matrix = np.empty((0, sample_count))
     gene_model = None
     declared_models: Counter[str] = Counter()
     bytes_streamed = 0
@@ -513,12 +511,11 @@ def build_cptac_cohort(
         if observed != records or provenance["gene_model"] != gene_model:
             raise RuntimeError("STAR gene mappings changed within the cohort; rebuild separately")
         declared_models[provenance["gene_model_declared"]] += 1
-        assert matrix is not None
         matrix[:, column] = [math.log2(genes[symbol][1] + 1) for symbol, _ in records]
         bytes_streamed += provenance["bytes"]
         ambiguous_symbols = max(ambiguous_symbols, provenance["ambiguous_symbols_excluded"])
         source_hash.update(
-            _json_bytes({"file_id": file["file_id"], "md5": file["md5sum"], **provenance})
+            json_bytes({"file_id": file["file_id"], "md5": file["md5sum"], **provenance})
         )
         if (column + 1) % 10 == 0 or column + 1 == sample_count:
             print(f"{cohort}: streamed {column + 1}/{sample_count} samples", flush=True)
@@ -528,17 +525,14 @@ def build_cptac_cohort(
     ) != end_status.get("tag"):
         raise RuntimeError("GDC release changed during the build; retry")
 
-    assert matrix is not None
     outdir.mkdir(parents=True, exist_ok=True)
     buffers: dict[str, io.BytesIO] = {}
     metadata: dict[str, list[dict[str, Any]]] = {}
     catalog = []
     for index, (symbol, ensembl) in enumerate(records):
         values = matrix[index]
-        encoded = np.full(sample_count, MISSING_EXPRESSION, dtype="<u2")
-        finite = np.isfinite(values)
-        encoded[finite] = np.rint(values[finite] * EXPRESSION_SCALE).astype("<u2")
-        bucket = _bucket_for(symbol)
+        encoded = encode_log2(values)
+        bucket = bucket_for(symbol)
         entries = metadata.setdefault(bucket, [])
         buffers.setdefault(bucket, io.BytesIO()).write(encoded.tobytes())
         entries.append(
@@ -546,32 +540,23 @@ def build_cptac_cohort(
                 "symbol": symbol,
                 "ensembl": ensembl,
                 "row": len(entries),
-                "medians": _median_metadata(values, encoded, clinical),
+                "medians": median_metadata(values, encoded, clinical),
             }
         )
         catalog.append({"symbol": symbol, "ensembl": ensembl, "bucket": bucket})
     bucket_assets = {}
     for bucket, entries in sorted(metadata.items()):
         name = f"{cohort}-bucket-{bucket}.zip"
-        with zipfile.ZipFile(outdir / name, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-            archive.writestr(
-                "meta.json",
-                _json_bytes(
-                    {
-                        "schema_version": 1,
-                        "cohort": cohort,
-                        "sample_count": sample_count,
-                        "scale": EXPRESSION_SCALE,
-                        "missing": MISSING_EXPRESSION,
-                        "transform": "log2(TPM+1)",
-                        "genes": entries,
-                    }
-                ),
-            )
-            archive.writestr("expression.u16le", buffers[bucket].getvalue())
+        write_bucket(
+            outdir / name,
+            cohort=cohort,
+            sample_count=sample_count,
+            genes=entries,
+            expression=buffers[bucket].getvalue(),
+        )
         bucket_assets[bucket] = name
     clinical_name = f"{cohort}-clinical.json"
-    (outdir / clinical_name).write_bytes(_json_bytes(clinical))
+    (outdir / clinical_name).write_bytes(json_bytes(clinical))
     return {
         "label": spec.label,
         "program": "CPTAC",

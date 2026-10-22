@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "survscope"
-version = "0.4.3"
+dynamic = ["version"]
 description = "Reproducible TCGA and CPTAC Kaplan-Meier survival plots from compact static data"
 readme = "README.md"
 license = "MIT"
@@ -47,6 +47,9 @@ survscope-build-data = "survscope.builder:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+
+[tool.setuptools.dynamic]
+version = { attr = "survscope._version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -19,8 +20,11 @@ from .constants import (
     DEFAULT_DATA_VERSION,
     EXPRESSION_SCALE,
     MISSING_EXPRESSION,
+    USER_AGENT,
     cohort_display_name,
 )
+from .encoding import decode_log2
+from .validation import SCHEMA_VERSIONS
 
 
 def _default_cache_dir() -> Path:
@@ -46,10 +50,7 @@ class GeneData:
 
     @property
     def expression_log2_tpm1(self) -> np.ndarray:
-        values = self.encoded_expression.astype(float)
-        values[self.encoded_expression == self.missing] = np.nan
-        values /= self.scale
-        return values
+        return decode_log2(self.encoded_expression, self.scale, self.missing)
 
     @property
     def expression_tpm(self) -> np.ndarray:
@@ -109,17 +110,21 @@ class DataStore:
             return cache_path.read_bytes()
         url = f"{self.base.rstrip('/')}/{name}"
         try:
-            request = urllib.request.Request(
-                url,
-                headers={"User-Agent": "survscope/0.1"},
-            )
+            request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(request, timeout=120) as response:
                 payload = response.read()
-        except urllib.error.HTTPError as error:
+        except (urllib.error.URLError, TimeoutError) as error:
+            reason = (
+                f"HTTP {error.code}"
+                if isinstance(error, urllib.error.HTTPError)
+                else getattr(error, "reason", None) or error
+            )
             raise RuntimeError(
                 f"Unable to download SurvScope data asset {name!r} "
-                f"for data release {self.data_version}: HTTP {error.code}"
+                f"for data release {self.data_version}: {reason}"
             ) from error
+        if name != self.manifest_name:
+            self._verify(name, payload)
         if self.cache:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
             temporary = cache_path.with_suffix(cache_path.suffix + ".tmp")
@@ -127,14 +132,37 @@ class DataStore:
             temporary.replace(cache_path)
         return payload
 
+    def _verify(self, name: str, payload: bytes) -> None:
+        expected = self.manifest.get("assets", {}).get(name, {})
+        size = expected.get("bytes")
+        digest = expected.get("sha256")
+        if (size is not None and len(payload) != size) or (
+            digest is not None and hashlib.sha256(payload).hexdigest() != digest
+        ):
+            raise RuntimeError(
+                f"SurvScope data asset {name!r} for data release {self.data_version} "
+                "does not match its manifest checksum"
+            )
+
     @property
     def manifest(self) -> dict[str, Any]:
         if self._manifest is None:
             self._manifest = json.loads(self._read(self.manifest_name))
             schema = self._manifest.get("schema_version")
-            if schema not in {1, 2}:
+            if schema not in SCHEMA_VERSIONS:
                 raise RuntimeError(f"Unsupported SurvScope data schema: {schema!r}")
         return self._manifest
+
+    def info(self) -> dict[str, Any]:
+        """Return release-level provenance and catalog sizes."""
+        return {
+            "data_version": self.manifest["data_version"],
+            "schema_version": self.manifest["schema_version"],
+            "created_at": self.manifest["created_at"],
+            "sources": self.manifest["sources"],
+            "cohort_count": len(self.manifest["cohorts"]),
+            "gene_count": len(self.manifest["genes"]),
+        }
 
     def available_cohorts(self) -> list[dict[str, Any]]:
         return [
@@ -149,9 +177,8 @@ class DataStore:
         ]
 
     def search_genes(self, query: str, cohort: str | None = None) -> list[dict[str, str]]:
+        """Return up to 100 matching genes; an empty query lists the first 100."""
         needle = query.strip().upper()
-        if not needle:
-            return []
         cohort = cohort.upper() if cohort else None
         results = []
         for gene in self.manifest["genes"]:

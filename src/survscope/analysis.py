@@ -2,22 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
 
 from .constants import ENDPOINTS, MONTH_DAYS
 from .data import DataStore, GeneData
+from .encoding import endpoint_valid, number_array
 from .grouping import GroupingSpec, assign_groups, grouping_label, normalize_grouping
 from .models import Curve, EndpointResult, SurvivalAnalysis
 from .statistics import COX_MESSAGES, bh_fdr, cox_fit, kaplan_meier, km_timeline, logrank_test
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-
-def _number_array(values: Sequence[float | int | None], dtype=float) -> np.ndarray:
-    return np.asarray([np.nan if value is None else value for value in values], dtype=dtype)
 
 
 def analyze(
@@ -52,9 +44,9 @@ def analyze_gene_data(
     pvalues: list[float] = []
     for endpoint in ENDPOINTS:
         clinical = data.clinical["endpoints"][endpoint]
-        time = _number_array(clinical["time"], dtype=float)
-        event = _number_array(clinical["event"], dtype=float)
-        valid = np.isfinite(tpm) & np.isfinite(time) & np.isin(event, [0, 1]) & (time > 0)
+        time = number_array(clinical["time"])
+        event = number_array(clinical["event"])
+        valid = endpoint_valid(tpm, time, event)
         indices = np.flatnonzero(valid)
         endpoint_time = time[valid]
         endpoint_event = event[valid].astype(int)
@@ -75,22 +67,16 @@ def analyze_gene_data(
         low = ~high
         endpoint_cutoff = lower_threshold if lower_threshold == upper_threshold else np.nan
 
-        warning = ""
-        if len(endpoint_time) == 0:
-            warning = "No endpoint-valid samples."
-        elif not bool(np.any(low)) or not bool(np.any(high)):
-            warning = "The cutoff leaves one expression group empty."
-        elif int(np.sum(endpoint_event[low])) == 0 or int(np.sum(endpoint_event[high])) == 0:
-            warning = "At least one group has no observed events; inferential statistics may be NA."
-
         chi2, pvalue = logrank_test(endpoint_time, endpoint_event, high.astype(int))
         hazard_ratio, cox_p, cox_status = cox_fit(
             endpoint_time,
             endpoint_event,
             high.astype(int),
         )
-        if cox_status != "ok" and len(endpoint_time):
-            warning = COX_MESSAGES[cox_status]
+        if len(endpoint_time) == 0:
+            warning = "No endpoint-valid samples."
+        else:
+            warning = COX_MESSAGES.get(cox_status, "")
         low_x, low_y = kaplan_meier(endpoint_time[low], endpoint_event[low])
         high_x, high_y = kaplan_meier(endpoint_time[high], endpoint_event[high])
         quality = clinical.get("quality", "caution")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -119,6 +120,13 @@ class SurvivalAnalysis:
                 endpoint: result.to_dict() for endpoint, result in self.endpoints.items()
             },
         }
+
+    def write_json(self, output_dir: str | Path = ".") -> Path:
+        """Save endpoint statistics and provenance next to the figure files."""
+        path = Path(output_dir) / f"{self.filename_stem}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.to_dict(), indent=2, allow_nan=False) + "\n")
+        return path
 
 
 @dataclass(frozen=True)

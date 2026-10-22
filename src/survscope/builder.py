@@ -9,12 +9,10 @@ import csv
 import gzip
 import hashlib
 import io
-import json
 import math
 import shutil
 import tempfile
 import urllib.request
-import zipfile
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -42,14 +40,12 @@ from .constants import (
     SCHEMA_VERSION,
     TCGA_CDR_CITATION_URL,
     TCGA_CDR_URL,
+    USER_AGENT,
 )
 from .cptac import CPTAC_COHORTS, build_cptac_cohort
+from .encoding import bucket_for, encode_log2, json_bytes, median_metadata, write_bucket
 from .quality import endpoint_quality
 from .validation import validate_release
-
-
-def _json_bytes(value: Any) -> bytes:
-    return (json.dumps(value, separators=(",", ":"), allow_nan=False) + "\n").encode()
 
 
 def _parse_number(value: str) -> float | None:
@@ -77,11 +73,6 @@ def _is_primary_cancer_sample(sample: str, cohort: str) -> bool:
     return _sample_type_code(sample) in _primary_sample_codes(cohort)
 
 
-def _bucket_for(symbol: str) -> str:
-    value = hashlib.sha256(symbol.upper().encode()).digest()[0] % BUCKET_COUNT
-    return f"{value:02x}"
-
-
 class HashingReader:
     """Binary reader that hashes source bytes as they stream past."""
 
@@ -95,14 +86,6 @@ class HashingReader:
         self.sha256.update(payload)
         self.byte_count += len(payload)
         return payload
-
-    def readinto(self, target) -> int:
-        payload = self.read(len(target))
-        target[: len(payload)] = payload
-        return len(payload)
-
-    def readable(self) -> bool:
-        return True
 
     def close(self) -> None:
         self.source.close()
@@ -122,7 +105,7 @@ def _read_small_source(url_or_path: str, public_url: str | None = None) -> Sourc
         payload = path.read_bytes()
         url = public_url or str(path.resolve())
     else:
-        request = urllib.request.Request(url_or_path, headers={"User-Agent": "survscope/0.1"})
+        request = urllib.request.Request(url_or_path, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(request, timeout=120) as response:
             payload = response.read()
         url = public_url or url_or_path
@@ -184,7 +167,7 @@ def _expression_stream(source: str) -> Any:
         raw: BinaryIO = path.open("rb")
         label = str(path.resolve())
     else:
-        request = urllib.request.Request(source, headers={"User-Agent": "survscope/0.1"})
+        request = urllib.request.Request(source, headers={"User-Agent": USER_AGENT})
         raw = urllib.request.urlopen(request, timeout=180)
         label = source
     hashing = HashingReader(raw)
@@ -221,45 +204,6 @@ def _clinical_asset(
         "identifiers_included": False,
         "endpoints": endpoints,
     }
-
-
-def _median_metadata(
-    expression_log2: np.ndarray,
-    encoded: np.ndarray,
-    clinical: dict[str, Any],
-) -> dict[str, dict[str, Any]]:
-    exact_tpm = np.exp2(expression_log2) - 1.0
-    decoded_log2 = encoded.astype(float) / EXPRESSION_SCALE
-    decoded_log2[encoded == MISSING_EXPRESSION] = np.nan
-    decoded_tpm = np.exp2(decoded_log2) - 1.0
-    metadata = {}
-    for endpoint in ENDPOINTS:
-        time = np.asarray(
-            [
-                np.nan if value is None else value
-                for value in clinical["endpoints"][endpoint]["time"]
-            ],
-            dtype=float,
-        )
-        event = np.asarray(
-            [
-                np.nan if value is None else value
-                for value in clinical["endpoints"][endpoint]["event"]
-            ],
-            dtype=float,
-        )
-        valid = (
-            np.isfinite(exact_tpm) & np.isfinite(time) & np.isfinite(event) & (time > 0)
-        )
-        if not np.any(valid):
-            metadata[endpoint] = {"cutoff_tpm": None, "flips": []}
-            continue
-        cutoff = float(np.median(exact_tpm[valid]))
-        exact_high = exact_tpm > cutoff
-        encoded_high = decoded_tpm > cutoff
-        flips = np.flatnonzero(valid & (exact_high != encoded_high)).astype(int).tolist()
-        metadata[endpoint] = {"cutoff_tpm": cutoff, "flips": flips}
-    return metadata
 
 
 def build_cohort(
@@ -314,6 +258,12 @@ def build_cohort(
                 included_rows = 0
                 for row in reader:
                     processed_rows += 1
+                    if processed_rows % 5000 == 0:
+                        print(
+                            f"{cohort}: streamed {processed_rows:,} source rows; "
+                            f"kept {included_rows:,}",
+                            flush=True,
+                        )
                     if not row:
                         continue
                     identifier = row[0].strip()
@@ -332,19 +282,15 @@ def build_cohort(
                         ],
                         dtype=float,
                     )
-                    encoded = np.full(len(values), MISSING_EXPRESSION, dtype="<u2")
-                    finite = np.isfinite(values)
-                    quantized = np.rint(values[finite] * EXPRESSION_SCALE)
-                    quantized = np.clip(quantized, 0, MISSING_EXPRESSION - 1)
-                    encoded[finite] = quantized.astype("<u2")
-                    bucket = _bucket_for(symbol)
+                    encoded = encode_log2(values)
+                    bucket = bucket_for(symbol)
                     row_index = len(bucket_metadata[bucket])
                     handles[bucket].write(encoded.tobytes())
                     record = {
                         "symbol": symbol,
                         "ensembl": ensembl,
                         "row": row_index,
-                        "medians": _median_metadata(values, encoded, clinical),
+                        "medians": median_metadata(values, encoded, clinical),
                     }
                     bucket_metadata[bucket].append(record)
                     genes.append(
@@ -355,12 +301,6 @@ def build_cohort(
                         }
                     )
                     included_rows += 1
-                    if processed_rows % 5000 == 0:
-                        print(
-                            f"{cohort}: streamed {processed_rows:,} source rows; "
-                            f"kept {included_rows:,}",
-                            flush=True,
-                        )
                 source_details = {
                     "url": expression_public_url or source_label,
                     "sha256": source_hash.sha256.hexdigest(),
@@ -376,28 +316,17 @@ def build_cohort(
             if not records:
                 continue
             asset_name = f"{cohort}-bucket-{bucket}.zip"
-            asset_path = outdir / asset_name
-            meta = {
-                "schema_version": SCHEMA_VERSION,
-                "cohort": cohort,
-                "sample_count": len(sample_cases),
-                "scale": EXPRESSION_SCALE,
-                "missing": MISSING_EXPRESSION,
-                "transform": "log2(TPM+1)",
-                "genes": records,
-            }
-            with zipfile.ZipFile(
-                asset_path,
-                mode="w",
-                compression=zipfile.ZIP_DEFLATED,
-                compresslevel=9,
-            ) as archive:
-                archive.writestr("meta.json", _json_bytes(meta))
-                archive.write(raw_paths[bucket], arcname="expression.u16le")
+            write_bucket(
+                outdir / asset_name,
+                cohort=cohort,
+                sample_count=len(sample_cases),
+                genes=records,
+                expression=raw_paths[bucket],
+            )
             bucket_assets[bucket] = asset_name
 
     clinical_name = f"{cohort}-clinical.json"
-    (outdir / clinical_name).write_bytes(_json_bytes(clinical))
+    (outdir / clinical_name).write_bytes(json_bytes(clinical))
     cohort_manifest = {
         "program": "TCGA",
         "label": COHORT_LABELS[cohort],
@@ -428,6 +357,19 @@ def _asset_checksums(outdir: Path) -> dict[str, dict[str, Any]]:
     return checksums
 
 
+def _select_cohorts(cohorts: list[str]) -> list[str]:
+    selected = list(dict.fromkeys(cohort.upper() for cohort in cohorts))
+    unknown = sorted(set(selected) - set(COHORTS) - set(CPTAC_COHORTS))
+    if unknown:
+        raise ValueError(
+            f"Unsupported cohorts: {', '.join(unknown)}. "
+            "CPTAC-2 currently lacks usable GDC overall-survival records."
+        )
+    if not selected:
+        raise ValueError("Select at least one cohort")
+    return selected
+
+
 def build_release(
     *,
     cohorts: list[str],
@@ -446,10 +388,7 @@ def build_release(
     data_version = data_version.removeprefix("data-v")
     if datetime.strptime(data_version, "%Y.%m.%d").strftime("%Y.%m.%d") != data_version:
         raise ValueError("Data version must use YYYY.MM.DD")
-    cohorts = list(dict.fromkeys(cohort.upper() for cohort in cohorts))
-    unknown = set(cohorts) - set(COHORTS) - set(CPTAC_COHORTS)
-    if not cohorts or unknown:
-        raise ValueError(f"Unsupported or empty cohort selection: {sorted(unknown)}")
+    cohorts = _select_cohorts(cohorts)
     reused_manifest = None
     reused_provenance = None
     if tcga_release is not None:
@@ -537,7 +476,7 @@ def build_release(
     manifest = {
         # Older readers hard-code TCGA names and release-level provenance.
         "schema_version": 2 if any(code in CPTAC_COHORTS for code in cohorts) else SCHEMA_VERSION,
-        "data_version": data_version.removeprefix("data-v"),
+        "data_version": data_version,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "expression_encoding": {
             "transform": "log2(TPM+1)",
@@ -572,7 +511,7 @@ def build_release(
     }
     manifest_name = f"manifest-{manifest['data_version']}.json"
     manifest_path = outdir / manifest_name
-    manifest_path.write_bytes(_json_bytes(manifest))
+    manifest_path.write_bytes(json_bytes(manifest))
     checksum_lines = [
         f"{details['sha256']}  {name}" for name, details in sorted(checksums.items())
     ]
@@ -627,13 +566,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    cohorts = [cohort.upper() for cohort in args.cohorts]
-    if args.include_cptac:
-        cohorts = list(dict.fromkeys([*cohorts, *CPTAC_COHORTS]))
-    unknown = sorted(set(cohorts) - set(COHORTS) - set(CPTAC_COHORTS))
-    if unknown:
-        raise SystemExit(f"Unsupported cohorts: {', '.join(unknown)}. "
-                         "CPTAC-2 currently lacks usable GDC overall-survival records.")
+    requested = [*args.cohorts, *(CPTAC_COHORTS if args.include_cptac else ())]
+    try:
+        cohorts = _select_cohorts(requested)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     if args.expression_file and len(cohorts) != 1:
         raise SystemExit("--expression-file requires exactly one --cohorts value")
     manifest = build_release(

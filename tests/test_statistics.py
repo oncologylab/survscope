@@ -4,7 +4,7 @@ import numpy as np
 
 from survscope.analysis import analyze_gene_data
 from survscope.data import GeneData
-from survscope.statistics import bh_fdr, cox_binary, kaplan_meier, logrank_test
+from survscope.statistics import bh_fdr, cox_fit, kaplan_meier, logrank_test
 
 
 def test_kaplan_meier_step_coordinates():
@@ -18,7 +18,9 @@ def test_logrank_and_cox_return_na_for_one_group():
     event = np.array([1, 1, 0], dtype=int)
     group = np.array([0, 0, 0], dtype=int)
     assert all(np.isnan(value) for value in logrank_test(time, event, group))
-    assert all(np.isnan(value) for value in cox_binary(time, event, group))
+    hazard_ratio, pvalue, status = cox_fit(time, event, group)
+    assert np.isnan(hazard_ratio) and np.isnan(pvalue)
+    assert status == "empty_group"
 
 
 def test_bh_ignores_nonfinite_values():

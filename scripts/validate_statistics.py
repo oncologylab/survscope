@@ -20,8 +20,9 @@ import numpy as np
 import scipy
 
 from survscope.analysis import analyze_gene_data
-from survscope.constants import ENDPOINTS
+from survscope.constants import DEFAULT_DATA_VERSION, ENDPOINTS
 from survscope.data import DataStore, GeneData
+from survscope.encoding import endpoint_valid, number_array
 from survscope.grouping import assign_groups, normalize_grouping
 from survscope.statistics import confidence_bounds
 
@@ -167,12 +168,10 @@ def python_result(item: dict) -> dict:
     spec = normalize_grouping(grouping=item["grouping"])
     analysis = analyze_gene_data(data, grouping=spec)
     output: dict = {"id": item["id"], "endpoints": {}, "groups": {}, "intervals": {}}
+    tpm = data.expression_tpm
     for ep, result in analysis.endpoints.items():
         clinical = data.clinical["endpoints"][ep]
-        time = np.array(clinical["time"], dtype=float)
-        event = np.array(clinical["event"], dtype=float)
-        tpm = data.expression_tpm
-        valid = np.isfinite(tpm) & np.isfinite(time) & (time > 0) & np.isin(event, [0, 1])
+        valid = endpoint_valid(tpm, number_array(clinical["time"]), number_array(clinical["event"]))
         indices = np.flatnonzero(valid)
         low, high, _, _ = assign_groups(tpm[valid], indices, data.medians[ep], spec)
         output["groups"][ep] = {"low": indices[low].tolist(), "high": indices[high].tolist()}
@@ -249,7 +248,7 @@ def compare(expected: list, actual: list, name: str) -> dict:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path)
-    parser.add_argument("--data-version", default="2026.09.18")
+    parser.add_argument("--data-version", default=DEFAULT_DATA_VERSION)
     parser.add_argument("--genes", nargs="+", default=["SRD5A1", "TP53", "EGFR"])
     parser.add_argument(
         "--output", type=Path, default=ROOT / "data-build/statistical-validation.json"

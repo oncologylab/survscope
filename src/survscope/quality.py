@@ -79,13 +79,3 @@ def endpoint_quality(cohort: str, endpoint: str) -> tuple[str, str]:
     use = _USES.get(cohort, ("caution",) * 4)[_ORDER.index(endpoint)]
     return use, _NOTES.get(cohort, "")
 
-
-def cohort_quality(cohort: str) -> dict[str, dict[str, str]]:
-    """Return JSON-compatible quality metadata for all four endpoints."""
-    return {
-        endpoint: {
-            "quality": endpoint_quality(cohort, endpoint)[0],
-            "note": endpoint_quality(cohort, endpoint)[1],
-        }
-        for endpoint in ("OS", "DSS", "PFI", "DFI")
-    }

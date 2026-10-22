@@ -12,6 +12,9 @@ import zipfile
 from pathlib import Path
 
 FORBIDDEN_SUFFIXES = (".tsv", ".tsv.gz", ".h5", ".hdf5", ".bam", ".cram")
+SCHEMA_VERSIONS = {1, 2}
+MAX_BYTES = 850 * 1024 * 1024
+MAX_ASSETS = 999
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -19,8 +22,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dir", required=True, type=Path)
     parser.add_argument("--expected-cohorts", type=int, default=None)
     parser.add_argument("--required-cohorts", nargs="+", default=[])
-    parser.add_argument("--max-bytes", type=int, default=850 * 1024 * 1024)
-    parser.add_argument("--max-assets", type=int, default=999)
+    parser.add_argument("--max-bytes", type=int, default=MAX_BYTES)
+    parser.add_argument("--max-assets", type=int, default=MAX_ASSETS)
     return parser.parse_args(argv)
 
 
@@ -29,35 +32,35 @@ def fail(message: str) -> None:
 
 
 def validate_release(
-    directory: Path, *, expected_cohorts: int | None = None,
+    directory: Path,
+    *,
+    expected_cohorts: int | None = None,
     required_cohorts: tuple[str, ...] | list[str] = (),
-    max_bytes: int = 850 * 1024 * 1024, max_assets: int = 999,
+    max_bytes: int = MAX_BYTES,
+    max_assets: int = MAX_ASSETS,
 ) -> dict:
     """Validate compact release integrity and return its manifest."""
-    args = argparse.Namespace(dir=directory, expected_cohorts=expected_cohorts,
-                              required_cohorts=required_cohorts,
-                              max_bytes=max_bytes, max_assets=max_assets)
-    manifests = list(args.dir.glob("manifest-*.json"))
+    manifests = list(directory.glob("manifest-*.json"))
     if len(manifests) != 1:
         fail(f"Expected one manifest, found {len(manifests)}")
     manifest = json.loads(manifests[0].read_text())
-    if manifest.get("schema_version") not in {1, 2}:
+    if manifest.get("schema_version") not in SCHEMA_VERSIONS:
         fail("Unsupported or missing schema version")
     cohorts = manifest.get("cohorts", {})
-    if not cohorts or not set(args.required_cohorts).issubset(cohorts):
+    if not cohorts or not set(required_cohorts).issubset(cohorts):
         fail("Required cohort coverage is incomplete")
     if "requested_cohorts" in manifest and set(manifest["requested_cohorts"]) != set(cohorts):
         fail("Requested cohort coverage is incomplete")
-    if args.expected_cohorts is not None and len(cohorts) != args.expected_cohorts:
-        fail(f"Expected {args.expected_cohorts} cohorts, found {len(cohorts)}")
-    files = [path for path in args.dir.iterdir() if path.is_file()]
-    if any(path.is_dir() or path.is_symlink() for path in args.dir.iterdir()):
+    if expected_cohorts is not None and len(cohorts) != expected_cohorts:
+        fail(f"Expected {expected_cohorts} cohorts, found {len(cohorts)}")
+    files = [path for path in directory.iterdir() if path.is_file()]
+    if any(path.is_dir() or path.is_symlink() for path in directory.iterdir()):
         fail("Release assets must be regular files in one flat directory")
-    if len(files) > args.max_assets:
-        fail(f"Release has {len(files)} assets; limit is {args.max_assets}")
+    if len(files) > max_assets:
+        fail(f"Release has {len(files)} assets; limit is {max_assets}")
     total_bytes = sum(path.stat().st_size for path in files)
-    if total_bytes > args.max_bytes:
-        fail(f"Release is {total_bytes} bytes; limit is {args.max_bytes}")
+    if total_bytes > max_bytes:
+        fail(f"Release is {total_bytes} bytes; limit is {max_bytes}")
     forbidden = [path.name for path in files if path.name.lower().endswith(FORBIDDEN_SUFFIXES)]
     if forbidden:
         fail(f"Raw/source data files are forbidden: {', '.join(forbidden)}")
@@ -67,7 +70,7 @@ def validate_release(
     if names != set(assets) | {manifests[0].name, "SHA256SUMS"}:
         fail("Release contains unlisted or missing assets")
     sums = {}
-    for line in (args.dir / "SHA256SUMS").read_text().splitlines():
+    for line in (directory / "SHA256SUMS").read_text().splitlines():
         digest, name = line.split("  ", 1)
         if name in sums or name not in names:
             fail("Unexpected or duplicate SHA256SUMS entry")
@@ -75,17 +78,16 @@ def validate_release(
     if set(sums) != names - {"SHA256SUMS"}:
         fail("SHA256SUMS coverage is incomplete")
     for name, digest in sums.items():
-        if hashlib.sha256((args.dir / name).read_bytes()).hexdigest() != digest:
+        payload = (directory / name).read_bytes()
+        actual = hashlib.sha256(payload).hexdigest()
+        if actual != digest:
             fail(f"SHA256SUMS mismatch: {name}")
-
-    for name, expected in assets.items():
-        path = args.dir / name
-        if not path.is_file():
-            fail(f"Missing declared asset: {name}")
-        payload = path.read_bytes()
+        expected = assets.get(name)
+        if expected is None:
+            continue
         if len(payload) != expected["bytes"]:
             fail(f"Size mismatch: {name}")
-        if hashlib.sha256(payload).hexdigest() != expected["sha256"]:
+        if actual != expected["sha256"]:
             fail(f"SHA-256 mismatch: {name}")
 
     gene_count = len(manifest.get("genes", []))
@@ -99,7 +101,7 @@ def validate_release(
         if cohort["clinical_asset"] not in assets:
             fail(f"{code}: clinical asset lacks a checksum")
         used_assets.add(cohort["clinical_asset"])
-        clinical_path = args.dir / cohort["clinical_asset"]
+        clinical_path = directory / cohort["clinical_asset"]
         clinical = json.loads(clinical_path.read_text())
         if clinical.get("identifiers_included") is not False:
             fail(f"{code}: clinical asset must omit case/sample identifiers")
@@ -119,8 +121,10 @@ def validate_release(
                 fail(f"{code}: CPTAC matched-case coverage mismatch")
             if cohort.get("sources", {}).get("survival", {}).get("time_unit") != "days":
                 fail(f"{code}: CPTAC survival must use days")
-            if any(clinical["endpoints"][ep].get("quality") != "unavailable"
-                   for ep in ("DSS", "PFI", "DFI")):
+            if any(
+                clinical["endpoints"][endpoint].get("quality") != "unavailable"
+                for endpoint in ("DSS", "PFI", "DFI")
+            ):
                 fail(f"{code}: unsupported CPTAC endpoints must be unavailable")
         for endpoint, values in clinical["endpoints"].items():
             if len(values["time"]) != sample_count or len(values["event"]) != sample_count:
@@ -135,14 +139,15 @@ def validate_release(
                 fail(f"{code} {endpoint}: unavailable endpoint contains observations")
         expected_genes = {
             (gene["symbol"].upper(), gene["ensembl"], gene["bucket"])
-            for gene in manifest["genes"] if code in gene["cohorts"]
+            for gene in manifest["genes"]
+            if code in gene["cohorts"]
         }
         actual_genes = set()
         for bucket, asset in cohort["bucket_assets"].items():
             if asset not in assets:
                 fail(f"{code}: expression asset lacks a checksum")
             used_assets.add(asset)
-            with zipfile.ZipFile(args.dir / asset) as archive:
+            with zipfile.ZipFile(directory / asset) as archive:
                 if set(archive.namelist()) != {"meta.json", "expression.u16le"}:
                     fail(f"{code} bucket {bucket}: unexpected ZIP members")
                 meta = json.loads(archive.read("meta.json"))
@@ -154,8 +159,10 @@ def validate_release(
                         fail(f"{code} bucket {bucket}: duplicate or misordered gene")
                     actual_genes.add(key)
                     for median in gene["medians"].values():
-                        if any(not isinstance(index, int) or not 0 <= index < sample_count
-                               for index in median["flips"]):
+                        if any(
+                            not isinstance(index, int) or not 0 <= index < sample_count
+                            for index in median["flips"]
+                        ):
                             fail(f"{code} bucket {bucket}: invalid median corrections")
                 expected_bytes = len(meta["genes"]) * sample_count * 2
                 if len(archive.read("expression.u16le")) != expected_bytes:
@@ -171,16 +178,22 @@ def validate_release(
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     manifest = validate_release(
-        args.dir, expected_cohorts=args.expected_cohorts,
-        required_cohorts=args.required_cohorts, max_bytes=args.max_bytes,
+        args.dir,
+        expected_cohorts=args.expected_cohorts,
+        required_cohorts=args.required_cohorts,
+        max_bytes=args.max_bytes,
         max_assets=args.max_assets,
     )
     files = list(args.dir.iterdir())
-    print(json.dumps({
-        "data_version": manifest["data_version"], "cohorts": len(manifest["cohorts"]),
-        "genes": len(manifest["genes"]), "assets": len(files),
-        "bytes": sum(path.stat().st_size for path in files), "status": "PASS",
-    }))
+    summary = {
+        "data_version": manifest["data_version"],
+        "cohorts": len(manifest["cohorts"]),
+        "genes": len(manifest["genes"]),
+        "assets": len(files),
+        "bytes": sum(path.stat().st_size for path in files),
+        "status": "PASS",
+    }
+    print(json.dumps(summary))
     return 0
 
 

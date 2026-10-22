@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from ._version import __version__
+
 DEFAULT_DATA_VERSION = "2026.09.18"
 SCHEMA_VERSION = 1
 EXPRESSION_SCALE = 1000
 MISSING_EXPRESSION = 65535
 MONTH_DAYS = 30.4375
 BUCKET_COUNT = 16
+USER_AGENT = f"survscope/{__version__}"
 
 ENDPOINTS = ("OS", "DSS", "PFI", "DFI")
 ENDPOINT_COLUMNS = {

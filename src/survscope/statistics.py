@@ -35,8 +35,6 @@ def kaplan_meier(time: np.ndarray, event: np.ndarray) -> tuple[np.ndarray, np.nd
     for event_time in np.unique(time[event == 1]):
         at_risk = int(np.sum(time >= event_time))
         events = int(np.sum((time == event_time) & (event == 1)))
-        if at_risk <= 0:
-            continue
         updated = survival * (1.0 - events / at_risk)
         xs.extend([float(event_time), float(event_time)])
         ys.extend([survival, updated])
@@ -69,8 +67,6 @@ def logrank_test(
         n_high = int(np.sum(risk & (high == 1)))
         deaths = int(np.sum(deaths_at_time))
         deaths_high = int(np.sum(deaths_at_time & (high == 1)))
-        if n <= 0:
-            continue
         observed_high += deaths_high
         expected_high += deaths * n_high / n
         if n > 1:
@@ -79,16 +75,6 @@ def logrank_test(
         return np.nan, np.nan
     chi2 = (observed_high - expected_high) ** 2 / variance
     return float(chi2), float(stats.chi2.sf(chi2, 1))
-
-
-def cox_binary(
-    time: np.ndarray,
-    event: np.ndarray,
-    high: np.ndarray,
-) -> tuple[float, float]:
-    """Binary Cox proportional-hazards estimate using Breslow ties."""
-    hr, pvalue, _ = cox_fit(time, event, high)
-    return hr, pvalue
 
 
 def cox_fit(

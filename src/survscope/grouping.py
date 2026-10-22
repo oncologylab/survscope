@@ -92,8 +92,6 @@ def normalize_grouping(
             raise ValueError("Group percentages must be positive and total at most 100.")
         if lower + upper == 100:
             return normalize_grouping(grouping=GroupingSpec("percentile", percentile=lower))
-    elif spec.kind not in {"median", "mean"}:
-        raise ValueError(f"Unsupported grouping: {spec.kind}")
     return spec
 
 

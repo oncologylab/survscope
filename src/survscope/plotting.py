@@ -5,10 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
 from .constants import ENDPOINTS, cohort_display_name
 from .models import PlotOutputs, SurvivalAnalysis
@@ -17,21 +15,18 @@ from .statistics import format_p
 COLORS = {"Low": "#2f6fb0", "High": "#c43c39"}
 
 
-def apply_plot_style() -> None:
-    plt.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.sans-serif": ["Liberation Sans", "Arial", "Helvetica", "DejaVu Sans"],
-            "font.size": 9,
-            "font.weight": "bold",
-            "axes.labelweight": "bold",
-            "axes.titleweight": "bold",
-            "axes.linewidth": 0.9,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
-            "svg.fonttype": "none",
-        }
-    )
+PLOT_STYLE = {
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Liberation Sans", "Arial", "Helvetica", "DejaVu Sans"],
+    "font.size": 9,
+    "font.weight": "bold",
+    "axes.labelweight": "bold",
+    "axes.titleweight": "bold",
+    "axes.linewidth": 0.9,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+    "svg.fonttype": "none",
+}
 
 
 def _bold_axis_text(axis) -> None:
@@ -44,10 +39,15 @@ def _bold_axis_text(axis) -> None:
     axis.yaxis.label.set_fontweight("bold")
 
 
-def create_figure(analysis: SurvivalAnalysis, *, show_q: bool = False):
-    """Create the 6.8-inch figure, optionally showing BH-adjusted q-values."""
-    apply_plot_style()
-    figure, axes = plt.subplots(2, 2, figsize=(6.8, 6.8))
+@matplotlib.rc_context(PLOT_STYLE)
+def create_figure(analysis: SurvivalAnalysis, *, show_q: bool = False) -> Figure:
+    """Create the 6.8-inch figure, optionally showing BH-adjusted q-values.
+
+    Save it inside ``matplotlib.rc_context(PLOT_STYLE)``, as :func:`plot` does,
+    so the font-embedding settings apply.
+    """
+    figure = Figure(figsize=(6.8, 6.8))
+    axes = figure.subplots(2, 2)
     show_q = show_q and sum(
         np.isfinite(result.logrank_p) for result in analysis.endpoints.values()
     ) > 1
@@ -150,14 +150,12 @@ def plot(
         raise ValueError("PNG dpi must be one of 150, 300, or 600")
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    figure = create_figure(analysis, show_q=show_q)
     paths = []
-    try:
+    with matplotlib.rc_context(PLOT_STYLE):
+        figure = create_figure(analysis, show_q=show_q)
         for output_format in requested:
             path = destination / f"{analysis.filename_stem}.{output_format}"
             save_options = {"dpi": dpi} if output_format == "png" else {}
             figure.savefig(path, **save_options)
             paths.append(path)
-    finally:
-        plt.close(figure)
     return PlotOutputs(paths=tuple(paths))

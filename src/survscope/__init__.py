@@ -1,5 +1,6 @@
 """SurvScope public Python API."""
 
+from ._version import __version__ as __version__
 from .analysis import analyze
 from .data import DataStore
 from .grouping import GroupingSpec
@@ -16,8 +17,6 @@ __all__ = [
     "plot",
     "search_genes",
 ]
-
-__version__ = "0.4.3"
 
 
 def available_cohorts(store: DataStore | None = None) -> list[dict]:
