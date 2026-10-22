@@ -8,7 +8,6 @@ __pycache__/
 htmlcov/
 build/
 dist/
-site/
 node_modules/
 *.tsbuildinfo
 web/dist/

@@ -75,20 +75,19 @@ use the decoded compact expression.
 Readers must reject unsupported `schema_version` values. Data releases are
 immutable; a schema or source refresh creates a new data tag and manifest.
 
-## Groupings and figure projects (software 0.3)
+## Groupings and figure projects
 
-The editor and new comparisons reuse the existing immutable schema-1/schema-2
-assets; they do not require a new data release. Median analysis continues to
-use the stored cutoff and XOR flips. Mean, percentile, custom percentile-group, and
-numeric TPM comparisons use decoded expression after endpoint filtering.
-Quantiles follow R type 7 and ties stay together. See [statistical methods](methods.md).
+All comparisons and the editor use the schema-1/schema-2 assets described
+above. Median analysis uses the stored cutoff and XOR flips. Mean, percentile,
+custom percentile-group, and numeric TPM comparisons use decoded expression
+after endpoint filtering. Quantiles follow R type 7 and ties stay together. See
+[statistical methods](methods.md).
 
-Analysis JSON adds normalized grouping, resolved lower/upper thresholds,
+Analysis JSON includes normalized grouping, resolved lower/upper thresholds,
 endpoint-valid and excluded-middle counts, a Cox-fit status, and method version
 `1`. A dual-threshold comparison has no single `cutoff_tpm`/`cutoffTpm`, so that
-legacy field is null. Original median/numeric calls and fields retain their
-meaning. Python uses snake_case result fields and the browser uses camelCase;
-grouping parameter objects consistently use `lowerPercent`/`upperPercent`.
+field is null. Python uses snake_case result fields and the browser uses
+camelCase; grouping parameter objects use `lowerPercent`/`upperPercent` in both.
 
 Browser figure projects are a separate versioned format containing an analysis
 snapshot, aggregate KM/risk timelines, and figure settings. They contain no

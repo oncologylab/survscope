@@ -12,7 +12,7 @@ jobs:
   verify-publisher:
     name: Verify PyPI Trusted Publisher
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     environment:
       name: pypi
@@ -59,7 +59,7 @@ jobs:
 
   build:
     if: startsWith(github.event.release.tag_name, 'v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -78,7 +78,7 @@ jobs:
   publish:
     if: startsWith(github.event.release.tag_name, 'v')
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/p/survscope

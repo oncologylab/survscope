@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       data_version:
-        description: Immutable data version (YYYY.MM.DD)
+        description: New immutable data version (YYYY.MM.DD)
         required: true
-        default: "2026.09.18"
       cohorts:
         description: "all (TCGA) or comma-separated TCGA/CPTAC-3 cohort codes"
         required: true
@@ -23,13 +22,17 @@ on:
 permissions:
   contents: write
 
+env:
+  # 850 MiB GitHub Pages budget.
+  MAX_RELEASE_BYTES: "891289600"
+
 concurrency:
   group: survscope-data-release
   cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
       GH_TOKEN: ${{ github.token }}
@@ -105,9 +108,9 @@ jobs:
           python scripts/validate_data_release.py \
             --dir data-build \
             --expected-cohorts "$EXPECTED_COHORTS" \
-            --max-bytes 891289600 \
+            --max-bytes "$MAX_RELEASE_BYTES" \
             --max-assets 999
-      - name: Package release in one API-friendly archive
+      - name: Package release archive
         shell: bash
         run: |
           archive_name="survscope-data-${DATA_VERSION}.tar"
@@ -115,7 +118,7 @@ jobs:
           sha256sum "$archive_name" > "${archive_name}.sha256"
           archive_bytes="$(stat -c %s "$archive_name")"
           echo "Archive: ${archive_bytes} bytes"
-          test "$archive_bytes" -le 891289600
+          test "$archive_bytes" -le "$MAX_RELEASE_BYTES"
           echo "ARCHIVE_NAME=${archive_name}" >> "$GITHUB_ENV"
       - name: Publish immutable release assets
         shell: bash

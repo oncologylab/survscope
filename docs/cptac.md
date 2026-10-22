@@ -128,9 +128,8 @@ declares `GENCODE vv36`; its 59,317 symbol/Ensembl mappings match the other
 samples exactly. The builder normalizes only that observed header typo to
 `GENCODE v36` and records counts of the original declarations in provenance.
 Actual gene-model or mapping changes still fail the build. TPM is converted to
-`log2(TPM+1)` and encoded to the existing uint16 format; exact median membership
-corrections preserve the source grouping. The current TCGA statistical and
-6.8-inch figure contract remains unchanged.
+`log2(TPM+1)` and encoded in the same uint16 format as TCGA; exact median
+membership corrections preserve the source grouping.
 
 ## Build and use
 

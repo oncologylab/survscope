@@ -4,7 +4,7 @@ The [README](../README.md) and [user guide](user-guide.md) introduce SurvScope f
 
 ## Local setup and checks
 
-Use Python 3.10 or later and Node.js 22. The browser remains a pure static build.
+Use Python 3.10 or later and Node.js 22. The browser is a pure static build.
 
 ```bash
 python -m pip install -e ".[test]"
@@ -21,20 +21,7 @@ npm run dev
 
 The local development site includes a six-gene TCGA-PAAD fixture (`2026.07.28`). The separate CPTAC fixture is under `tests/fixtures/cptac/2026.09.18`; integration tests serve both from the test site's origin. A local browser test uses installed Chrome; CI uses Playwright Chromium. All runtime requests, including fonts and data, must remain same-origin.
 
-### Keeping the workspace clean
-
-Keep downloaded releases, one-off exports, previews, and validation output in the ignored `data-build/` directory. These files are disposable working copies; keep any report intended as lasting evidence in `docs/` with its date and provenance. The checked-in TCGA/CPTAC fixtures, bundled fonts and licenses, and historical validation reports remain part of the project.
-
-After stopping local previews and tests, inspect generated files with this command from the repository root. Replace `-ndX` with `-fdX` to remove the listed files:
-
-```bash
-git clean -ndX -- build/ dist/ site/ .coverage htmlcov/ \
-  .pytest_cache/ .ruff_cache/ src/survscope/__pycache__/ \
-  tests/__pycache__/ scripts/__pycache__/ web/dist/ web/.vite/ \
-  web/test-results/ web/playwright-report/ 'web/*.tsbuildinfo'
-```
-
-Review `git clean -ndX -- data-build/` separately, then use `git clean -fdX -- data-build/` when its exports and downloaded data are no longer needed. Published releases can be downloaded again. These commands preserve tracked files and the active `.venv/`, `web/node_modules/`, and editable Python package metadata. Avoid an unscoped `git clean -fdX`, which would remove those development dependencies too.
+Keep downloaded releases, exports, previews, and validation output in the ignored `data-build/` directory; reports meant as lasting evidence go in `docs/` with their date and provenance. To remove build and test output, use `git clean -fdX` scoped to the generated paths (preview with `-ndX` first); an unscoped run would also delete `.venv/` and `web/node_modules/`.
 
 `npm run build` also checks for unused TypeScript imports, local variables, and parameters.
 
@@ -70,7 +57,7 @@ python scripts/validate_data_release.py \
 
 Production uses 33 TCGA cohorts and 18 CPTAC groups. The latest data release is `data-v2026.09.18`; it contains 869 assets and 818,907,113 bytes. See [CPTAC coverage and source research](cptac.md), and [data format](data-format.md).
 
-Generate data only through the manual data-release workflow on an ephemeral runner. Use a **new** version for each refresh; never reuse an existing release tag. For example, substitute a new date in:
+Generate data only through the manual data-release workflow on an ephemeral runner. Use a new version for each refresh; never reuse an existing release tag. For example, substitute a new date in:
 
 ```bash
 gh workflow run data-release.yml \
@@ -80,25 +67,40 @@ gh workflow run data-release.yml \
 
 This reuses checksummed compact TCGA assets and builds CPTAC. Leave `tcga_data_version` blank to rebuild TCGA from its sources. The archive checksum is verified before extraction; each extracted asset is then verified independently. The complete catalog is kept out of source control.
 
-## Deployment and software publishing
+## Deployment
 
-Software (`v0.4.3`, …) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
+Software (`vX.Y.Z`) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
 
-Pages deployment starts after a successful main-branch CI run, a successful main-branch data-release workflow, or an explicit main-branch dispatch. It checks out that triggering commit, runs Python and browser checks, verifies the full data release, and validates statistics across its deployed cohort catalog. Deployment requires passing tests and a complete built site below **891,289,600 bytes (850 MiB)**. The release archive stays immutable; fonts/editor code count toward the final site budget.
+Pages deployment starts after a successful main-branch CI run, a successful main-branch data-release workflow, or an explicit main-branch dispatch. It checks out that triggering commit, runs Python and browser checks, verifies the full data release, and validates statistics across its deployed cohort catalog. Deployment requires passing tests and a complete built site of at most 891,289,600 bytes (850 MiB). The release archive stays immutable; fonts/editor code count toward the final site budget.
 
 The site serves only the selected release. For archived calculations, extract the immutable GitHub release and pass both `--data-version` and `--data-dir` (or their `DataStore` equivalents). A browser project can reopen its saved aggregate results without fetching archived assets; switching to current data requires **New analysis**.
 
-Build Python distributions with `python -m build` and check them with `python -m twine check dist/*`. Publish tested wheels/source distributions to a new software GitHub release. Automated PyPI publishing uses GitHub OIDC Trusted Publishing; see [registration and publishing](publishing.md). Do not add API-token secrets.
+## Python package releases
+
+Build distributions with `python -m build` and check them with `python -m twine check dist/*`. Publishing a GitHub release named `vX.Y.Z` runs [`publish.yml`](../.github/workflows/publish.yml): the build job runs the tests, builds the wheel and source distribution, and checks their metadata; the publish job uploads them to PyPI with GitHub OIDC Trusted Publishing. No API token is stored in the workflow or repository settings.
+
+The PyPI project registers this publisher in its [publishing settings](https://pypi.org/manage/project/survscope/settings/publishing/):
+
+| Field | Value |
+| --- | --- |
+| GitHub owner | `oncologylab` |
+| Repository | `survscope` |
+| Workflow filename | `publish.yml` |
+| Environment | `pypi` |
+
+To check the registration without uploading anything, run `gh workflow run publish.yml --ref main`. The **Verify PyPI Trusted Publisher** job exchanges the GitHub identity for a short-lived PyPI credential and discards it. An `invalid-publisher` error means one of the fields above does not match, or the publisher was registered on TestPyPI; see [PyPI's troubleshooting guide](https://docs.pypi.org/trusted-publishers/troubleshooting/).
+
+PyPI does not accept a second upload of an existing version. Fix a failed release with a new `vX.Y.Z` version rather than replacing published files.
 
 ## Editor and project format
 
-The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Seven export font families are bundled with their OFL notices and fetched from the site's own origin. [Font provenance](fonts.md) records the sources; new assets have pinned upstream revisions and SHA-256 checksums. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release; statistical artwork is memoized separately from selection and viewport state. Icon commands use local SVG paths, accessible button names, and tooltips shown on hover or keyboard focus; tooltip changes do not rerender the plot.
+The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Seven export font families are bundled with their OFL notices and fetched from the site's own origin. [Font provenance](fonts.md) records the sources, pinned upstream revisions, and SHA-256 checksums. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release. Icon commands use local SVG paths with accessible button names.
 
-Dependency upgrades are maintained manually. Dependabot version-update configuration is intentionally absent, and GitHub's automatic security-update pull requests are disabled. Keep the CI dependency audit; do not reintroduce bot PRs or branches without a maintainer request.
+Dependencies are updated by hand; CI runs `npm audit --audit-level=high`.
 
-Project JSON uses `format: "survscope-project"`, `version: 2`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Version 1 imports retain their appearance and results. Version 2 adds validated text runs (bold/italic/super/sub), per-object fonts/alignment/rotation, lock/visibility flags, and an analysis-provenance/citation snapshot. Custom text is rendered as SVG text; the locally bundled ProseMirror overlay edits only the active object and never stores arbitrary HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
+Project JSON uses `format: "survscope-project"`, `version: 2`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Version 1 projects import with their appearance and results. Version 2 contains validated text runs (bold/italic/super/sub), per-object fonts/alignment/rotation, lock/visibility flags, and an analysis-provenance/citation snapshot. Custom text is rendered as SVG text; the locally bundled ProseMirror overlay edits only the active object and never stores arbitrary HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
 
-The Python result JSON retains its existing snake_case fields; browser JSON retains camelCase. Both add normalized grouping parameters, lower/upper thresholds, eligible/excluded counts, Cox status, and statistical method version. The browser project format is separate from analysis-only JSON.
+Analysis-only JSON is separate from the project format; its fields are described in [data format](data-format.md#groupings-and-figure-projects).
 
 ### Browser and interaction validation
 
@@ -106,6 +108,4 @@ The default Playwright suite uses Chromium. Run the same suite in Firefox and We
 
 `web/scripts/editor-benchmark.mjs` measures 120-step drags in a production build using TP53/BRCA, all survival overlays, and 100 annotations. Run it against a local complete-catalog preview, without concurrent tests. It records browser/CPU information and three measured runs at normal and 4× CPU slowdown after warm-up. Targets: median p95 frame time ≤20 ms / ≤33 ms respectively, with interaction long tasks ≤100 ms.
 
-The [September 21 benchmark report](editor-performance-2026.09.21.json) records median p95 frame times of **16.7 ms** at normal speed and **16.8 ms** at 4× slowdown. The longest measured interaction task was **64 ms**. These measurements describe the recorded browser and machine, not a speed guarantee for every device.
-
-Grouping outputs use `percentile_groups`; `extremes` remains an accepted legacy input alias in browser URLs/projects and the Python API/CLI. The numeric grouping algorithm is unchanged. Historical validation reports retain the identifiers used at the time.
+The [September 21 benchmark report](editor-performance-2026.09.21.json) records median p95 frame times of 16.7 ms at normal speed and 16.8 ms at 4× slowdown, and a longest interaction task of 64 ms, on the browser and machine it lists.

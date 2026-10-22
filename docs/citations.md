@@ -1,6 +1,6 @@
 # Cite the data behind your analysis
 
-Use **Cite this analysis** in SurvScope to copy references or download BibTeX/RIS for your reference manager. The accompanying methods paragraph includes your gene, cohort, comparison, group sizes, exclusions, and recorded versions. It describes unadjusted p-values by default and includes BH adjustment when you enable the optional q-value display. Save a project to keep these references with your edited figure.
+Use **Cite this analysis** in SurvScope to copy references or download BibTeX/RIS for your reference manager. The accompanying methods paragraph includes your gene, cohort, comparison, group sizes, exclusions, and recorded versions. It mentions the BH adjustment only when the [q-value](methods.md#adjusted-q-values) is displayed. Save a project to keep these references with your edited figure.
 
 Cite SurvScope as software and the original data resources relevant to your selected cohort. A TCGA analysis and a CPTAC analysis have different clinical sources.
 
@@ -26,7 +26,7 @@ For example, the CPTAC pancreatic consortium publication is: Cao L, Huang C, Zho
 
 ## Cohort publications and recorded versions
 
-A cohort-associated publication describes the consortium study. SurvScope analyzes eligible patients in the recorded data snapshot; that group need not match the publication's original cohort exactly. This distinction is especially relevant when a source combines discovery and confirmatory studies.
+A cohort-associated publication describes the consortium study. SurvScope analyzes eligible patients in the recorded data snapshot; that group need not match the publication's original cohort exactly.
 
 Every supported cohort has dataset and resource citations. The application does not infer a paper from a similar cancer name: for example, a renal carcinoma classified as NOS is not automatically assigned a clear-cell renal publication. Where a cohort publication has not been verified, the panel says so.
 

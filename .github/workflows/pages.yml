@@ -16,6 +16,14 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  # Bundled regression fixture, deployed when no complete release exists yet.
+  FIXTURE_DATA_VERSION: "2026.07.28"
+  # First data release that includes the CPTAC-3 cohorts.
+  FIRST_CPTAC_DATA_VERSION: "2026.09.18"
+  # 850 MiB GitHub Pages budget.
+  MAX_SITE_BYTES: "891289600"
+
 concurrency:
   # A skipped PR/failed CI completion must not cancel a production deployment.
   group: >-
@@ -73,7 +81,7 @@ jobs:
             tag="$(gh release list --limit 100 --exclude-drafts --exclude-pre-releases \
               --json tagName --jq '[.[].tagName | select(test("^data-v[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}$"))] | sort | last // ""')"
             DATA_VERSION="${tag#data-v}"
-            DATA_VERSION="${DATA_VERSION:-2026.07.28}"
+            DATA_VERSION="${DATA_VERSION:-$FIXTURE_DATA_VERSION}"
           fi
           if [[ ! "$DATA_VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]]; then
             echo "Invalid DATA_VERSION" >&2
@@ -109,19 +117,14 @@ jobs:
             mkdir -p "web/public/data/${DATA_VERSION}"
             tar -xf "$release_dir/$archive_name" \
               -C "web/public/data/${DATA_VERSION}"
-            validation_args=(--required-cohorts
-              ACC BLCA BRCA CESC CHOL COAD DLBC ESCA GBM HNSC KICH KIRC KIRP
-              LAML LGG LIHC LUAD LUSC MESO OV PAAD PCPG PRAD READ SARC SKCM
-              STAD TGCT THCA THYM UCEC UCS UVM)
-            if [[ "$DATA_VERSION" > "2026.09.17" ]]; then
-              validation_args+=(CPTAC-3-ASTRO CPTAC-3-FHRCC CPTAC-3-GBM
-                CPTAC-3-GLIOMA CPTAC-3-HNSC CPTAC-3-KICH CPTAC-3-KIRP
-                CPTAC-3-LAML CPTAC-3-LUAD CPTAC-3-LUSC CPTAC-3-OLIGO
-                CPTAC-3-PAAD CPTAC-3-RCC CPTAC-3-SCCNOS CPTAC-3-SKCM
-                CPTAC-3-STAD CPTAC-3-UCEC CPTAC-3-UTUC)
+            tcga_cohorts="$(python -c 'from survscope.constants import COHORTS; print(*COHORTS)')"
+            validation_args=(--required-cohorts $tcga_cohorts)
+            if [[ ! "$DATA_VERSION" < "$FIRST_CPTAC_DATA_VERSION" ]]; then
+              cptac_cohorts="$(python -c 'from survscope.cptac import CPTAC_COHORTS; print(*CPTAC_COHORTS)')"
+              validation_args+=($cptac_cohorts)
             fi
           else
-            if [[ "$DATA_VERSION" != "2026.07.28" ]]; then
+            if [[ "$DATA_VERSION" != "$FIXTURE_DATA_VERSION" ]]; then
               echo "Requested immutable release is unavailable: $tag" >&2
               exit 2
             fi
@@ -131,7 +134,7 @@ jobs:
           python scripts/validate_data_release.py \
             --dir "web/public/data/${DATA_VERSION}" \
             "${validation_args[@]}" \
-            --max-bytes 891289600 \
+            --max-bytes "$MAX_SITE_BYTES" \
             --max-assets 999
       - name: Validate statistics across the deployed cohort catalog
         run: |
@@ -152,7 +155,7 @@ jobs:
         run: |
           bytes="$(du -sb web/dist | cut -f1)"
           echo "Pages artifact: ${bytes} bytes"
-          test "$bytes" -le 891289600
+          test "$bytes" -le "$MAX_SITE_BYTES"
       - name: Confirm the tested commit is still current
         run: |
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
@@ -166,7 +169,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy

@@ -1,7 +1,5 @@
 # Your guide to SurvScope
 
-[Open the website](https://oncologylab.github.io/survscope/) to explore a gene and make an editable survival figure. You do not need to install software or upload a dataset.
-
 ## Choose patients and a gene
 
 The **Cancer cohort** menu groups cancers by study: TCGA and CPTAC. The same cancer in two studies represents two separate patient groups. For example, `TCGA-PAAD` and `CPTAC-3-PAAD` both concern pancreatic cancer but are analyzed separately.
@@ -47,7 +45,7 @@ CPTAC currently supports OS only. Its remaining panels say **Endpoint unavailabl
 
 - **n** is the number of patients with usable follow-up in a group; **e** counts patients with an observed event. For OS, that event is death. The other patients are censored: follow-up ended without the event being observed. Therefore **e ≤ n**; equality is possible when every included patient has an event.
 - **p** is the two-sided log-rank p-value. It concerns the difference between these two curves, not whether the finding will reproduce elsewhere.
-- **q** is optional and off by default. It adjusts the available endpoint p-values for this one gene, cohort, and comparison using Benjamini–Hochberg (BH). Enable **Properties → Survival details → Show adjusted q-value** to display it. With only one tested outcome (current CPTAC analyses), **q = p**, so the figure shows p alone and the option is unavailable. With several outcomes, some BH-adjusted values can also equal p, and rounded values may look equal. Hiding panels does not change the adjustment. It does not correct for trying many genes, cohorts, or cutoffs; analysis JSON keeps the full-precision values whether or not q is displayed.
+- **q** is an optional Benjamini–Hochberg adjustment across the outcomes of this one analysis, shown with **Properties → Survival details → Show adjusted q-value**. It does not correct for trying many genes, cohorts, or cutoffs. See [adjusted q-values](methods.md#adjusted-q-values).
 - **HR** is the unadjusted hazard ratio for higher versus lower expression. Above 1 indicates a higher modeled event hazard in the higher-expression group. Interpretation assumes proportional hazards; the application does not test this assumption or adjust for stage, treatment, age, or other factors.
 - **NA** means the statistic cannot be estimated. Empty groups, no events, lack of overlapping risk sets, or complete separation can cause this. The available curves may still be shown.
 
@@ -57,13 +55,13 @@ In **Properties → Survival details**, you can add:
 - **Censor marks:** a plus sign where a patient's observed follow-up ends without the recorded event. Several patients can share a mark.
 - **Number-at-risk tables:** how many people are still observed and event-free immediately before each displayed time. A patient censored exactly at that time is still counted just before it.
 
-These three additions are off initially, preserving the original appearance. Research associations should be interpreted alongside study design and independent evidence.
+All three are off by default. Research associations should be interpreted alongside study design and independent evidence.
 
 ## Edit the figure
 
 Your figure is ready to edit as soon as it appears. Double-click a title, axis label, complete legend entry, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
 
-The editing commands use familiar icons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Alignment, distribution, copying, annotation order, and text formatting use the same icon controls. Unavailable actions are dimmed. The compact toolbar at the top of Properties has alignment and annotation commands; its number badge shows how many objects are selected.
+Editing commands are icon buttons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Unavailable actions are dimmed.
 
 The workspace fills wide displays. **Analysis** sits on the left and **Properties / Layers** on the right; use the rail buttons to open or close them. Drag the panel boundaries to adjust their widths. On smaller screens, the panels open as drawers so the figure keeps its space. **Reset workspace** restores the panel sizes and Fit view without changing your figure.
 
@@ -71,7 +69,7 @@ The workspace fills wide displays. **Analysis** sits on the left and **Propertie
 
 Click a title, axis label, legend, statistics block, curve, or panel. You can also choose **Selected item**, which helps with overlapping or hidden items. Drag labels, legends, statistics, panels, and annotations to move them. A selected panel has a corner handle for resizing. An arrow or line has a handle for moving its endpoint. Curve selection changes line appearance while keeping the data attached to its axes.
 
-Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange** shows the selection count and icons for aligning objects and distributing three or more objects evenly. Toggle the artboard icon to align to the page instead of the selection; the reference is displayed beside it. **Snap** shows alignment guides near object edges and centers. In **Layers**, the eye and padlock icons hide or lock objects. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
+Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange**, at the top of Properties, shows the selection count and icons for aligning objects and distributing three or more objects evenly. Toggle the artboard icon to align to the page instead of the selection; the reference is displayed beside it. **Snap** shows alignment guides near object edges and centers. In **Layers**, the eye and padlock icons hide or lock objects. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
 
 | Shortcut | Action outside a text field |
 | --- | --- |
@@ -92,7 +90,7 @@ The editor offers:
 - **Axes:** show months, years, or days; set a displayed time range and tick spacing; zoom into a survival range. Axis limits do not truncate follow-up or refit the model. Extremely dense requested ticks are thinned to keep the figure responsive.
 - **Legend and annotations:** double-click any complete legend entry, including its `n=…` and `e=…`, to edit and format all its text. Each outcome has separate entries. Legend edits change the figure only; the analysis JSON, curves, and citations retain the original calculated counts. **Reset selected item** restores the automatic entry. The lower/higher group-name fields apply names across all outcomes and restore their automatic counts. Add notes, lines, or arrows, and use multiple lines when needed. Calculated p, q, and HR values remain linked to the analysis.
 
-Use **Fit**, **100%**, the zoom buttons, and the **Hand tool** to inspect details without changing export dimensions. With focus on the figure, arrow keys move the selected item by one point; hold Shift for ten points. **Undo/Redo** also respond to Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z. **Reset figure** restores the default appearance, including turning q-values off, and can itself be undone. Saved projects and style presets retain their q-value display setting when reopened.
+Use **Fit**, **100%**, the zoom buttons, and the Hand tool to inspect details without changing export dimensions. **Reset figure** restores the default appearance, including turning q-values off, and can itself be undone. Saved projects and style presets keep their q-value display setting.
 
 A new gene, cohort, or comparison retains styling and layout, refreshes automatic labels, and clears custom label text and annotations tied to the previous result. Save a project first if you want to keep those edits. When making a smaller figure, check that labels and panels have enough room; the editor allows deliberate overlaps.
 
@@ -102,7 +100,7 @@ Use **Size and appearance → Font** for the whole figure, or **Selected font** 
 
 | Menu choice | Font used in the figure and exports |
 | --- | --- |
-| Arial / Helvetica style | Liberation Sans — the original figure font |
+| Arial / Helvetica style | Liberation Sans (default) |
 | Times New Roman style | Liberation Serif |
 | Courier New style | Liberation Mono |
 | Calibri style | Carlito |
@@ -143,7 +141,7 @@ Save the project to keep this citation snapshot with the figure. [Full reference
 
 **Why is n larger than e?** A patient can contribute follow-up without having an observed event. For example, n=100 and e=30 means 30 events and 70 censored observations. n and e can be equal; e cannot exceed n.
 
-**Why are p and q equal in CPTAC?** Current CPTAC data provide overall survival only. Benjamini–Hochberg adjustment of one test leaves its p-value unchanged. The figure omits the duplicate q label, while JSON retains both values. The information icon next to the q control explains how many outcomes were tested.
+**Why are p and q equal in CPTAC?** Current CPTAC data provide overall survival only, and Benjamini–Hochberg adjustment of a single test leaves its p-value unchanged. See [adjusted q-values](methods.md#adjusted-q-values).
 
 **Why do the group counts differ from the cohort count?** Missing expression, missing outcomes, or nonpositive follow-up time exclude a patient from that outcome. Custom percentile comparisons also leave out the middle expression values.
 
