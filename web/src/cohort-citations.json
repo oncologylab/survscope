@@ -3,9 +3,7 @@
     {
       "id": "tcga-paad-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated Genomic Characterization of Pancreatic Ductal Adenocarcinoma",
       "year": 2017,
       "journal": "Cancer Cell",
@@ -20,9 +18,7 @@
     {
       "id": "tcga-brca-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular portraits of human breast tumours",
       "year": 2012,
       "journal": "Nature",
@@ -37,9 +33,7 @@
     {
       "id": "tcga-coad-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular characterization of human colon and rectal cancer",
       "year": 2012,
       "journal": "Nature",
@@ -54,9 +48,7 @@
     {
       "id": "tcga-read-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular characterization of human colon and rectal cancer",
       "year": 2012,
       "journal": "Nature",
@@ -71,9 +63,7 @@
     {
       "id": "tcga-gbm-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "The somatic genomic landscape of glioblastoma",
       "year": 2013,
       "journal": "Cell",
@@ -88,9 +78,7 @@
     {
       "id": "tcga-ov-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated genomic analyses of ovarian carcinoma",
       "year": 2011,
       "journal": "Nature",
@@ -105,9 +93,7 @@
     {
       "id": "tcga-lusc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive genomic characterization of squamous cell lung cancers",
       "year": 2012,
       "journal": "Nature",
@@ -122,9 +108,7 @@
     {
       "id": "tcga-luad-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular profiling of lung adenocarcinoma",
       "year": 2014,
       "journal": "Nature",
@@ -139,9 +123,7 @@
     {
       "id": "tcga-ucec-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated genomic characterization of endometrial carcinoma",
       "year": 2013,
       "journal": "Nature",
@@ -156,9 +138,7 @@
     {
       "id": "tcga-laml-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Genomic and epigenomic landscapes of adult de novo acute myeloid leukemia",
       "year": 2013,
       "journal": "New England Journal of Medicine",
@@ -173,9 +153,7 @@
     {
       "id": "tcga-kirc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular characterization of clear cell renal cell carcinoma",
       "year": 2013,
       "journal": "Nature",
@@ -190,9 +168,7 @@
     {
       "id": "tcga-blca-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive Molecular Characterization of Muscle-Invasive Bladder Cancer",
       "year": 2017,
       "journal": "Cell",
@@ -207,9 +183,7 @@
     {
       "id": "tcga-kich-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "The Somatic Genomic Landscape of Chromophobe Renal Cell Carcinoma",
       "year": 2014,
       "journal": "Cancer Cell",
@@ -224,9 +198,7 @@
     {
       "id": "tcga-stad-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive molecular characterization of gastric adenocarcinoma",
       "year": 2014,
       "journal": "Nature",
@@ -241,9 +213,7 @@
     {
       "id": "tcga-thca-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated genomic characterization of papillary thyroid carcinoma",
       "year": 2014,
       "journal": "Cell",
@@ -258,9 +228,7 @@
     {
       "id": "tcga-hnsc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive genomic characterization of head and neck squamous cell carcinomas",
       "year": 2015,
       "journal": "Nature",
@@ -275,9 +243,7 @@
     {
       "id": "tcga-skcm-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Genomic Classification of Cutaneous Melanoma",
       "year": 2015,
       "journal": "Cell",
@@ -292,9 +258,7 @@
     {
       "id": "tcga-lgg-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive, Integrative Genomic Analysis of Diffuse Lower-Grade Gliomas",
       "year": 2015,
       "journal": "New England Journal of Medicine",
@@ -309,9 +273,7 @@
     {
       "id": "tcga-prad-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "The Molecular Taxonomy of Primary Prostate Cancer",
       "year": 2015,
       "journal": "Cell",
@@ -326,9 +288,7 @@
     {
       "id": "tcga-kirp-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive Molecular Characterization of Papillary Renal-Cell Carcinoma",
       "year": 2016,
       "journal": "New England Journal of Medicine",
@@ -343,9 +303,7 @@
     {
       "id": "tcga-acc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive Pan-Genomic Characterization of Adrenocortical Carcinoma",
       "year": 2016,
       "journal": "Cancer Cell",
@@ -360,9 +318,7 @@
     {
       "id": "tcga-esca-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated genomic characterization of oesophageal carcinoma",
       "year": 2017,
       "journal": "Nature",
@@ -377,9 +333,7 @@
     {
       "id": "tcga-pcpg-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive Molecular Characterization of Pheochromocytoma and Paraganglioma",
       "year": 2017,
       "journal": "Cancer Cell",
@@ -394,9 +348,7 @@
     {
       "id": "tcga-ucs-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated Molecular Characterization of Uterine Carcinosarcoma",
       "year": 2017,
       "journal": "Cancer Cell",
@@ -411,9 +363,7 @@
     {
       "id": "tcga-chol-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrative Genomic Analysis of Cholangiocarcinoma Identifies Distinct IDH-Mutant Molecular Profiles",
       "year": 2017,
       "journal": "Cell Reports",
@@ -428,9 +378,7 @@
     {
       "id": "tcga-cesc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrated genomic and molecular characterization of cervical cancer",
       "year": 2017,
       "journal": "Nature",
@@ -445,9 +393,7 @@
     {
       "id": "tcga-lihc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive and Integrative Genomic Characterization of Hepatocellular Carcinoma",
       "year": 2017,
       "journal": "Cell",
@@ -462,9 +408,7 @@
     {
       "id": "tcga-uvm-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Integrative Analysis Identifies Four Molecular and Clinical Subsets in Uveal Melanoma",
       "year": 2017,
       "journal": "Cancer Cell",
@@ -479,9 +423,7 @@
     {
       "id": "tcga-sarc-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "Comprehensive and Integrated Genomic Characterization of Adult Soft Tissue Sarcomas",
       "year": 2017,
       "journal": "Cell",
@@ -496,9 +438,7 @@
     {
       "id": "tcga-thym-publication",
       "role": "Original cohort publication",
-      "authors": [
-        "The Cancer Genome Atlas Research Network"
-      ],
+      "authors": ["The Cancer Genome Atlas Research Network"],
       "title": "The Integrated Genomic Landscape of Thymic Epithelial Tumors",
       "year": 2018,
       "journal": "Cancer Cell",
@@ -513,12 +453,7 @@
     {
       "id": "cptac-paad-publication",
       "role": "Cohort-associated consortium publication",
-      "authors": [
-        "Cao, L.",
-        "Huang, C.",
-        "Zhou, D. C.",
-        "others"
-      ],
+      "authors": ["Cao, L.", "Huang, C.", "Zhou, D. C.", "others"],
       "title": "Proteogenomic characterization of pancreatic ductal adenocarcinoma",
       "year": 2021,
       "journal": "Cell",
@@ -533,12 +468,7 @@
     {
       "id": "cptac-luad-publication",
       "role": "Cohort-associated consortium publication",
-      "authors": [
-        "Gillette, M. A.",
-        "Satpathy, S.",
-        "Cao, S.",
-        "others"
-      ],
+      "authors": ["Gillette, M. A.", "Satpathy, S.", "Cao, S.", "others"],
       "title": "Proteogenomic Characterization Reveals Therapeutic Vulnerabilities in Lung Adenocarcinoma",
       "year": 2020,
       "journal": "Cell",
@@ -553,12 +483,7 @@
     {
       "id": "cptac-lusc-publication",
       "role": "Cohort-associated consortium publication",
-      "authors": [
-        "Satpathy, S.",
-        "Krug, K.",
-        "Jean Beltran, P. M.",
-        "others"
-      ],
+      "authors": ["Satpathy, S.", "Krug, K.", "Jean Beltran, P. M.", "others"],
       "title": "A proteogenomic portrait of lung squamous cell carcinoma",
       "year": 2021,
       "journal": "Cell",
@@ -573,12 +498,7 @@
     {
       "id": "cptac-gbm-publication",
       "role": "Cohort-associated consortium publication",
-      "authors": [
-        "Wang, L.-B.",
-        "Karpova, A.",
-        "Gritsenko, M. A.",
-        "others"
-      ],
+      "authors": ["Wang, L.-B.", "Karpova, A.", "Gritsenko, M. A.", "others"],
       "title": "Proteogenomic and metabolomic characterization of human glioblastoma",
       "year": 2021,
       "journal": "Cancer Cell",

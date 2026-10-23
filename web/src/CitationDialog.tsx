@@ -106,10 +106,6 @@ export function CitationDialog({
             ))}
           </ol>
           <h3>Methods and acknowledgement</h3>
-          <p>
-            This text describes the calculated analysis, including group sizes
-            and exclusions.
-          </p>
           <textarea
             className="citation-methods"
             aria-label="Methods and acknowledgement"

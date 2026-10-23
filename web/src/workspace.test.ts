@@ -277,7 +277,7 @@ describe("data citations", () => {
     for (const cohort of ["CPTAC-3-RCC", "CPTAC-3-KIRP", "CPTAC-3-OLIGO"])
       expect(
         resolveProvenance({ ...analysis(), cohort }).cohortPublicationNote,
-      ).toContain("No cohort-specific");
+      ).toContain("No original cohort publication");
   });
   test("exports reusable references and methods from the saved analysis, rejecting mismatched provenance", () => {
     const a = attachProvenance(analysis());
