@@ -442,7 +442,7 @@ export function usePlotInteraction(
                 width={b.width + 6}
                 height={b.height + 6}
                 fill="none"
-                stroke="#147d77"
+                stroke="#1f2328"
                 strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
                 pointerEvents="none"
@@ -477,7 +477,7 @@ export function usePlotInteraction(
                     }
                     width="6"
                     height="6"
-                    fill="#147d77"
+                    fill="#1f2328"
                     style={{ cursor: "nwse-resize" }}
                   />
                 )}
@@ -488,8 +488,8 @@ export function usePlotInteraction(
       <rect
         ref={marquee}
         visibility="hidden"
-        fill="#147d7718"
-        stroke="#147d77"
+        fill="#1f232812"
+        stroke="#1f2328"
         pointerEvents="none"
       />
       <line

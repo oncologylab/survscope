@@ -1,7 +1,7 @@
 # SurvScope
 
 [![CI](https://github.com/oncologylab/survscope/actions/workflows/ci.yml/badge.svg)](https://github.com/oncologylab/survscope/actions/workflows/ci.yml)
-[![Open the app](https://img.shields.io/badge/open-SurvScope-147d77)](https://oncologylab.github.io/survscope/)
+[![Open the app](https://img.shields.io/badge/open-SurvScope-1f2328)](https://oncologylab.github.io/survscope/)
 
 SurvScope shows how a gene's RNA expression relates to survival in a cancer cohort, and lets you edit and download the resulting figure. It runs in your browser, without an account or installation.
 

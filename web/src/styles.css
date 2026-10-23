@@ -1,17 +1,20 @@
 :root {
-  color: #18201f;
-  background: #f3f1ea;
+  color: #1f2328;
+  background: #f5f5f4;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-synthesis: none;
-  --ink: #18201f;
-  --muted: #66706e;
-  --paper: #fffefb;
-  --line: #d7d5cd;
-  --teal: #147d77;
-  --teal-dark: #0d5f5b;
-  --coral: #d9684c;
-  --blue: #2f6fb0;
-  --red: #c43c39;
+  --ink: #1f2328;
+  --ink-soft: #3d4148;
+  --muted: #6b6f76;
+  --paper: #fff;
+  --field: #fafaf9;
+  --line: #dcdcd9;
+  --line-strong: #c8c8c4;
+  --hover: #f0f0ef;
+  --selected: #e7e7e5;
+  --accent: #1f2328;
+  --accent-hover: #3d4148;
+  --guide: #d9684c;
 }
 
 * {
@@ -22,7 +25,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #f3f1ea;
+  background: #f5f5f4;
   overflow: hidden;
 }
 
@@ -41,7 +44,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgb(24 32 31 / 14%);
+  border-bottom: 1px solid rgb(31 35 40 / 14%);
 }
 
 .brand {
@@ -73,7 +76,7 @@ select {
 }
 
 .result-heading > div:first-child > span {
-  color: var(--coral);
+  color: var(--guide);
   font-size: 14px;
   font-style: italic;
 }
@@ -99,7 +102,7 @@ h2 {
 .controls label > span:first-child {
   display: block;
   margin-bottom: 5px;
-  color: #42534b;
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 600;
 }
@@ -116,16 +119,16 @@ h2 {
   height: 46px;
   padding: 0 13px;
   color: var(--ink);
-  background: #faf9f5;
-  border: 1px solid #c9c8c1;
+  background: var(--field);
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
   outline: none;
 }
 
 .controls select:focus,
 .gene-control > input:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgb(20 125 119 / 12%);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(31 35 40 / 12%);
 }
 
 .gene-control {
@@ -142,7 +145,7 @@ h2 {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 5px;
-  box-shadow: 0 16px 35px rgb(26 34 33 / 16%);
+  box-shadow: 0 16px 35px rgb(31 35 40 / 16%);
 }
 
 .suggestions button {
@@ -158,7 +161,7 @@ h2 {
 }
 
 .suggestions button:hover {
-  background: #eff7f5;
+  background: var(--hover);
 }
 
 .suggestions small {
@@ -173,14 +176,14 @@ h2 {
 .primary-button {
   width: 100%;
   color: white;
-  background: var(--teal);
+  background: var(--accent);
   border: 0;
   border-radius: 4px;
   font-weight: 700;
 }
 
 .primary-button:hover:not(:disabled) {
-  background: var(--teal-dark);
+  background: var(--accent-hover);
 }
 
 button:disabled {
@@ -201,9 +204,9 @@ button:disabled {
 
 .export-buttons button {
   padding: 7px 9px;
-  color: var(--teal-dark);
+  color: var(--accent-hover);
   background: transparent;
-  border: 1px solid #a8c9c5;
+  border: 1px solid var(--line-strong);
   border-radius: 3px;
   font-size: 10px;
   font-weight: 600;
@@ -211,15 +214,15 @@ button:disabled {
 
 .export-buttons button:hover:not(:disabled) {
   color: white;
-  background: var(--teal);
+  background: var(--accent);
 }
 
 .plot-stage {
   background:
-    linear-gradient(90deg, rgb(30 48 45 / 3%) 1px, transparent 1px),
-    linear-gradient(rgb(30 48 45 / 3%) 1px, transparent 1px), #ebeae4;
+    linear-gradient(90deg, rgb(31 35 40 / 4%) 1px, transparent 1px),
+    linear-gradient(rgb(31 35 40 / 4%) 1px, transparent 1px), #ececea;
   background-size: 18px 18px;
-  border: 1px solid #deddd7;
+  border: 1px solid var(--line);
 }
 
 .survival-plot {
@@ -249,7 +252,7 @@ button:disabled {
 .quality-strip article {
   min-width: 0;
   padding: 8px 10px;
-  background: #f7f6f1;
+  background: #f7f7f6;
   border: 1px solid var(--line);
   border-radius: 4px;
 }
@@ -262,7 +265,7 @@ button:disabled {
 }
 
 .quality-strip article > div span {
-  color: var(--teal-dark);
+  color: var(--accent-hover);
   font-size: 11px;
 }
 
@@ -293,7 +296,7 @@ button:disabled {
 
 footer {
   color: var(--muted);
-  border-top: 1px solid rgb(24 32 31 / 14%);
+  border-top: 1px solid rgb(31 35 40 / 14%);
 }
 
 footer p {
@@ -301,7 +304,7 @@ footer p {
 }
 
 footer a {
-  color: var(--teal-dark);
+  color: var(--accent-hover);
   font-weight: 700;
 }
 
@@ -346,10 +349,10 @@ footer a {
 .header-actions button,
 .zoom-toolbar button,
 .editor-controls button {
-  border: 1px solid #bfc8c1;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  background: #fffefb;
-  color: #31534d;
+  background: var(--paper);
+  color: var(--ink-soft);
   padding: 7px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -357,13 +360,13 @@ footer a {
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 2px solid var(--teal);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 .header-actions button:hover,
 .zoom-toolbar button:hover:not(:disabled),
 .editor-controls button:hover:not(:disabled) {
-  background: #eaf4f1;
+  background: var(--hover);
 }
 .file-input {
   display: none;
@@ -382,9 +385,9 @@ summary:focus-visible {
   width: 100%;
   padding: 8px 10px;
   min-height: 34px;
-  border: 1px solid #c9c8c1;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  background: #faf9f5;
+  background: var(--field);
   color: var(--ink);
   font: inherit;
 }
@@ -401,7 +404,7 @@ summary:focus-visible {
 .studio .text-button {
   border: 0;
   background: transparent;
-  color: var(--teal-dark);
+  color: var(--accent-hover);
   padding: 0;
   font-size: inherit;
   text-decoration: underline;
@@ -416,8 +419,8 @@ summary:focus-visible {
 .group-preview {
   margin-top: 12px;
   padding: 9px 11px;
-  background: #f2f5ef;
-  border: 1px solid #dce0d5;
+  background: #f7f7f6;
+  border: 1px solid var(--line);
   border-radius: 4px;
   font-size: 10px;
 }
@@ -426,7 +429,7 @@ summary:focus-visible {
   justify-content: space-between;
   gap: 8px;
   padding-bottom: 5px;
-  color: #43544b;
+  color: var(--ink-soft);
 }
 .group-preview p {
   display: grid;
@@ -479,12 +482,12 @@ summary:focus-visible {
 .zoom-toolbar {
   margin-top: 10px;
   flex-wrap: wrap;
-  color: #4d5a55;
+  color: var(--ink-soft);
   font-size: 11px;
 }
 .zoom-toolbar button[aria-pressed="true"] {
   color: white;
-  background: var(--teal);
+  background: var(--accent);
 }
 .editor-controls {
   min-height: 0;
@@ -501,7 +504,7 @@ summary:focus-visible {
 .editor-controls label > span:first-child {
   display: block;
   margin-bottom: 5px;
-  color: #42534b;
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 600;
 }
@@ -512,7 +515,7 @@ summary:focus-visible {
 }
 .editor-controls summary {
   cursor: pointer;
-  color: #283f37;
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 8px;
@@ -522,10 +525,10 @@ summary:focus-visible {
   min-height: 60px;
 }
 .editor-controls .selected-properties {
-  background: #edf5ef;
+  background: #f7f7f6;
   margin: 14px -8px 0;
   padding: 12px 8px;
-  border: 1px solid #cbdace;
+  border: 1px solid var(--line);
   border-radius: 5px;
 }
 .property-grid {
@@ -546,7 +549,7 @@ summary:focus-visible {
   font-weight: 400;
 }
 .editor-controls input[type="checkbox"] {
-  accent-color: var(--teal);
+  accent-color: var(--accent);
 }
 .editor-controls .color-field {
   display: flex;
@@ -582,7 +585,7 @@ summary:focus-visible {
   box-shadow: 0 30px 100px #0004;
 }
 .help-dialog::backdrop {
-  background: #18352b80;
+  background: #1f232866;
   backdrop-filter: blur(2px);
 }
 .help-dialog h2 {
@@ -597,7 +600,7 @@ summary:focus-visible {
 .help-dialog dd {
   font-size: 14px;
   line-height: 1.7;
-  color: #4d5a55;
+  color: var(--ink-soft);
 }
 .help-dialog dt {
   font-size: 13px;
@@ -608,7 +611,7 @@ summary:focus-visible {
   margin: 0;
 }
 .help-dialog a {
-  color: var(--teal-dark);
+  color: var(--accent-hover);
 }
 .dialog-close {
   position: absolute;
@@ -715,14 +718,14 @@ summary:focus-visible {
   font-size: 12px;
 }
 .studio button:hover:not(:disabled) {
-  background: #eaf2ee;
-  border-color: #94b8ac;
+  background: var(--hover);
+  border-color: var(--line-strong);
 }
 .studio button[aria-pressed="true"],
 .studio button[aria-selected="true"] {
   color: #fff;
-  background: var(--teal);
-  border-color: var(--teal);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 .studio .analysis-dock {
   flex: 0 0 var(--analysis-width);
@@ -782,7 +785,7 @@ summary:focus-visible {
   padding: 11px;
   border: 0;
   color: #fff;
-  background: var(--teal);
+  background: var(--accent);
   margin-top: 18px;
 }
 .studio .result {
@@ -814,7 +817,7 @@ summary:focus-visible {
   gap: 4px;
 }
 .studio .export-buttons button {
-  color: var(--teal-dark);
+  color: var(--accent-hover);
 }
 .studio .zoom-toolbar {
   display: flex;
@@ -854,7 +857,7 @@ summary:focus-visible {
 .studio .figure-canvas {
   flex: none;
   margin: 0;
-  box-shadow: 0 8px 22px #1a222326;
+  box-shadow: 0 8px 22px #1f232826;
   background: white;
 }
 .studio .survival-plot {
@@ -865,6 +868,10 @@ summary:focus-visible {
   max-width: none;
   user-select: none;
   text-rendering: geometricPrecision;
+}
+.studio .survival-plot:focus-visible {
+  outline: 2px solid rgb(31 35 40 / 18%);
+  outline-offset: 4px;
 }
 .tool-type .survival-plot,
 .tool-type [data-element] {
@@ -933,7 +940,7 @@ summary:focus-visible {
   font-size: 11px;
 }
 .layer-row.selected {
-  background: #dcefeb;
+  background: var(--selected);
 }
 .studio .layer-select {
   flex: 1;
@@ -960,7 +967,7 @@ summary:focus-visible {
 }
 .dock-resizer:hover,
 .dock-resizer:focus {
-  background: #147d7755;
+  background: #1f232840;
 }
 .studio footer {
   flex: none;
@@ -987,13 +994,14 @@ summary:focus-visible {
   padding: 0;
   line-height: 1.2;
   min-height: 1.2em;
-  outline: 1px solid #147d77;
+  outline: 1px solid var(--accent);
   background: #fff;
   white-space: pre-wrap;
   overflow-wrap: normal;
   font-weight: 400;
   font-style: normal;
-  caret-color: #147d77;
+  caret-color: var(--accent);
+  text-rendering: geometricPrecision;
 }
 .inline-text-editor .ProseMirror p {
   margin: 0;
@@ -1011,7 +1019,7 @@ summary:focus-visible {
   transform: translateX(-50%);
   background: white;
   padding: 7px;
-  border: 1px solid var(--teal);
+  border: 1px solid var(--accent);
   border-radius: 6px;
   box-shadow: 0 5px 16px #0002;
   display: flex;
@@ -1033,7 +1041,7 @@ summary:focus-visible {
   display: block;
   font-weight: 700;
   font-size: 12px;
-  color: var(--teal-dark);
+  color: var(--accent-hover);
 }
 .citation-list a {
   overflow-wrap: anywhere;
@@ -1052,8 +1060,8 @@ summary:focus-visible {
   flex-wrap: wrap;
 }
 .citation-dialog button:not(.dialog-close):hover {
-  border-color: var(--teal);
-  color: var(--teal-dark);
+  border-color: var(--accent);
+  color: var(--accent-hover);
 }
 @media (max-width: 1439px) {
   .studio .analysis-dock {
@@ -1216,12 +1224,12 @@ summary:focus-visible {
 }
 .studio .icon-button:hover:not(:disabled),
 .text-format-toolbar .icon-button:hover:not(:disabled) {
-  border-color: #94b8ac;
-  background: #eaf2ee;
+  border-color: var(--line-strong);
+  background: var(--hover);
 }
 .text-format-toolbar .icon-button[aria-pressed="true"] {
   color: white;
-  background: var(--teal);
+  background: var(--accent);
 }
 .studio .icon-button:disabled {
   opacity: 0.35;
@@ -1233,10 +1241,10 @@ summary:focus-visible {
   width: max-content;
   max-width: 248px;
   padding: 9px 11px;
-  border: 1px solid #4d625c;
+  border: 1px solid #3d4148;
   border-radius: 5px;
   color: #fff;
-  background: #243c34;
+  background: var(--ink);
   box-shadow: 0 4px 14px #0002;
   font-size: 12px;
   line-height: 1.45;
@@ -1245,14 +1253,14 @@ summary:focus-visible {
 .command-tooltip kbd {
   display: inline-block;
   margin-left: 10px;
-  color: #d7e5df;
+  color: #c9cdd2;
   font: inherit;
   font-size: 10px;
 }
 .command-tooltip > span {
   display: block;
   margin-top: 4px;
-  color: #d7e5df;
+  color: #c9cdd2;
 }
 .selection-count {
   align-self: center;
@@ -1260,7 +1268,7 @@ summary:focus-visible {
   min-width: 22px;
   padding: 2px 5px;
   border-radius: 4px;
-  background: #e8eeea;
+  background: var(--hover);
   text-align: center;
 }
 .check-with-help {
@@ -1272,7 +1280,7 @@ summary:focus-visible {
 .selected-item-field > label {
   display: block;
   margin-bottom: 4px;
-  color: #42534b;
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 600;
 }
