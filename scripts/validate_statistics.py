@@ -269,12 +269,11 @@ def main():
         r_path = directory / "reference.json"
         subprocess.run(
             [
-                str(ROOT / "web/node_modules/.bin/esbuild"),
+                str(ROOT / "web/node_modules/.bin/rolldown"),
                 str(ROOT / "scripts/statistics-browser.ts"),
-                "--bundle",
                 "--platform=node",
                 "--format=esm",
-                f"--outfile={js_path}",
+                f"--file={js_path}",
             ],
             check=True,
         )
