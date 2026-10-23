@@ -1,104 +1,101 @@
-# Your guide to SurvScope
+# User guide
 
 ## Choose patients and a gene
 
-The **Cancer cohort** menu groups cancers by study: TCGA and CPTAC. The same cancer in two studies represents two separate patient groups. For example, `TCGA-PAAD` and `CPTAC-3-PAAD` both concern pancreatic cancer but are analyzed separately.
+The **Cancer cohort** menu lists TCGA and CPTAC cohorts. The same cancer in two studies is two separate groups. For example, `TCGA-PAAD` and `CPTAC-3-PAAD` are never combined.
 
-Enter a gene symbol, such as **TP53**, or its Ensembl identifier. Suggestions show genes available in the selected cohort. A cohort's menu count is its available patient total; the plot may use fewer people because follow-up or expression can be missing.
+Enter a gene symbol, such as TP53, or an Ensembl ID. The menu shows each cohort's patient count. A plot can use fewer patients when expression or follow-up is missing.
 
 ## Choose an expression comparison
 
-Every comparison makes two groups, lower and higher expression. The selector offers:
+Each comparison makes two groups: lower and higher expression.
 
-| Choice | What it compares | Patients left out |
+| Choice | Compares | Left out |
 | --- | --- | --- |
-| Median | At or below the middle expression value versus above it | None with usable expression and follow-up |
-| Mean | At or below the average TPM versus above it | None with usable expression and follow-up |
-| Percentile | A chosen dividing point; for example, the 75th percentile | None with usable expression and follow-up |
-| Lowest/highest quarter | The bottom 25% versus the top 25% | Middle expression values |
-| Lowest/highest third | The bottom third versus the top third | Middle expression values |
-| Custom percentile groups | For example, the lowest 20% versus the highest 30% | The gap between those groups |
-| Custom TPM threshold | At or below a number you enter versus above it | None with usable expression and follow-up |
+| Median | At or below the middle value vs above | No one |
+| Mean | At or below the average TPM vs above | No one |
+| Percentile | Below vs above a point you pick, such as 75% | No one |
+| Lowest/highest quarter | Bottom 25% vs top 25% | The middle |
+| Lowest/highest third | Bottom third vs top third | The middle |
+| Custom percentile groups | For example, lowest 20% vs highest 30% | The middle |
+| Custom TPM threshold | At or below your number vs above | No one |
 
-TPM measures a gene's RNA abundance relative to the other RNA in a sample. The mean uses TPM values, not their logarithms. Equal values stay together, so a “quarter” or “half” may not contain exactly that proportion of patients. If many patients have the same value, a group can even be empty. SurvScope shows the actual group sizes before you create the plot.
+- TPM measures a gene's RNA level in a sample.
+- Equal values stay in the same group. So a "quarter" may not be exactly 25%, and a group can be empty. Check the group sizes before you plot.
+- Each outcome uses only patients with follow-up for it. Cutoffs and sizes can differ by outcome.
+- Groups that add up to 100% (such as 30%/70%) become one split with no one left out.
 
-Each outcome uses patients with valid follow-up for that outcome. Its dividing values and group sizes may therefore differ. A 50th-percentile split, or two complementary 50% groups, uses the original median comparison exactly. Complementary custom fractions such as 30%/70% form one percentile split without a middle exclusion.
-
-The median retains the original source grouping. Other choices use compact expression values rounded to 0.001 in `log2(TPM+1)` units. Very close expression values can therefore share a value; see [methods](methods.md) for the reproducibility details.
-
-Select **Create survival plot** after changing a gene, cohort, or comparison. A notice tells you when your current selections differ from the displayed result. Comparing selected lower and upper percentiles uses fewer patients and can change the observed pattern. SurvScope does not automatically search for a cutoff that makes a p-value smaller.
+Select **Create survival plot** after each change. A notice shows when your choices differ from the plot. SurvScope never hunts for the cutoff with the smallest p-value. Details are in [methods](methods.md#expression-groups).
 
 ![Choosing a comparison and checking patient counts](images/comparison.png)
 
 ## Understand the figure
 
-A Kaplan–Meier curve starts at 1 (100%). It steps down when an event occurs. A higher curve indicates a larger estimated fraction of patients still free of that event. The meaning of “event” depends on the outcome:
+A Kaplan–Meier curve starts at 100%. It steps down at each event. A higher curve means more patients are still event-free.
 
-| Panel | Outcome | Event of interest |
-| --- | --- | --- |
-| OS | Overall survival | Death from any cause |
-| DSS | Disease-specific survival | Death attributed to the cancer |
-| PFI | Progression-free interval | A progression-related event under the TCGA-CDR definition |
-| DFI | Disease-free interval | A disease-free interval ending in a new tumor event under TCGA-CDR eligibility rules |
+| Panel | Event |
+| --- | --- |
+| OS, overall survival | Death from any cause |
+| DSS, disease-specific survival | Death from the cancer |
+| PFI, progression-free interval | Progression, as defined by TCGA-CDR |
+| DFI, disease-free interval | New tumor after being disease-free (TCGA-CDR) |
 
-CPTAC currently supports OS only. Its remaining panels say **Endpoint unavailable**. TCGA quality labels reproduce the source's recommendations; a **caution** or **not recommended** outcome needs particular care. CPTAC has a separate caution about follow-up completeness. Very small groups may have no usable group comparison.
+CPTAC has OS only. Its other panels say **Endpoint unavailable**. Take care with outcomes marked **caution** or **not recommended**. Very small groups may have no result.
 
-- **n** is the number of patients with usable follow-up in a group; **e** counts patients with an observed event. For OS, that event is death. The other patients are censored: follow-up ended without the event being observed. Therefore **e ≤ n**; equality is possible when every included patient has an event.
-- **p** is the two-sided log-rank p-value. It concerns the difference between these two curves, not whether the finding will reproduce elsewhere.
-- **q** is an optional Benjamini–Hochberg adjustment across the outcomes of this one analysis, shown with **Properties → Survival details → Show adjusted q-value**. It does not correct for trying many genes, cohorts, or cutoffs. See [adjusted q-values](methods.md#adjusted-q-values).
-- **HR** is the unadjusted hazard ratio for higher versus lower expression. Above 1 indicates a higher modeled event hazard in the higher-expression group. Interpretation assumes proportional hazards; the application does not test this assumption or adjust for stage, treatment, age, or other factors.
-- **NA** means the statistic cannot be estimated. Empty groups, no events, lack of overlapping risk sets, or complete separation can cause this. The available curves may still be shown.
+| Label | Meaning |
+| --- | --- |
+| n | Patients in the group |
+| e | Patients with an event. The rest are censored (follow-up ended with no event). So e ≤ n. |
+| p | Log-rank p-value for the difference between the curves |
+| q | Optional adjusted p across this analysis's outcomes. See [q-values](methods.md#adjusted-q-values). |
+| HR | Hazard ratio, higher vs lower expression. Above 1 means more events in the higher group. Not adjusted for stage, age, treatment or other factors. |
+| NA | Cannot be estimated, for example with an empty group or no events |
 
-In **Properties → Survival details**, you can add:
+**Properties → Survival details** can add confidence bands (90%, 95% or 99%), censor marks (+) and number-at-risk tables. All are off by default.
 
-- **Confidence bands:** pointwise uncertainty around each curve, at 90%, 95%, or 99%. Wider bands indicate less precision. The bands do not provide a separate test of the difference between curves.
-- **Censor marks:** a plus sign where a patient's observed follow-up ends without the recorded event. Several patients can share a mark.
-- **Number-at-risk tables:** how many people are still observed and event-free immediately before each displayed time. A patient censored exactly at that time is still counted just before it.
-
-All three are off by default. Research associations should be interpreted alongside study design and independent evidence.
+Results are associations, not proof of cause.
 
 ## Edit the figure
 
-Your figure is ready to edit as soon as it appears. Double-click a title, axis label, complete legend entry, or note to type directly on the figure. Select individual characters to apply bold, italic, superscript, or subscript using the floating text toolbar. Enter adds a line; Escape or clicking outside finishes the edit. Saving or exporting also finishes an active text edit.
-
-Editing commands are icon buttons: a pointer for Selection, a T for Type, a hand for panning, a disk for saving, and curved arrows for Undo/Redo. Hover over an icon, or focus it with Tab, to see its name and keyboard shortcut. Unavailable actions are dimmed.
-
-The workspace fills wide displays. **Analysis** sits on the left and **Properties / Layers** on the right; use the rail buttons to open or close them. Drag the panel boundaries to adjust their widths. On smaller screens, the panels open as drawers so the figure keeps its space. **Reset workspace** restores the panel sizes and Fit view without changing your figure.
-
 ![The figure editor with a selected title](images/editor.png)
 
-Click a title, axis label, legend, statistics block, curve, or panel. You can also choose **Selected item**, which helps with overlapping or hidden items. Drag labels, legends, statistics, panels, and annotations to move them. A selected panel has a corner handle for resizing. An arrow or line has a handle for moving its endpoint. Curve selection changes line appearance while keeping the data attached to its axes.
+- Double-click any text to edit it. Select characters for bold, italic, superscript or subscript. Enter adds a line. Escape finishes.
+- Click an object to select it, or pick it from **Selected item**. Drag to move. Use the corner handle to resize.
+- Shift-click or drag a box to select several. **Arrange** aligns and spaces them. **Snap** shows guides.
+- In **Layers**, the eye hides an object and the padlock locks it.
+- Hover over an icon to see its name and shortcut.
+- **Analysis** is on the left and **Properties / Layers** on the right. Drag their edges to resize. **Reset workspace** resets the panels, not the figure.
 
-Shift-click to select several objects, or drag a selection rectangle on the artboard. **Arrange**, at the top of Properties, shows the selection count and icons for aligning objects and distributing three or more objects evenly. Toggle the artboard icon to align to the page instead of the selection; the reference is displayed beside it. **Snap** shows alignment guides near object edges and centers. In **Layers**, the eye and padlock icons hide or lock objects. Copy, paste, duplicate, and reorder annotations with the Arrange controls. Locked panels also protect their contents from movement.
-
-| Shortcut | Action outside a text field |
+| Key | Action |
 | --- | --- |
 | V / T / H / Z | Selection / Type / Hand / Zoom |
-| Space (hold) | Temporarily pan |
-| Arrow / Shift+Arrow | Move selection by 1 / 10 points |
+| Space (hold) | Pan |
+| Arrow / Shift+Arrow | Move 1 / 10 points |
 | Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z | Undo / redo |
-| Ctrl/Cmd+C / Ctrl/Cmd+V | Copy / paste selected annotations within the workspace |
-| Ctrl/Cmd+D | Duplicate selected annotations |
-| Delete | Remove selected annotations |
+| Ctrl/Cmd+C / V / D | Copy / paste / duplicate annotations |
+| Ctrl/Cmd+B / I | Bold / italic while typing |
+| Delete | Remove annotations |
 
-With Type, click an empty part of the artboard to create a note. Drag with Line or Arrow to draw a new annotation. A text object's corner handle scales its type; panel resizing keeps type and stroke sizes fixed. While typing, Ctrl/Cmd+B and Ctrl/Cmd+I format the selected text. Browser shortcuts such as Save and Bookmark remain available.
+With Type, click an empty spot to add a note. Drag with Line or Arrow to draw one.
 
-The editor offers:
+| Properties section | What it sets |
+| --- | --- |
+| **Size and appearance** | Size in inches, font, text size, colors, line width and style |
+| **Outcomes and layout** | Which panels show, their grid and order (display only) |
+| **Axes** | Time unit, time range, ticks, survival range (display only) |
+| **Legend and annotations** | Group names, legend text, notes, lines, arrows |
 
-- **Size and appearance:** width and height in inches, font family, text scale, colors, line width, and solid/dashed/dotted curves. Titles and labels also have individual text and style controls; Enter in a numeric field applies the value.
-- **Outcomes and layout:** show selected panels, arrange a grid or row/column, and change their order. This changes presentation only; q-values still reflect all valid outcomes from the analysis.
-- **Axes:** show months, years, or days; set a displayed time range and tick spacing; zoom into a survival range. Axis limits do not truncate follow-up or refit the model. Extremely dense requested ticks are thinned to keep the figure responsive.
-- **Legend and annotations:** double-click any complete legend entry, including its `n=…` and `e=…`, to edit and format all its text. Each outcome has separate entries. Legend edits change the figure only; the analysis JSON, curves, and citations retain the original calculated counts. **Reset selected item** restores the automatic entry. The lower/higher group-name fields apply names across all outcomes and restore their automatic counts. Add notes, lines, or arrows, and use multiple lines when needed. Calculated p, q, and HR values remain linked to the analysis.
+Legend edits change the figure only. JSON and citations keep the real counts. **Reset selected item** restores the automatic text.
 
-Use **Fit**, **100%**, the zoom buttons, and the Hand tool to inspect details without changing export dimensions. **Reset figure** restores the default appearance, including turning q-values off, and can itself be undone. Saved projects and style presets keep their q-value display setting.
+**Fit**, **100%** and zoom change the view, not the export size. **Reset figure** restores the default look and can be undone.
 
-A new gene, cohort, or comparison retains styling and layout, refreshes automatic labels, and clears custom label text and annotations tied to the previous result. Save a project first if you want to keep those edits. When making a smaller figure, check that labels and panels have enough room; the editor allows deliberate overlaps.
+A new gene, cohort or comparison keeps your style. It clears custom labels and notes. Save a project first to keep them.
 
 ### Choose a font
 
-Use **Size and appearance → Font** for the whole figure, or **Selected font** for one text object. The menu shows a live sample and the actual bundled font name. Seven families are available, each with regular, bold, italic, and bold italic faces:
+Use **Size and appearance → Font** for the whole figure, or **Selected font** for one text object.
 
-| Menu choice | Font used in the figure and exports |
+| Menu choice | Font used |
 | --- | --- |
 | Arial / Helvetica style | Liberation Sans (default) |
 | Times New Roman style | Liberation Serif |
@@ -108,47 +105,57 @@ Use **Size and appearance → Font** for the whole figure, or **Selected font** 
 | Source Sans 3 | Source Sans 3 |
 | Source Serif 4 | Source Serif 4 |
 
-The familiar-name choices are clearly labeled alternatives, not the proprietary Arial, Helvetica, Times New Roman, Courier New, or Calibri font files. SVG and PDF embed the fonts; PNG captures the same lettering as pixels. The figure therefore does not depend on which fonts are installed on a reader's computer. Projects preserve your global and individual font choices. [Font sources and licenses](fonts.md).
+The "style" fonts are look-alikes, not the original fonts. Exports embed the fonts, so figures look the same on any computer. See [font sources](fonts.md).
 
 ## Download, save, and reopen
 
-| Button or file | Use it for |
+| Button | Gives you |
 | --- | --- |
-| SVG | A scalable figure with embedded fonts, suitable for further vector editing |
-| PDF | A vector figure with embedded fonts and the chosen physical page size |
-| PNG | A raster image; choose 150, 300, or 600 DPI in **Export and reuse** |
-| JSON | Analysis results and provenance; it does not save the editor layout |
-| Save project | Results, aggregate curves/risk counts, labels, annotations, appearance, and data/software versions |
-| Save style preset | Reusable appearance without old custom text or annotations |
+| SVG | Vector figure with embedded fonts |
+| PDF | Vector figure with embedded fonts, at your page size |
+| PNG | Image at 150, 300 or 600 DPI (set in **Export and reuse**) |
+| JSON | Results and data sources, without the layout |
+| Save project | Results, curves, labels, notes, style and versions |
+| Save style preset | Style only |
 
-For example, 6.8 inches at 300 DPI produces a 2040 × 2040 PNG. Very large PNGs exceeding 40 million pixels require a smaller size or lower DPI. SVG and PDF retain vector lines and text. Zoom and selection handles are excluded from exports.
+6.8 inches at 300 DPI gives a 2040 × 2040 PNG. The PNG limit is 40 million pixels.
 
-**Open project** accepts a saved project or preset from your computer. Project results reopen as a snapshot and remain editable without retrieving the original data. A project from an older data release keeps that release's results: choose **New analysis** explicitly to calculate using the website's current data. A project is not an upload to a server; files are read locally in the browser.
+**Open project** opens a project or preset. Files stay on your computer. A project keeps its results, even from an older data release. Choose **New analysis** to use current data.
 
-A URL records gene, cohort, and comparison choices. Share the project file when you also want to share the exact edited figure. Projects include aggregate curve data, not patient identifiers or a raw expression matrix.
+A URL saves the gene, cohort and comparison. Share a project file to share the edited figure. Projects contain no patient IDs or expression data.
 
 ## Cite an analysis
 
-Choose **Cite this analysis** to see the references for the result currently displayed. **Copy references**, **Download BibTeX**, and **Download RIS** help you transfer them to a manuscript or reference manager. The methods box includes the gene, cohort, grouping rule, outcome counts, exclusions, software/data versions, and the relevant program acknowledgement.
-
-TCGA and CPTAC have separate source citations. Original cohort papers are included when their association has been verified; the actual patients used by SurvScope may be a subset or come from an updated source snapshot. If no paper has been verified for a rare classification, the panel says so and provides its source dataset and resource references. An upstream version that was not recorded is displayed as **not recorded**.
-
 ![The citation panel with source references and downloads](images/citations.png)
 
-Save the project to keep this citation snapshot with the figure. [Full references and source information](citations.md).
+Choose **Cite this analysis**. Use **Copy references**, **Download BibTeX** or **Download RIS**. The methods text lists gene, cohort, grouping, counts, exclusions and versions. If no cohort paper was checked, or a version was **not recorded**, the panel says so. Save a project to keep citations with the figure. See [all references](citations.md).
 
 ## Common questions
 
-**Why is n larger than e?** A patient can contribute follow-up without having an observed event. For example, n=100 and e=30 means 30 events and 70 censored observations. n and e can be equal; e cannot exceed n.
+### Why is n larger than e?
 
-**Why are p and q equal in CPTAC?** Current CPTAC data provide overall survival only, and Benjamini–Hochberg adjustment of a single test leaves its p-value unchanged. See [adjusted q-values](methods.md#adjusted-q-values).
+Some patients have no event during follow-up. n=100, e=30 means 30 events and 70 censored.
 
-**Why do the group counts differ from the cohort count?** Missing expression, missing outcomes, or nonpositive follow-up time exclude a patient from that outcome. Custom percentile comparisons also leave out the middle expression values.
+### Why are p and q equal in CPTAC?
 
-**Why did a percentile not split the group evenly?** Equal expression values are kept together. Percentiles define expression thresholds, not an arbitrary ordering of people with the same value.
+CPTAC has one outcome (OS). Adjusting one p-value leaves it the same.
 
-**Can I see protein expression from CPTAC?** This release analyzes RNA TPM. Protein abundance uses different assays, units, and missing-data rules and is not included.
+### Why are group counts smaller than the cohort count?
 
-**Will another cutoff produce a stronger difference?** It can change the pattern in either direction. Exploring many choices increases the chance of an accidental finding. Report the comparisons tried and validate interesting findings independently.
+Patients with missing expression, missing outcome or zero follow-up are left out. Custom percentile groups also leave out the middle.
 
-**What should I keep for reproducibility?** Save the project, analysis JSON, and the software/data versions. Describe your gene, cohort, endpoint, grouping rule, omitted patients, and any exploration of multiple comparisons. [Statistical methods](methods.md) explains the calculations.
+### Why is a percentile split uneven?
+
+Patients with equal values stay together.
+
+### Can I see CPTAC protein data?
+
+No. Only RNA is included.
+
+### Will another cutoff give a stronger result?
+
+It may. Trying many cutoffs raises the chance of a false finding. Report what you tried.
+
+### What should I keep?
+
+The project, the JSON and the versions. Report the gene, cohort, outcome, grouping and excluded patients.

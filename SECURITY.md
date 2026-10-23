@@ -1,8 +1,5 @@
 # Security policy
 
-Please report security issues privately through GitHub Security Advisories for
-`oncologylab/survscope`.
+Report security issues privately through GitHub Security Advisories for `oncologylab/survscope`.
 
-SurvScope does not require credentials at runtime. PyPI publication uses
-short-lived GitHub OIDC credentials through PyPI Trusted Publishing; long-lived
-PyPI API tokens must not be stored in the repository or Actions secrets.
+SurvScope needs no credentials at runtime. PyPI publishing uses short-lived GitHub OIDC credentials (PyPI Trusted Publishing). Do not store PyPI API tokens in the repository or in Actions secrets.

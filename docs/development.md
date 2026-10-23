@@ -1,10 +1,10 @@
 # Development and releases
 
-The [README](../README.md) and [user guide](user-guide.md) introduce SurvScope for users. This page covers maintaining the software and compact data releases.
+This page is for maintainers. Users should read the [README](../README.md) and [user guide](user-guide.md).
 
 ## Local setup and checks
 
-Use Python 3.10 or later and Node.js 22. The browser is a pure static build.
+You need Python 3.10+ and Node.js 22.
 
 ```bash
 python -m pip install -e ".[test]"
@@ -19,24 +19,26 @@ npm run test:e2e
 npm run dev
 ```
 
-The local development site includes a six-gene TCGA-PAAD fixture (`2026.07.28`). The separate CPTAC fixture is under `tests/fixtures/cptac/2026.09.18`; integration tests serve both from the test site's origin. A local browser test uses installed Chrome; CI uses Playwright Chromium. All runtime requests, including fonts and data, must remain same-origin.
+- `npm run build` fails on unused imports, variables and parameters.
+- The dev site uses a six-gene TCGA-PAAD fixture (`2026.07.28`). The CPTAC fixture is in `tests/fixtures/cptac/2026.09.18`.
+- Local browser tests use Chrome. CI uses Playwright Chromium.
+- All runtime requests stay same-origin.
+- Put build output in the ignored `data-build/` folder. Dated reports to keep go in `docs/`.
+- Clean with `git clean -fdX` on the generated paths only (preview with `-ndX`). Run on the whole repo, it also deletes `.venv/` and `web/node_modules/`.
+- Dependencies are updated by hand. CI runs `npm audit --audit-level=high`.
 
-Keep downloaded releases, exports, previews, and validation output in the ignored `data-build/` directory; reports meant as lasting evidence go in `docs/` with their date and provenance. To remove build and test output, use `git clean -fdX` scoped to the generated paths (preview with `-ndX` first); an unscoped run would also delete `.venv/` and `web/node_modules/`.
+## Statistical validation
 
-`npm run build` also checks for unused TypeScript imports, local variables, and parameters.
-
-## Independent statistical validation
-
-On Ubuntu 24.04, install the independently versioned reference package with:
+On Ubuntu 24.04:
 
 ```bash
 scripts/install_r_reference.sh
 python scripts/validate_statistics.py
 ```
 
-The installer uses `sudo` for R, jsonlite, and Matrix, then installs the SHA-256-verified upstream R survival source at the pinned revision. Other systems can install R, jsonlite, Matrix, and survival 3.8-13 manually. Node dependencies must already be installed. The regular suite writes `data-build/statistical-validation.json` and exits unsuccessfully on any mismatch beyond the documented tolerances.
+The installer uses `sudo` for R, jsonlite and Matrix, then installs the pinned, checksum-verified R survival source. Elsewhere, install R, jsonlite, Matrix and survival 3.8-13 yourself. Install Node dependencies first. The run writes `data-build/statistical-validation.json` and fails on any error above the [tolerances](methods.md#validation).
 
-Validate a complete compact release, without obtaining raw source matrices:
+Check a full compact release:
 
 ```bash
 python scripts/validate_statistics.py \
@@ -44,20 +46,22 @@ python scripts/validate_statistics.py \
   --genes SRD5A1 TP53 EGFR --output data-build/statistical-validation-full.json
 ```
 
-Reports include runtime versions, source hashes, grouping definitions, coverage, and maximum errors. R output is streamed during the full-catalog check. Temporary decoded validation vectors are removed on completion and are never part of a release or Actions artifact. See [methods](methods.md#validation) for exact semantics and limitations.
+Temporary decoded values are deleted after the run. They never go into a release or artifact.
 
 ## Compact data and coverage
 
-Raw TCGA matrices must never be committed, cached, uploaded, or released. Builders stream one cohort, quantize immediately, and write only documented compact assets. Asset validation checks SHA-256 checksums, cohort/gene coverage, array shape, file count, and the 850 MiB budget. Anonymous expression rows in validated compact assets are permitted; raw source matrices are not.
+Never commit, cache, upload or release raw TCGA matrices. Builders stream one cohort and write only the [documented assets](data-format.md).
+
+Release checks: SHA-256 checksums, cohort and gene coverage, array shape, asset count, and the 850 MiB budget.
 
 ```bash
 python scripts/validate_data_release.py \
   --dir web/public/data/2026.07.28 --expected-cohorts 1
 ```
 
-Production uses 33 TCGA cohorts and 18 CPTAC groups. The latest data release is `data-v2026.09.18`; it contains 869 assets and 818,907,113 bytes. See [CPTAC coverage and source research](cptac.md), and [data format](data-format.md).
+Production has 33 TCGA and 18 CPTAC cohorts. The latest release is `data-v2026.09.18`: 869 assets, 818,907,113 bytes. See [CPTAC](cptac.md).
 
-Generate data only through the manual data-release workflow on an ephemeral runner. Use a new version for each refresh; never reuse an existing release tag. For example, substitute a new date in:
+Build data only with the manual workflow. Each refresh needs a new date. Never reuse a tag.
 
 ```bash
 gh workflow run data-release.yml \
@@ -65,21 +69,28 @@ gh workflow run data-release.yml \
   -f tcga_data_version=2026.07.28
 ```
 
-This reuses checksummed compact TCGA assets and builds CPTAC. Leave `tcga_data_version` blank to rebuild TCGA from its sources. The archive checksum is verified before extraction; each extracted asset is then verified independently. The complete catalog is kept out of source control.
+This reuses checked TCGA assets and builds CPTAC. Leave `tcga_data_version` blank to rebuild TCGA. The archive and each file are checksum-checked. Full catalogs stay out of git.
 
 ## Deployment
 
-Software (`vX.Y.Z`) and immutable data (`data-vYYYY.MM.DD`) have independent versions. No data rebuild is required for editor or analysis-software updates.
+Software (`vX.Y.Z`) and data (`data-vYYYY.MM.DD`) have separate versions. Data releases are immutable.
 
-Pages deployment starts after a successful main-branch CI run, a successful main-branch data-release workflow, or an explicit main-branch dispatch. It checks out that triggering commit, runs Python and browser checks, verifies the full data release, and validates statistics across its deployed cohort catalog. Deployment requires passing tests and a complete built site of at most 891,289,600 bytes (850 MiB). The release archive stays immutable; fonts/editor code count toward the final site budget.
+Pages deploys after a passing CI run, a passing data-release run, or a manual dispatch, all on `main`. It then:
 
-The site serves only the selected release. For archived calculations, extract the immutable GitHub release and pass both `--data-version` and `--data-dir` (or their `DataStore` equivalents). A browser project can reopen its saved aggregate results without fetching archived assets; switching to current data requires **New analysis**.
+1. runs the Python and browser tests,
+2. checks the full data release,
+3. validates statistics on all cohorts,
+4. checks the site is at most 891,289,600 bytes (850 MiB).
+
+Pages uses the newest data release unless one is named, and builds it in as `VITE_DATA_VERSION`. It serves only that release. For an old release, unpack its archive and pass `--data-version` and `--data-dir`.
 
 ## Python package releases
 
-Build distributions with `python -m build` and check them with `python -m twine check dist/*`. Publishing a GitHub release named `vX.Y.Z` runs [`publish.yml`](../.github/workflows/publish.yml): the build job runs the tests, builds the wheel and source distribution, and checks their metadata; the publish job uploads them to PyPI with GitHub OIDC Trusted Publishing. No API token is stored in the workflow or repository settings.
+Build with `python -m build`. Check with `python -m twine check dist/*`.
 
-The PyPI project registers this publisher in its [publishing settings](https://pypi.org/manage/project/survscope/settings/publishing/):
+A GitHub release `vX.Y.Z` runs [`publish.yml`](../.github/workflows/publish.yml). It tests, builds the wheel and sdist, and uploads to PyPI with GitHub OIDC Trusted Publishing. No API token is stored anywhere.
+
+PyPI [publishing settings](https://pypi.org/manage/project/survscope/settings/publishing/):
 
 | Field | Value |
 | --- | --- |
@@ -88,24 +99,38 @@ The PyPI project registers this publisher in its [publishing settings](https://p
 | Workflow filename | `publish.yml` |
 | Environment | `pypi` |
 
-To check the registration without uploading anything, run `gh workflow run publish.yml --ref main`. The **Verify PyPI Trusted Publisher** job exchanges the GitHub identity for a short-lived PyPI credential and discards it. An `invalid-publisher` error means one of the fields above does not match, or the publisher was registered on TestPyPI; see [PyPI's troubleshooting guide](https://docs.pypi.org/trusted-publishers/troubleshooting/).
+To test without uploading, run `gh workflow run publish.yml --ref main`. `invalid-publisher` means a field does not match, or the publisher is on TestPyPI. See [PyPI troubleshooting](https://docs.pypi.org/trusted-publishers/troubleshooting/).
 
-PyPI does not accept a second upload of an existing version. Fix a failed release with a new `vX.Y.Z` version rather than replacing published files.
+PyPI never accepts the same version twice. Fix a bad release with a new version.
 
 ## Editor and project format
 
-The React/TypeScript editor uses normalized panel/annotation positions and physical dimensions in inches; element text offsets are in points. Seven export font families are bundled with their OFL notices and fetched from the site's own origin. [Font provenance](fonts.md) records the sources, pinned upstream revisions, and SHA-256 checksums. SVG/PNG embed font data; vector PDF registers the same TTF faces. Source notices cover adapted SciPy/NumPy numerical routines and the editor dependencies. Dragging uses temporary SVG transforms and commits one history transaction on release. Icon commands use local SVG paths with accessible button names.
+- Positions are normalized. Sizes are in inches. Text offsets are in points.
+- Fonts are bundled ([fonts](fonts.md)). SVG and PNG embed them. PDF uses the same TTF files.
+- A drag is one undo step.
 
-Dependencies are updated by hand; CI runs `npm audit --audit-level=high`.
+Projects (`format: "survscope-project"`, `version: 2`) hold the software version, a result snapshot, settings, rich text, per-object font, position, lock and visibility, and a citation snapshot. Presets (`format: "survscope-preset"`) hold style only. Neither has matrix rows or patient IDs.
 
-Project JSON uses `format: "survscope-project"`, `version: 2`, software version, a result snapshot, and validated settings. Presets use `format: "survscope-preset"` and appearance only. There are no matrix rows or patient identifiers. Imports reject unsupported versions, invalid dimensions, inconsistent counts, unsafe property names, and curve position overrides. Version 1 projects import with their appearance and results. Version 2 contains validated text runs (bold/italic/super/sub), per-object fonts/alignment/rotation, lock/visibility flags, and an analysis-provenance/citation snapshot. Custom text is rendered as SVG text; the locally bundled ProseMirror overlay edits only the active object and never stores arbitrary HTML. A project is an editable research artifact, not a signed certificate of data authenticity.
+Import rejects unknown versions, bad sizes, mismatched counts, unsafe property names and curve position overrides. Version 1 projects still open. Text is drawn as SVG and never stored as HTML. A project is editable, so it does not prove its data are real.
 
-Analysis-only JSON is separate from the project format; its fields are described in [data format](data-format.md#groupings-and-figure-projects).
+Analysis JSON is described in [data format](data-format.md#groupings-and-figure-projects).
 
 ### Browser and interaction validation
 
-The default Playwright suite uses Chromium. Run the same suite in Firefox and WebKit with `BROWSER=firefox npm run test:e2e` and `BROWSER=webkit npm run test:e2e` from `web/` after installing those browsers. Viewport coverage includes native 4K, 1080p, laptop/tablet/phone, short windows, and the CSS viewport used at 200% desktop zoom. The suite checks direct rich text editing, layers, object locks, keyboard isolation, citations, project migration, and embedded-font exports.
+Run other browsers from `web/` after installing them:
 
-`web/scripts/editor-benchmark.mjs` measures 120-step drags in a production build using TP53/BRCA, all survival overlays, and 100 annotations. Run it against a local complete-catalog preview, without concurrent tests. It records browser/CPU information and three measured runs at normal and 4× CPU slowdown after warm-up. Targets: median p95 frame time ≤20 ms / ≤33 ms respectively, with interaction long tasks ≤100 ms.
+```bash
+BROWSER=firefox npm run test:e2e
+BROWSER=webkit npm run test:e2e
+```
 
-The [September 21 benchmark report](editor-performance-2026.09.21.json) records median p95 frame times of 16.7 ms at normal speed and 16.8 ms at 4× slowdown, and a longest interaction task of 64 ms, on the browser and machine it lists.
+Tests use viewports from phone to 4K, plus 200% zoom.
+
+`web/scripts/editor-benchmark.mjs` times 120-step drags (TP53/BRCA, all overlays, 100 notes) in a production build. Run it alone on a full-catalog preview.
+
+| Target | Normal | 4× CPU slowdown |
+| --- | ---: | ---: |
+| Median p95 frame time | ≤ 20 ms | ≤ 33 ms |
+| Long tasks | ≤ 100 ms | ≤ 100 ms |
+
+The [September 21 report](editor-performance-2026.09.21.json) measured 16.7 ms and 16.8 ms, with a longest task of 64 ms.

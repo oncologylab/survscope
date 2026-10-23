@@ -1,20 +1,12 @@
-# CPTAC support and source research
+# CPTAC
 
-Reviewed against live GDC Data Release 46.0 (August 10, 2026), API 8.5.0,
-on September 18, 2026.
+Checked against GDC Data Release 46.0 (August 10, 2026), API 8.5.0, on September 18, 2026.
 
-SurvScope supports **CPTAC-3 RNA expression with overall survival (OS)**,
-alongside the existing TCGA analyses. The source is open GDC STAR-Counts
-`tpm_unstranded`, joined to GDC survival donors by case UUID during the build.
-CPTAC is a separate cohort namespace: `CPTAC-3-PAAD` never aliases or pools with
-TCGA `PAAD`. The application and Python readers use the same compact assets.
+SurvScope supports CPTAC-3 RNA expression with overall survival (OS). Expression is GDC STAR-Counts `tpm_unstranded`. The build joins it to GDC survival donors by case UUID. CPTAC cohorts are separate from TCGA: `CPTAC-3-PAAD` is never merged with TCGA `PAAD`. The app and Python use the same compact assets.
 
 ## Supported cohorts and observed coverage
 
-These counts come from a live metadata audit with the exact filters in
-[`cptac.py`](../src/survscope/cptac.py), not from project-wide totals. They are
-a dated snapshot, not guaranteed counts for future builds. “Matched” requires
-one unambiguously linked primary RNA specimen and a positive OS time.
+Counts come from a metadata audit using the filters in [`cptac.py`](../src/survscope/cptac.py). They are a dated snapshot. Future builds may differ. “Matched” means one clearly linked primary RNA sample and a positive OS time.
 
 | Cohort code | Cancer definition | Matched patients | Deaths |
 | --- | --- | ---: | ---: |
@@ -37,103 +29,42 @@ one unambiguously linked primary RNA specimen and a positive OS time.
 | `CPTAC-3-UTUC` | Renal urothelial carcinoma | 1 | 1 |
 | `CPTAC-3-SCCNOS` | Squamous carcinoma at an ill-defined site | 1 | 0 |
 
-The 18 groups cover 1,390 matched patients in this audit. They include every
-identifiable malignant primary-tumor group with eligible RNA and positive OS
-found by an exhaustive CPTAC program query on this date. This is not a promise
-of support for every future GDC diagnosis or every CPTAC assay. Eight groups
-contain fewer than 20 patients. Sample counts are visible in the cohort selector;
-these groups have an explicit small-sample note and may have no estimable group
-comparison. One-patient or no-death cohorts cannot support meaningful survival
-association estimates.
+- The 18 groups have 1,390 matched patients. They are every malignant primary-tumor group with RNA and positive OS found on that date.
+- Eight groups have fewer than 20 patients. They show a small-sample note and may have no result.
+- RCC keeps the GDC "NOS" label. It is not clear-cell RCC. Other renal types have their own cohorts. Benign lesions are left out.
+- GBM leaves out other gliomas. LUAD and LUSC use separate histology filters.
+- Cohorts follow GDC clinical fields. They do not try to match a paper's cohort.
 
-The RCC cohort retains the GDC NOS designation. It is not labeled clear-cell
-RCC. Benign kidney lesions and unspecified diagnoses are excluded; other
-malignant renal histologies have separate cohorts. GBM
-excludes other gliomas; LUAD and LUSC have distinct histology filters. Discovery
-and confirmatory samples can both occur within a GDC project; these cohorts
-are defined by GDC clinical fields, not claimed to reproduce a publication's
-discovery cohort.
-
-The published [data-v2026.09.18 release](https://github.com/oncologylab/survscope/releases/tag/data-v2026.09.18)
-contains the full catalogs for all 18 CPTAC groups and all 33 TCGA cohorts:
-59,317 genes, 869 assets, and 818,907,113 bytes. All 561 TCGA data assets match
-the `2026.07.28` release byte for byte. The initial 0.2 site was 823,332,414 bytes
-(785.19 MiB); the 0.3 build is 789.57 MiB, within the 850 MiB budget. Both the release archive and all
-extracted assets passed checksum and coverage validation.
-
-Software 0.3 adds the figure editor and outcome-independent comparison choices
-across these same cohorts. Current cross-language tests cover 5,256 endpoint
-comparisons (three genes, eight groupings, all 51 cohorts, and synthetic edge
-cases). Counts and memberships match exactly; [methods and validation](methods.md#validation)
-record numerical tolerances, measured errors, and the independent R reference.
-Each new Pages build checks the complete site's size again before deployment.
-
-## Sources that informed the implementation
-
-- [NCI's CPTAC overview](https://gdc.cancer.gov/about-gdc/contributed-genomic-data-cancer-research/clinical-proteomic-tumor-analysis-consortium-cptac)
-  distinguishes GDC genomic data from PDC proteomics. Clinical metadata and
-  expression quantification are open-access; controlled sequencing reads are
-  unnecessary for this workflow.
-- [GDC mRNA pipeline](https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/)
-  describes the expression workflow. Live STAR files contain GENCODE v36 gene
-  IDs/names and `tpm_unstranded`; the builder reads TPM, not counts or FPKM.
-- [GDC search and retrieval](https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/)
-  supplies case/file filtering, pagination, and download metadata. The builder
-  verifies the advertised MD5 and byte count for every consumed STAR file and
-  records SHA-256 provenance.
-- [GDC survival API](https://docs.gdc.cancer.gov/API/Users_Guide/Data_Analysis/)
-  supplies donor-level OS time and censoring. The build uses these records,
-  not the API's aggregate curve or statistics. SurvScope computes its own
-  expression split, KM curves, log-rank test, and Cox estimate.
-- [GDC API release notes](https://docs.gdc.cancer.gov/API/Release_Notes/API_Release_Notes/)
-  document the June 29, 2026 survival update: follow-up records now contribute
-  censoring times, and unknown/unreported vital status is excluded. Using the
-  current donor endpoint avoids freezing an outdated clinical-field rule.
-- [PDC documentation](https://pdc.cancer.gov/pdc-docs/usage) describes protein
-  assemblies and clinical/follow-up exports, useful for a future proteomics
-  adapter with pinned study versions and assay-specific normalization.
-- The [Payne Lab CPTAC package](https://github.com/PayneLab/cptac) provides
-  curated multi-omics access and a
-  [clinical outcomes example](https://paynelab.github.io/cptac/usecase09_clinical_outcomes.html).
-  Its README currently reports Zenodo access difficulties. Its automatic
-  download/storage behavior also differs from this repository's streaming
-  build policy, so it is a research reference rather than a runtime dependency.
+The [data-v2026.09.18 release](https://github.com/oncologylab/survscope/releases/tag/data-v2026.09.18) has all 18 CPTAC groups and all 33 TCGA cohorts: 59,317 genes, 869 assets, 818,907,113 bytes. Its 561 TCGA assets are byte-identical to the `2026.07.28` release. All files passed checksum and coverage checks. [Validation](methods.md#validation) covers all 51 cohorts.
 
 ## Survival and sample rules
 
-OS times remain in days in assets; plots divide by 30.4375 for months. A GDC
-`censored` value of `true` becomes event `0`, and `false` becomes event `1`.
-The case vital status must agree with censoring. Unknown status, nonfinite or
-nonpositive time, and absent survival records do not become censored observations.
-Conflicting status and duplicate donors fail the build.
+Survival:
 
-CPTAC OS receives a **caution** badge because follow-up completeness varies.
-The TCGA-CDR quality recommendations are not assigned to CPTAC. DSS, PFI and DFI
-are null arrays marked **unavailable**, with explicit unavailable figure panels.
-No recurrence field is relabeled as a TCGA-CDR endpoint. BH adjustment includes
-only finite endpoint p-values, so CPTAC's OS q-value equals its OS p-value. The figure shows p alone for this single-test case; both values remain in analysis JSON.
+- OS time is in days. GDC `censored: true` is event `0`. `false` is event `1`.
+- Vital status must agree with censoring. Conflicts or duplicate donors stop the build.
+- Unknown status, missing records and time ≤ 0 are dropped, not censored.
+- OS has a caution badge because follow-up varies. TCGA-CDR quality labels are not used.
+- DSS, PFI and DFI are empty and marked unavailable.
+- With one p-value, q equals p. The figure shows p only.
 
-Solid-tumor cohorts use GDC `Primary Tumor` sample metadata. AML accepts primary
-bone marrow or peripheral-blood cancer specimens, preferring bone marrow when
-both are available. Normal, recurrent and metastatic samples are excluded.
-Files linked to multiple samples or cases are excluded as ambiguous. Remaining
-replicates are selected deterministically by sample-type priority, sample UUID,
-then file UUID. This conservative rule can exclude otherwise useful samples;
-the exclusion count is recorded instead of silently treating them as independent
-patients. UUIDs and submitter IDs are not written to published assets.
+Samples:
 
-Ambiguous gene symbols are excluded case-insensitively. All files in a cohort
-must agree on gene mapping and gene-model version. One melanoma STAR file
-declares `GENCODE vv36`; its 59,317 symbol/Ensembl mappings match the other
-samples exactly. The builder normalizes only that observed header typo to
-`GENCODE v36` and records counts of the original declarations in provenance.
-Actual gene-model or mapping changes still fail the build. TPM is converted to
-`log2(TPM+1)` and encoded in the same uint16 format as TCGA; exact median
-membership corrections preserve the source grouping.
+- Solid tumors use GDC `Primary Tumor` samples. AML uses primary bone marrow or blood, preferring bone marrow.
+- Normal, recurrent and metastatic samples are left out.
+- Files linked to more than one sample or case are left out.
+- Replicates are picked by sample-type priority, then sample UUID, then file UUID. The number dropped is recorded.
+- No UUIDs or submitter IDs are published.
+
+Genes:
+
+- Ambiguous symbols are dropped (case-insensitive).
+- All files in a cohort must use the same gene mapping and GENCODE version. One melanoma file says `GENCODE vv36`. Its 59,317 mappings match the rest, so the builder fixes this typo to `GENCODE v36` and records it. Any real change stops the build.
+- TPM is stored as `log2(TPM+1)` in the TCGA format, with exact median corrections.
 
 ## Build and use
 
-Build one full CPTAC cohort into a new, empty directory:
+Build one CPTAC cohort into a new, empty folder:
 
 ```bash
 survscope-build-data \
@@ -146,62 +77,30 @@ survscope --data-version 2026.09.18 --data-dir data-build/cptac \
   plot --gene SRD5A1 --cohort CPTAC-3-PAAD --format pdf svg png --json
 ```
 
-Add `--genes SRD5A1 TP53` for a compact smoke fixture. This reduces the output
-catalog, not source downloads: each selected STAR file must still be consumed
-and checksummed. Up to three sample downloads run concurrently, with results
-consumed in the fixed patient order and at most three buffered downloads.
-A build keeps one cohort's gene values in memory to calculate
-exact medians; it never writes a raw expression matrix. Metadata requests are
-paginated; transient connection/HTTP errors retry, and incomplete or changing
-responses fail explicitly.
+- `--genes SRD5A1 TP53` makes a small test fixture. It still downloads and checks every STAR file.
+- Up to three downloads run at once. Results are used in a fixed patient order.
+- The build keeps one cohort in memory to compute exact medians. It never writes a raw matrix.
+- Network errors retry. Incomplete or changing responses stop the build.
 
-For a combined release, use `--include-cptac` with the default 33 TCGA cohorts.
-The manual `data-release.yml` workflow defaults to this 51-cohort build:
+For a combined release, add `--include-cptac` to the 33 TCGA cohorts. The `data-release.yml` workflow does this by default ([command](development.md#compact-data-and-coverage)). It downloads and checks the TCGA archive and passes it with `--tcga-release`. Each reused cohort records its source version and manifest SHA-256.
 
-```bash
-gh workflow run data-release.yml \
-  -f data_version=2026.09.18 -f cohorts=all -f include_cptac=true \
-  -f tcga_data_version=2026.07.28
-```
+Deploy rules are in [development](development.md#deployment). Pages also requires all 33 TCGA cohorts and, from 2026.09.18 on, all 18 CPTAC groups.
 
-The workflow downloads and verifies the existing compact TCGA archive, then
-passes its extracted directory through `--tcga-release`. The builder validates
-every checksum and all gene/cohort coverage before copying selected TCGA assets.
-Each reused cohort records the source data version and manifest SHA-256.
-Leave the workflow's `tcga_data_version` input blank for a full source refresh.
+For a local CPTAC preview, copy the output to `web/public/data/2026.09.18` and run `VITE_DATA_VERSION=2026.09.18 npm run build`. Python defaults to `2026.09.18`.
 
-Use a fresh `data-vYYYY.MM.DD` tag for a production refresh. Validation checks
-checksums (including the manifest), requested and gene coverage, endpoint shape,
-asset count, and the 850 MiB budget. Pages additionally requires all 33 TCGA cohorts and, for releases from
-2026.09.18 onward, all 18 current CPTAC groups, and checks the final site size. It selects the newest immutable data
-release unless a version is explicitly requested, and compiles the matching
-`VITE_DATA_VERSION` into the static app. Browser requests stay on the same origin.
+The six-gene PAAD fixture in `tests/fixtures/cptac/2026.09.18` tests Python/browser agreement and CPTAC/TCGA together. Its manifest lists its sources.
 
-The Python default is `2026.09.18`; the bundled development web preview uses
-the `2026.07.28` TCGA fixture. For a local CPTAC preview, copy compact output
-under `web/public/data/2026.09.18` and build with
-`VITE_DATA_VERSION=2026.09.18 npm run build`. Keep full generated catalogs out of
-source control. Pages serves only the active data release to stay within its
-size budget. For an archived analysis, extract that release's immutable GitHub
-archive and pass both `--data-version` and `--data-dir` (or `DataStore` equivalents).
+## Sources
 
-The six-gene live PAAD fixture in `tests/fixtures/cptac/2026.09.18` tests Python
-and browser numerical parity and CPTAC/TCGA coexistence. It is not a production
-catalog. Its input URLs, hashes and GDC release are in its manifest.
+- [NCI CPTAC overview](https://gdc.cancer.gov/about-gdc/contributed-genomic-data-cancer-research/clinical-proteomic-tumor-analysis-consortium-cptac): GDC has open genomic and clinical data. PDC has proteomics.
+- [GDC mRNA pipeline](https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/Expression_mRNA_Pipeline/): STAR files use GENCODE v36. The builder reads `tpm_unstranded`.
+- [GDC search and retrieval](https://docs.gdc.cancer.gov/API/Users_Guide/Search_and_Retrieval/): file queries. The builder checks each file's MD5 and size and records SHA-256.
+- [GDC survival API](https://docs.gdc.cancer.gov/API/Users_Guide/Data_Analysis/): per-donor OS time and censoring. SurvScope computes its own statistics.
+- [GDC API release notes](https://docs.gdc.cancer.gov/API/Release_Notes/API_Release_Notes/): since June 29, 2026, follow-up adds censoring times and unknown status is excluded.
+- [PDC documentation](https://pdc.cancer.gov/pdc-docs/usage): protein data, for possible future use.
+- [Payne Lab CPTAC package](https://github.com/PayneLab/cptac) and [clinical outcomes example](https://paynelab.github.io/cptac/usecase09_clinical_outcomes.html): reference only. It downloads and stores data, which this build does not do.
 
 ## Current limits
 
-The live CPTAC-2 query returned no usable GDC OS donors, despite eligible RNA
-for breast, colorectal, and ovarian/peritoneal cases. PDC's
-[`clinicalPerStudy` API](https://pdc.cancer.gov/pdc/publicapi-documentation)
-was also checked for the breast, colon, and ovarian study IDs linked by the
-GDC overview. Thirteen queries returned no reported vital status, death time,
-or follow-up; `PDC000116` returned clinical API errors and was not usable.
-These RNA datasets are not presented as supported survival cohorts. A future
-publication-specific clinical adapter would need explicit case matching,
-endpoint definitions and time origins before enabling CPTAC-2.
-
-Protein abundance, phosphoproteomics, and other PDC measurements are not TPM.
-They require signed/missing-aware encoding, assay labels, protein-to-gene mapping
-rules, and different cutoff units. This change does not feed those values through
-the RNA/TPM analysis path.
+- CPTAC-2 has RNA but no usable GDC OS data. PDC [`clinicalPerStudy`](https://pdc.cancer.gov/pdc/publicapi-documentation) also gave no survival data for the breast, colon and ovarian studies (13 empty queries; `PDC000116` returned errors).
+- Protein data are not TPM. They need different encoding, units and gene mapping. They are not included.
