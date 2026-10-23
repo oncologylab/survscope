@@ -144,18 +144,18 @@ export function layoutFigure(
   settings: FigureSettings,
   layout: "grid" | "row" | "column",
 ): FigureSettings {
-  const result = structuredClone(settings),
-    count = settings.endpoints.length;
+  const result = structuredClone(settings);
+  const count = settings.endpoints.length;
   if (!count) return result;
   const columns =
     layout === "row" ? count : layout === "column" ? 1 : Math.min(2, count);
   const rows = Math.ceil(count / columns);
-  const w = settings.widthIn * 72,
-    h = settings.heightIn * 72;
+  const w = settings.widthIn * 72;
+  const h = settings.heightIn * 72;
   for (const [i, ep] of settings.endpoints.entries()) {
     const header = Math.min(46, h * 0.2);
-    const cellW = w / columns,
-      cellH = (h - header) / rows;
+    const cellW = w / columns;
+    const cellH = (h - header) / rows;
     const left = Math.min(60, Math.max(0, (cellW - 30) * 0.7));
     const right = Math.min(25, Math.max(0, cellW - left - 30));
     const top = Math.min(34, Math.max(0, (cellH - 30) / 2));

@@ -57,19 +57,19 @@ interface Drag {
   additive: boolean;
 }
 export function usePlotInteraction(
-  svg: RefObject<SVGSVGElement>,
+  svg: RefObject<SVGSVGElement | null>,
   settings: FigureSettings,
   editor: PlotEditor,
 ) {
   const current = useRef({ settings, editor });
   current.current = { settings, editor };
   const [boxes, setBoxes] = useState<{ id: string; box: Bounds }[]>([]);
-  const overlay = useRef<SVGGElement>(null),
-    marquee = useRef<SVGRectElement>(null),
-    guideX = useRef<SVGLineElement>(null),
-    guideY = useRef<SVGLineElement>(null);
-  const drag = useRef<Drag | null>(null),
-    raf = useRef(0);
+  const overlay = useRef<SVGGElement>(null);
+  const marquee = useRef<SVGRectElement>(null);
+  const guideX = useRef<SVGLineElement>(null);
+  const guideY = useRef<SVGLineElement>(null);
+  const drag = useRef<Drag | null>(null);
+  const raf = useRef(0);
   useLayoutEffect(() => {
     if (!svg.current) return;
     setBoxes(
@@ -97,9 +97,11 @@ export function usePlotInteraction(
       editor.editText(text, { left: event.clientX, top: event.clientY });
       return;
     }
-    const matrix = svg.current!.getScreenCTM()!,
-      inverse = matrix.inverse(),
-      p = new DOMPoint(event.clientX, event.clientY).matrixTransform(inverse);
+    const matrix = svg.current!.getScreenCTM()!;
+    const inverse = matrix.inverse();
+    const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+      inverse,
+    );
     if (editor.tool === "type") {
       if (settings.annotations.length >= 100) return;
       const item = newAnnotation(
@@ -225,18 +227,18 @@ export function usePlotInteraction(
         !d.draw &&
         d.bounds
       ) {
-        const axis = horizontal ? "x" : "y",
-          dim = horizontal ? "width" : "height",
-          delta = horizontal ? "dx" : "dy",
-          positions = d.guides[axis];
-        let nearest = d.tolerance,
-          adjustment = 0;
+        const axis = horizontal ? "x" : "y";
+        const dim = horizontal ? "width" : "height";
+        const delta = horizontal ? "dx" : "dy";
+        const positions = d.guides[axis];
+        let nearest = d.tolerance;
+        let adjustment = 0;
         for (const fraction of [0, 0.5, 1]) {
           const value = d.bounds[axis] + d.bounds[dim] * fraction + d[delta];
           // The geometry is fixed for this gesture. Search cached guide positions
           // without reading layout or scanning every object on each pointer event.
-          let low = 0,
-            high = positions.length;
+          let low = 0;
+          let high = positions.length;
           while (low < high) {
             const middle = (low + high) >>> 1;
             if (positions[middle] < value) low = middle + 1;
@@ -291,8 +293,8 @@ export function usePlotInteraction(
       let transform = `translate(${d.dx} ${d.dy})`;
       if (d.resize && d.bounds) {
         const b = d.bounds;
-        const sx = Math.max(0.1, (b.width + d.dx) / Math.max(b.width, 1)),
-          sy = Math.max(0.1, (b.height + d.dy) / Math.max(b.height, 1));
+        const sx = Math.max(0.1, (b.width + d.dx) / Math.max(b.width, 1));
+        const sy = Math.max(0.1, (b.height + d.dy) / Math.max(b.height, 1));
         transform = `translate(${b.x} ${b.y}) scale(${sx} ${d.resize.startsWith("panel.") ? sy : sx}) translate(${-b.x} ${-b.y})`;
       }
       node.setAttribute("transform", `${transform} ${d.transforms[i] ?? ""}`);
@@ -355,8 +357,8 @@ export function usePlotInteraction(
         ...svg.current!.querySelectorAll<SVGGraphicsElement>("[data-element]"),
       ]
         .filter((n) => {
-          const id = n.dataset.element!,
-            b = objectBounds(svg.current!, id);
+          const id = n.dataset.element!;
+          const b = objectBounds(svg.current!, id);
           return (
             b &&
             !locked(settings, id) &&
@@ -389,9 +391,9 @@ export function usePlotInteraction(
     let next: FigureSettings;
     if (d.resize) {
       next = structuredClone(d.original);
-      const id = d.resize,
-        w = settings.widthIn * 72,
-        h = settings.heightIn * 72;
+      const id = d.resize;
+      const w = settings.widthIn * 72;
+      const h = settings.heightIn * 72;
       if (id.startsWith("panel.")) {
         const b = panelBox(next, id);
         b.width = Math.max(

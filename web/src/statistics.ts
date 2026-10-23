@@ -109,17 +109,17 @@ function coxFit(time: number[], event: number[], high: boolean[]) {
   const eventTimes = [...new Set(time.filter((_, i) => event[i] === 1))].sort(
     (a, b) => a - b,
   );
-  let mixedLow = 0,
-    mixedHigh = 0;
+  let mixedLow = 0;
+  let mixedHigh = 0;
   const sets = eventTimes.map((t) => {
     const risk = time.flatMap((x, i) => (x >= t ? [i] : []));
     const deaths = time.flatMap((x, i) =>
       x === t && event[i] === 1 ? [i] : [],
     );
-    const nh = risk.filter((i) => high[i]).length,
-      nl = risk.length - nh;
-    const dh = deaths.filter((i) => high[i]).length,
-      d = deaths.length;
+    const nh = risk.filter((i) => high[i]).length;
+    const nl = risk.length - nh;
+    const dh = deaths.filter((i) => high[i]).length;
+    const d = deaths.length;
     if (nl && nh) {
       mixedHigh += dh;
       mixedLow += d - dh;
@@ -169,8 +169,8 @@ function coxFit(time: number[], event: number[], high: boolean[]) {
 }
 
 export function kmTimeline(time: number[], event: number[]): RiskPoint[] {
-  let survival = 1,
-    greenwood = 0;
+  let survival = 1;
+  let greenwood = 0;
   return [...new Set(time)]
     .sort((a, b) => a - b)
     .map((at) => {
@@ -292,10 +292,10 @@ function analyzeEndpoint(
     lower,
     upper,
   } = prepareEndpoint(data, endpoint, spec);
-  const lowTime = time.filter((_, i) => !high[i]),
-    lowEvent = event.filter((_, i) => !high[i]);
-  const highTime = time.filter((_, i) => high[i]),
-    highEvent = event.filter((_, i) => high[i]);
+  const lowTime = time.filter((_, i) => !high[i]);
+  const lowEvent = event.filter((_, i) => !high[i]);
+  const highTime = time.filter((_, i) => high[i]);
+  const highEvent = event.filter((_, i) => high[i]);
   const [chi2, p] = logrank(time, event, high);
   const fit = coxFit(time, event, high);
   return {

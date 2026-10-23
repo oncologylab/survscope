@@ -10,7 +10,9 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173/survscope/",
     channel: process.env.CI || process.env.BROWSER ? undefined : "chrome",
     browserName: (process.env.BROWSER || "chromium") as
-      "chromium" | "firefox" | "webkit",
+      | "chromium"
+      | "firefox"
+      | "webkit",
     trace: "retain-on-failure",
     viewport: { width: 1440, height: 1100 },
   },

@@ -139,8 +139,8 @@ describe("portable editor projects", () => {
   test("round-trips dimensions, notes, unavailable statistics, and aggregate results", () => {
     const data = exampleData();
     data.clinical.endpoints.DSS.time.fill(null);
-    const analysis = analyzeGeneData(data, "median"),
-      settings = defaultFigure();
+    const analysis = analyzeGeneData(data, "median");
+    const settings = defaultFigure();
     settings.widthIn = 8;
     settings.heightIn = 5;
     settings.elements.title = {

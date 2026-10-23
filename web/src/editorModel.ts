@@ -89,9 +89,9 @@ export function moveObjects(
   dx: number,
   dy: number,
 ): FigureSettings {
-  const next = structuredClone(settings),
-    w = settings.widthIn * 72,
-    h = settings.heightIn * 72;
+  const next = structuredClone(settings);
+  const w = settings.widthIn * 72;
+  const h = settings.heightIn * 72;
   const selected = roots(ids, settings);
   ({ dx, dy } = clampMovement(settings, selected, dx, dy));
   for (const id of selected) {
@@ -135,14 +135,14 @@ export function objectBounds(svg: SVGSVGElement, id: string): Bounds | null {
 }
 export function nodeBounds(node: SVGGraphicsElement, inv: DOMMatrix): Bounds {
   const rect = node.getBoundingClientRect();
-  const a = new DOMPoint(rect.left, rect.top).matrixTransform(inv),
-    b = new DOMPoint(rect.right, rect.bottom).matrixTransform(inv);
+  const a = new DOMPoint(rect.left, rect.top).matrixTransform(inv);
+  const b = new DOMPoint(rect.right, rect.bottom).matrixTransform(inv);
   return { x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y };
 }
 export function unionBounds(boxes: Bounds[]): Bounds | null {
   if (!boxes.length) return null;
-  const x = Math.min(...boxes.map((b) => b.x)),
-    y = Math.min(...boxes.map((b) => b.y));
+  const x = Math.min(...boxes.map((b) => b.x));
+  const y = Math.min(...boxes.map((b) => b.y));
   return {
     x,
     y,
@@ -155,8 +155,8 @@ export function updateText(
   id: string,
   runs: TextRun[],
 ): FigureSettings {
-  const next = structuredClone(settings),
-    value = runs.map((r) => r.text).join("");
+  const next = structuredClone(settings);
+  const value = runs.map((r) => r.text).join("");
   const style = (next.elements[id] ??= {});
   style.runs = runs;
   if (id === "label.low" || id === "label.high")
@@ -207,9 +207,9 @@ export function alignObjects(
   let next = settings;
   if (action.startsWith("distribute")) {
     if (movable.length < 3) return next;
-    const horizontal = action === "distribute-x",
-      axis = horizontal ? "x" : "y",
-      dim = horizontal ? "width" : "height";
+    const horizontal = action === "distribute-x";
+    const axis = horizontal ? "x" : "y";
+    const dim = horizontal ? "width" : "height";
     const ordered = [...movable].sort(
       (a, b) => boxes.get(a)![axis] - boxes.get(b)![axis],
     );
@@ -280,10 +280,10 @@ export function pasteAnnotations(
   settings: FigureSettings,
   clipboard: AnnotationClipboard,
 ): { settings: FigureSettings; ids: string[] } {
-  const next = structuredClone(settings),
-    dx = 10 / (settings.widthIn * 72),
-    dy = 10 / (settings.heightIn * 72),
-    ids: string[] = [];
+  const next = structuredClone(settings);
+  const dx = 10 / (settings.widthIn * 72);
+  const dy = 10 / (settings.heightIn * 72);
+  const ids: string[] = [];
   for (const a of clipboard.annotations.slice(
     0,
     100 - next.annotations.length,
@@ -319,8 +319,8 @@ export function reorderAnnotations(
   ids: string[],
   front: boolean,
 ): FigureSettings {
-  const selected = selectedAnnotations(settings, ids),
-    rest = settings.annotations.filter((a) => !selected.includes(a));
+  const selected = selectedAnnotations(settings, ids);
+  const rest = settings.annotations.filter((a) => !selected.includes(a));
   return {
     ...settings,
     annotations: front ? [...rest, ...selected] : [...selected, ...rest],

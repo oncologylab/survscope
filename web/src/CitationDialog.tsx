@@ -18,8 +18,8 @@ export function CitationDialog({
   analysis: SurvivalAnalysis | null;
   showQ: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null),
-    [status, setStatus] = useState("");
+  const ref = useRef<HTMLDialogElement>(null);
+  const [status, setStatus] = useState("");
   useEffect(() => {
     if (open) {
       setStatus("");

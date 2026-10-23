@@ -32,8 +32,8 @@ import { HelpGuide } from "./HelpGuide";
 
 function queryDefaults() {
   const params = new URLSearchParams(window.location.search);
-  let grouping: GroupingSpec = { kind: "median" },
-    error = "";
+  let grouping: GroupingSpec = { kind: "median" };
+  let error = "";
   try {
     grouping = groupingFromQuery(params);
   } catch (e) {
@@ -70,14 +70,14 @@ export default function App() {
   const [cite, setCite] = useState(false);
   const [snapshot, setSnapshot] = useState(false);
   const [resetKey, setResetKey] = useState(0);
-  const history = useHistory(defaultFigure()),
-    settings = history.value;
-  const plotRef = useRef<SVGSVGElement>(null),
-    fileRef = useRef<HTMLInputElement>(null);
+  const history = useHistory(defaultFigure());
+  const settings = history.value;
+  const plotRef = useRef<SVGSVGElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const initialized = useRef(!!defaults.error),
-    pendingLoad = useRef(0);
+  const initialized = useRef(!!defaults.error);
+  const pendingLoad = useRef(0);
   const comparison = useMemo(() => {
     try {
       return { spec: draftGrouping(draft), error: "" };
@@ -238,8 +238,8 @@ export default function App() {
   ) {
     window.dispatchEvent(new Event("survscope:commit-text"));
     if (!analysis || !plotRef.current) return;
-    const svg = plotRef.current,
-      captured = structuredClone(settingsRef.current);
+    const svg = plotRef.current;
+    const captured = structuredClone(settingsRef.current);
     setBusy(true);
     setStatus(
       `Preparing ${kind === "project" || kind === "preset" ? kind : kind.toUpperCase()}…`,

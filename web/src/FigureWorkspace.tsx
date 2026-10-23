@@ -29,7 +29,7 @@ import type { AnnotationClipboard } from "./editorModel";
 interface Props {
   analysis: SurvivalAnalysis | null;
   history: History<FigureSettings>;
-  plotRef: RefObject<SVGSVGElement>;
+  plotRef: RefObject<SVGSVGElement | null>;
   analysisControls: ReactNode;
   status: string;
   pending: boolean;
@@ -105,8 +105,8 @@ function DockResizer({
       className={`dock-resizer ${edge}`}
       onPointerDown={(e) => {
         e.preventDefault();
-        const target = e.currentTarget,
-          x = e.clientX;
+        const target = e.currentTarget;
+        const x = e.clientX;
         target.setPointerCapture(e.pointerId);
         const move = (event: PointerEvent) =>
           onResize(clampDock(width + (event.clientX - x) * direction));
@@ -146,15 +146,18 @@ export function FigureWorkspace(p: Props) {
   const hasSelectedAnnotations = selection.some(
     (id) => id.startsWith("annotation.") && !locked(settings, id),
   );
-  const stage = useRef<HTMLDivElement>(null),
-    pan = useRef<{ x: number; y: number; left: number; top: number } | null>(
-      null,
-    );
+  const stage = useRef<HTMLDivElement>(null);
+  const pan = useRef<{
+    x: number;
+    y: number;
+    left: number;
+    top: number;
+  } | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const clipboard = useRef<AnnotationClipboard | null>(null);
-  const selected = selection.at(-1) ?? null,
-    activeTool = space ? "hand" : tool;
+  const selected = selection.at(-1) ?? null;
+  const activeTool = space ? "hand" : tool;
   const fit = Math.max(
     0.1,
     Math.min(
@@ -179,8 +182,8 @@ export function FigureWorkspace(p: Props) {
     setZoom(null);
   }, [p.resetKey]);
   useEffect(() => {
-    const medium = window.matchMedia("(min-width:1440px)"),
-      large = window.matchMedia("(min-width:1024px)");
+    const medium = window.matchMedia("(min-width:1440px)");
+    const large = window.matchMedia("(min-width:1024px)");
     const change = () =>
       setPrefs((v) => ({
         ...v,
@@ -206,20 +209,20 @@ export function FigureWorkspace(p: Props) {
   function zoomAt(factor: number, x?: number, y?: number) {
     const el = stage.current;
     if (!el) return;
-    const rect = el.getBoundingClientRect(),
-      cx = (x ?? rect.left + rect.width / 2) - rect.left,
-      cy = (y ?? rect.top + rect.height / 2) - rect.top;
+    const rect = el.getBoundingClientRect();
+    const cx = (x ?? rect.left + rect.width / 2) - rect.left;
+    const cy = (y ?? rect.top + rect.height / 2) - rect.top;
     const oldLeft = Math.max(
-        24,
-        (el.clientWidth - settings.widthIn * 96 * scale) / 2,
-      ),
-      oldTop = Math.max(
-        24,
-        (el.clientHeight - settings.heightIn * 96 * scale) / 2,
-      );
-    const px = (el.scrollLeft + cx - oldLeft) / scale,
-      py = (el.scrollTop + cy - oldTop) / scale,
-      next = Math.max(0.1, Math.min(16, scale * factor));
+      24,
+      (el.clientWidth - settings.widthIn * 96 * scale) / 2,
+    );
+    const oldTop = Math.max(
+      24,
+      (el.clientHeight - settings.heightIn * 96 * scale) / 2,
+    );
+    const px = (el.scrollLeft + cx - oldLeft) / scale;
+    const py = (el.scrollTop + cy - oldTop) / scale;
+    const next = Math.max(0.1, Math.min(16, scale * factor));
     setZoom(next);
     requestAnimationFrame(() => {
       el.scrollLeft =
@@ -248,17 +251,17 @@ export function FigureWorkspace(p: Props) {
     if (id.startsWith("label.")) setSelection([id]);
     const parts = id.split(".");
     const style =
-        id.startsWith("label.") && parts.length === 3
-          ? legendEntry(
-              settings,
-              analysis.endpoints[parts[2] as Endpoint],
-              parts[1] as "low" | "high",
-            ).style
-          : objectStyle(settings, id),
-      matrix = plotRef
-        .current!.getScreenCTM()!
-        .inverse()
-        .multiply(node.getScreenCTM()!);
+      id.startsWith("label.") && parts.length === 3
+        ? legendEntry(
+            settings,
+            analysis.endpoints[parts[2] as Endpoint],
+            parts[1] as "low" | "high",
+          ).style
+        : objectStyle(settings, id);
+    const matrix = plotRef
+      .current!.getScreenCTM()!
+      .inverse()
+      .multiply(node.getScreenCTM()!);
     const computed = getComputedStyle(node);
     setTextTarget({
       id,

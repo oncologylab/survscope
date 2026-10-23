@@ -78,11 +78,11 @@ export function quantile(values: number[], probability: number): number {
   const ordered = [...values].sort((a, b) => a - b);
   // Match R type-7's one-based index and weighted-average operation order.
   const position = 1 + (ordered.length - 1) * probability;
-  const lower = Math.floor(position),
-    upper = Math.ceil(position),
-    fraction = position - lower;
-  const a = ordered[lower - 1],
-    b = ordered[upper - 1];
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  const fraction = position - lower;
+  const a = ordered[lower - 1];
+  const b = ordered[upper - 1];
   return fraction === 0 || a === b ? a : (1 - fraction) * a + fraction * b;
 }
 
@@ -102,8 +102,8 @@ export function assignGroups(
     return { low: high.map((x) => !x), high, lower, upper: lower };
   }
   if (spec.kind === "mean") {
-    let total = 0,
-      correction = 0;
+    let total = 0;
+    let correction = 0;
     for (const value of tpm) {
       const updated = total + value;
       correction +=

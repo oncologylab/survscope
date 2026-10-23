@@ -78,8 +78,8 @@ test("edits text, drags and nudges elements, resizes panels, and restores a save
 test("exports edited physical dimensions, embedded fonts, overlays, and clean vector files", async ({
   page,
 }) => {
-  const errors: string[] = [],
-    external: string[] = [];
+  const errors: string[] = [];
+  const external: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("request", (r) => {
     if (r.url().startsWith("http") && new URL(r.url()).hostname !== "127.0.0.1")
@@ -275,8 +275,8 @@ test("reuses presets, rearranges outcomes, and applies consistent axes to all pa
   await expect(
     page.getByRole("button", { name: "Hand tool", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  const stage = page.locator(".plot-stage"),
-    b = (await stage.boundingBox())!;
+  const stage = page.locator(".plot-stage");
+  const b = (await stage.boundingBox())!;
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await page.mouse.move(b.x + b.width / 2 - 80, b.y + b.height / 2 - 60);

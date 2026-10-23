@@ -5,8 +5,8 @@ import type { FigureSettings } from "./figure";
 import type { SurvivalAnalysis } from "./types";
 
 export function download(blob: Blob, name: string): void {
-  const url = URL.createObjectURL(blob),
-    anchor = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = name;
   document.body.append(anchor);
@@ -61,8 +61,8 @@ export async function saveSvg(
 // Write the standard pHYs chunk so print software reads the requested resolution.
 export async function pngResolution(blob: Blob, dpi: number): Promise<Blob> {
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const chunk = new Uint8Array(21),
-    view = new DataView(chunk.buffer);
+  const chunk = new Uint8Array(21);
+  const view = new DataView(chunk.buffer);
   view.setUint32(0, 9);
   chunk.set([112, 72, 89, 115], 4); // pHYs
   const pixelsPerMetre = Math.round(dpi / 0.0254);
@@ -78,7 +78,7 @@ export async function pngResolution(blob: Blob, dpi: number): Promise<Blob> {
   view.setUint32(17, (crc ^ 0xffffffff) >>> 0);
   const parts: Uint8Array<ArrayBuffer>[] = [bytes.slice(0, 33), chunk];
   const input = new DataView(bytes.buffer);
-  for (let at = 33; at < bytes.length;) {
+  for (let at = 33; at < bytes.length; ) {
     const size = input.getUint32(at) + 12;
     if (String.fromCharCode(...bytes.subarray(at + 4, at + 8)) !== "pHYs")
       parts.push(bytes.slice(at, at + size));
@@ -93,8 +93,8 @@ export async function savePng(
   settings: FigureSettings,
 ): Promise<void> {
   const { dpi } = settings;
-  const width = Math.round(settings.widthIn * dpi),
-    height = Math.round(settings.heightIn * dpi);
+  const width = Math.round(settings.widthIn * dpi);
+  const height = Math.round(settings.heightIn * dpi);
   if (width * height > 40_000_000)
     throw new Error(
       "This PNG exceeds 40 million pixels. Choose a lower resolution or smaller figure.",
@@ -148,8 +148,8 @@ export async function savePdf(
     import("jspdf"),
     import("svg2pdf.js"),
   ]);
-  const width = settings.widthIn * 72,
-    height = settings.heightIn * 72;
+  const width = settings.widthIn * 72;
+  const height = settings.heightIn * 72;
   const pdf = new jsPDF({
     orientation: width > height ? "landscape" : "portrait",
     unit: "pt",

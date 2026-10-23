@@ -82,21 +82,21 @@ export function boundedMinimum(
   lower: number,
   upper: number,
 ): number {
-  const sqrtEps = Math.sqrt(2.2e-16),
-    goldenMean = 0.5 * (3 - Math.sqrt(5));
-  let a = lower,
-    b = upper;
-  let fulc = a + goldenMean * (b - a),
-    nfc = fulc,
-    xf = fulc;
-  let rat = 0,
-    e = 0,
-    fx = func(xf),
-    ffulc = fx,
-    fnfc = fx;
-  let xm = 0.5 * (a + b),
-    tol1 = sqrtEps * Math.abs(xf) + 1e-5 / 3,
-    tol2 = 2 * tol1;
+  const sqrtEps = Math.sqrt(2.2e-16);
+  const goldenMean = 0.5 * (3 - Math.sqrt(5));
+  let a = lower;
+  let b = upper;
+  let fulc = a + goldenMean * (b - a);
+  let nfc = fulc;
+  let xf = fulc;
+  let rat = 0;
+  let e = 0;
+  let fx = func(xf);
+  let ffulc = fx;
+  let fnfc = fx;
+  let xm = 0.5 * (a + b);
+  let tol1 = sqrtEps * Math.abs(xf) + 1e-5 / 3;
+  let tol2 = 2 * tol1;
   let count = 1;
   while (Math.abs(xf - xm) > tol2 - 0.5 * (b - a)) {
     let golden = true;

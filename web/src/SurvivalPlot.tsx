@@ -25,8 +25,8 @@ interface Props {
 
 function niceMaximum(value: number): number {
   if (!(value > 0)) return 1;
-  const magnitude = 10 ** Math.floor(Math.log10(value)),
-    normalized = value / magnitude;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
   return (
     (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) *
     magnitude
@@ -54,8 +54,8 @@ const PlotArtwork = memo(function PlotArtwork({
   analysis: SurvivalAnalysis;
   settings: FigureSettings;
 }) {
-  const width = settings.widthIn * 72,
-    height = settings.heightIn * 72;
+  const width = settings.widthIn * 72;
+  const height = settings.heightIn * 72;
   const showQ = settings.showQ && testedOutcomeCount(analysis) > 1;
   function element(id: string, children: ReactNode) {
     const style = settings.elements[id] ?? {};
@@ -143,10 +143,10 @@ const PlotArtwork = memo(function PlotArtwork({
     );
     const max = axes.xMax ?? Math.max(autoMaximum, axes.xMin + 1);
     const xStep = axes.xStep ?? (max - axes.xMin) / 4;
-    const xTicks = ticks(axes.xMin, max, xStep),
-      yTicks = ticks(axes.yMin, axes.yMax, axes.yStep);
-    const bottom = g.top + g.height,
-      right = g.left + g.width;
+    const xTicks = ticks(axes.xMin, max, xStep);
+    const yTicks = ticks(axes.yMin, axes.yMax, axes.yStep);
+    const bottom = g.top + g.height;
+    const right = g.left + g.width;
     const px = (months: number) =>
       g.left +
       ((displayTime(months, settings.unit) - axes.xMin) / (max - axes.xMin)) *
@@ -173,8 +173,8 @@ const PlotArtwork = memo(function PlotArtwork({
       );
     function confidencePath(curve: Curve): string {
       if (!curve.n) return "";
-      const lower: [number, number][] = [[0, 1]],
-        upper: [number, number][] = [[0, 1]];
+      const lower: [number, number][] = [[0, 1]];
+      const upper: [number, number][] = [[0, 1]];
       let previous: [number, number] = [1, 1];
       for (const point of curve.timeline) {
         lower.push([point.timeMonths, previous[0]]);
@@ -449,8 +449,8 @@ const PlotArtwork = memo(function PlotArtwork({
         text("grouping", width / 2, 48, 8)}
       {settings.endpoints.map((ep) => panel(analysis.endpoints[ep]))}
       {settings.annotations.map((item) => {
-        const id = `annotation.${item.id}`,
-          style = objectStyle(settings, id);
+        const id = `annotation.${item.id}`;
+        const style = objectStyle(settings, id);
         if (style.hidden) return null;
         return (
           <g key={id} data-element={id} pointerEvents="bounding-box">

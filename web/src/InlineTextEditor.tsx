@@ -63,10 +63,10 @@ export function InlineTextEditor({
   scale: number;
 }) {
   const [active, setActive] = useState<Record<string, boolean>>({});
-  const host = useRef<HTMLDivElement>(null),
-    view = useRef<EditorView>(),
-    done = useRef(false),
-    commitRef = useRef(commit);
+  const host = useRef<HTMLDivElement>(null);
+  const view = useRef<EditorView | undefined>(undefined);
+  const done = useRef(false);
+  const commitRef = useRef(commit);
   commitRef.current = commit;
   function finish() {
     if (!view.current || done.current) return;

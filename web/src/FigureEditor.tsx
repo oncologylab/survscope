@@ -157,8 +157,8 @@ function SelectionProperties({
     fn: (next: FigureSettings) => void,
     apply: (settings: FigureSettings) => void = history.change,
   ) => apply(edited(settings, fn));
-  const width = settings.widthIn * 72,
-    height = settings.heightIn * 72;
+  const width = settings.widthIn * 72;
+  const height = settings.heightIn * 72;
   const [kind, part, endpoint] = selected.split(".");
   const isLegendEntry = kind === "label" && !!endpoint;
   const style: ElementStyle = isLegendEntry

@@ -165,13 +165,11 @@ test("opens shared rich legends from older projects and formats the complete ent
     runs: [{ text: "Lower RNA", italic: true }],
   };
   file.settings.elements["legend.OS"] = { dx: 9, dy: 6 };
-  await page
-    .getByLabel("Open figure file")
-    .setInputFiles({
-      name: "older-project.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(file)),
-    });
+  await page.getByLabel("Open figure file").setInputFiles({
+    name: "older-project.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
   const label = page.locator('[data-text-id="label.low.OS"]');
   const value = `Lower RNA n=${file.analysis.endpoints.OS.low.n}, e=${file.analysis.endpoints.OS.low.events}`;
   await expect(label).toHaveText(value);
@@ -329,8 +327,8 @@ for (const viewport of [
   }) => {
     await page.setViewportSize(viewport);
     await start(page);
-    const main = (await page.locator("main").boundingBox())!,
-      before = (await page.locator(".figure-canvas").boundingBox())!;
+    const main = (await page.locator("main").boundingBox())!;
+    const before = (await page.locator(".figure-canvas").boundingBox())!;
     expect(main.width).toBeGreaterThan(viewport.width - 40);
     expect(
       await page.evaluate(

@@ -89,8 +89,8 @@ function optionalNumber(value: unknown, min = -1e100, max = 1e100): number {
 }
 
 export function validateSettings(value: unknown): FigureSettings {
-  const raw = object(value),
-    result = defaultFigure();
+  const raw = object(value);
+  const result = defaultFigure();
   if (Object.keys(raw).some((key) => !(key in result)))
     failure("these figure settings need a newer application.");
   result.widthIn = number(raw.widthIn, 2, 20);
@@ -123,11 +123,11 @@ export function validateSettings(value: unknown): FigureSettings {
     new Set(result.endpoints).size !== result.endpoints.length
   )
     failure("select at least one distinct outcome.");
-  const panels = object(raw.panels),
-    axes = object(raw.axes);
+  const panels = object(raw.panels);
+  const axes = object(raw.axes);
   for (const ep of ENDPOINTS) {
-    const box = object(panels[ep]),
-      axis = object(axes[ep]);
+    const box = object(panels[ep]);
+    const axis = object(axes[ep]);
     result.panels[ep] = {
       x: number(box.x, 0, 1),
       y: number(box.y, 0, 1),
@@ -159,8 +159,8 @@ export function validateSettings(value: unknown): FigureSettings {
   );
   for (const [id, value] of Object.entries(elements)) {
     if (!allowedIds.has(id)) failure("an editable item is unknown.");
-    const s = object(value),
-      style: ElementStyle = {};
+    const s = object(value);
+    const style: ElementStyle = {};
     const keys = [
       "runs",
       "fontFamily",
@@ -232,8 +232,8 @@ export function validateSettings(value: unknown): FigureSettings {
   }
   const ids = new Set<string>();
   result.annotations = array(raw.annotations, 100).map((value) => {
-    const a = object(value),
-      id = text(a.id, 100);
+    const a = object(value);
+    const id = text(a.id, 100);
     if (!/^[a-zA-Z0-9_-]+$/.test(id) || ids.has(id))
       failure("annotation identifiers must be unique.");
     ids.add(id);
@@ -274,9 +274,9 @@ function validateCurve(value: unknown): Curve {
     )
       failure("curve coordinates are out of order.");
   }
-  let remaining = result.n,
-    totalEvents = 0,
-    lastTime = -1;
+  let remaining = result.n;
+  let totalEvents = 0;
+  let lastTime = -1;
   result.timeline = array(c.timeline).map((value) => {
     const p = object(value);
     const point: RiskPoint = {
@@ -303,8 +303,8 @@ function validateCurve(value: unknown): Curve {
   return result;
 }
 function validateAnalysis(value: unknown): SurvivalAnalysis {
-  const a = object(value),
-    endpoints = object(a.endpoints);
+  const a = object(value);
+  const endpoints = object(a.endpoints);
   if (a.statisticsVersion !== "1")
     failure("this statistical version is unsupported.");
   const result: SurvivalAnalysis = {

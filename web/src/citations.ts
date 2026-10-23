@@ -77,8 +77,8 @@ export function resolveProvenance(
   analysis: SurvivalAnalysis,
   manifest?: Manifest | null,
 ): AnalysisProvenance {
-  const cohort = analysis.cohort,
-    program = cohort.startsWith("CPTAC-") ? "CPTAC" : "TCGA";
+  const cohort = analysis.cohort;
+  const program = cohort.startsWith("CPTAC-") ? "CPTAC" : "TCGA";
   const project =
     program === "CPTAC" ? "CPTAC-3" : `TCGA-${cohort.replace(/^TCGA-/, "")}`;
   const record =
@@ -192,8 +192,8 @@ export function bibliography(
   a: SurvivalAnalysis,
   kind: "text" | "bibtex" | "ris",
 ): string {
-  const p = a.provenance ?? resolveProvenance(a),
-    release = `SurvScope data ${a.dataVersion}; upstream GDC ${p.upstreamRelease ?? "not recorded"}; cohort ${a.cohort}`;
+  const p = a.provenance ?? resolveProvenance(a);
+  const release = `SurvScope data ${a.dataVersion}; upstream GDC ${p.upstreamRelease ?? "not recorded"}; cohort ${a.cohort}`;
   if (kind === "text")
     return `${release}\n\n${p.citations.map(citationText).join("\n\n")}\n\n${p.acknowledgement}\n`;
   if (kind === "bibtex")

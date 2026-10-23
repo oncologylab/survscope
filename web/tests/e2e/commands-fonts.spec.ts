@@ -56,9 +56,9 @@ test("icon commands expose hover and keyboard help without losing editing shortc
 test("all font families load locally and the new fonts survive vector export and reopening", async ({
   page,
 }) => {
-  const external: string[] = [],
-    failed: string[] = [],
-    errors: string[] = [];
+  const external: string[] = [];
+  const failed: string[] = [];
+  const errors: string[] = [];
   page.on("request", (request) => {
     if (
       /^https?:/.test(request.url()) &&

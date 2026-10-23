@@ -147,8 +147,8 @@ describe("document editing and migration", () => {
     expect(testedOutcomeCount(result)).toBe(4);
   });
   test("moves a selected parent once and respects locks", () => {
-    const s = defaultFigure(),
-      n = moveObjects(s, ["panel.OS", "title.OS", "curve.low.OS"], 10, 20);
+    const s = defaultFigure();
+    const n = moveObjects(s, ["panel.OS", "title.OS", "curve.low.OS"], 10, 20);
     expect(n.panels.OS.x - s.panels.OS.x).toBeCloseTo(10 / (6.8 * 72));
     expect(n.elements["title.OS"]).toBeUndefined();
     s.elements["panel.OS"] = { locked: true };
@@ -182,13 +182,10 @@ describe("document editing and migration", () => {
       fontSize: 10,
       lineWidth: 1,
     }));
-    const ids = s.annotations.map((a) => `annotation.${a.id}`),
-      boxes = new Map(
-        ids.map((id, i) => [
-          id,
-          { x: i * 30, y: i * 10, width: 10, height: 10 },
-        ]),
-      );
+    const ids = s.annotations.map((a) => `annotation.${a.id}`);
+    const boxes = new Map(
+      ids.map((id, i) => [id, { x: i * 30, y: i * 10, width: 10, height: 10 }]),
+    );
     const n = alignObjects(s, ids, boxes, "top", false);
     expect(n.annotations[2].y).toBeCloseTo(0.2 - 20 / (6.8 * 72));
     const d = alignObjects(s, ids, boxes, "distribute-x", true);
@@ -209,8 +206,8 @@ describe("document editing and migration", () => {
       align: "start",
       locked: true,
     };
-    const file = projectFile(analysis(), s),
-      r = readFigureFile(JSON.stringify(file));
+    const file = projectFile(analysis(), s);
+    const r = readFigureFile(JSON.stringify(file));
     expect(file.version).toBe(2);
     expect(r.settings).toEqual(s);
     expect(splitLines(s.elements.title.runs!)).toHaveLength(2);
@@ -250,8 +247,8 @@ describe("data citations", () => {
     const cohorts = Object.keys(releases["2026.09.18"]);
     expect(cohorts).toHaveLength(51);
     for (const cohort of cohorts) {
-      const a = { ...analysis(), cohort },
-        p = resolveProvenance(a);
+      const a = { ...analysis(), cohort };
+      const p = resolveProvenance(a);
       expect(p.citations.some((c) => c.role === "Source dataset")).toBe(true);
       const ids = p.citations.map((c) => c.id);
       expect(ids.includes("liu2018cdr")).toBe(!cohort.startsWith("CPTAC-"));
@@ -304,11 +301,17 @@ describe("data citations", () => {
 
 test("comparison presets survive a round trip through their saved spec", () => {
   for (const mode of ["quarters", "thirds"] as const) {
-    const spec = draftGrouping({ ...comparisonDraft({ kind: "median" }), mode });
+    const spec = draftGrouping({
+      ...comparisonDraft({ kind: "median" }),
+      mode,
+    });
     expect(comparisonDraft(spec).mode).toBe(mode);
   }
   expect(
-    comparisonDraft({ kind: "percentile_groups", lowerPercent: 30, upperPercent: 30 })
-      .mode,
+    comparisonDraft({
+      kind: "percentile_groups",
+      lowerPercent: 30,
+      upperPercent: 30,
+    }).mode,
   ).toBe("percentile_groups");
 });

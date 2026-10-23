@@ -41,13 +41,11 @@ try {
     color: "#123456",
     lineWidth: 1,
   }));
-  await page
-    .getByLabel("Open figure file")
-    .setInputFiles({
-      name: "benchmark.survscope.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(project)),
-    });
+  await page.getByLabel("Open figure file").setInputFiles({
+    name: "benchmark.survscope.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(project)),
+  });
   await page.locator('[data-element="annotation.benchmark-99"]').waitFor();
   await page.evaluate(() => document.fonts.ready);
   const cdp = await context.newCDPSession(page);
@@ -57,8 +55,8 @@ try {
     const runs = [];
     for (let run = -1; run < 3; run++) {
       const box = await page.locator('[data-element="title"]').boundingBox();
-      const x = box.x + box.width / 2,
-        y = box.y + box.height / 2;
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2;
       await page.mouse.move(x, y);
       await page.evaluate(() => {
         window.bench = { frames: [], longTasks: [], active: true, last: null };
